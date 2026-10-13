@@ -12,6 +12,7 @@ const DEFAULTS = {
   NEXT_PUBLIC_APP_URL: "http://localhost:3000",
   NEXT_PUBLIC_WEB_URL: "http://localhost:3001",
   PLAYWRIGHT_REUSE_SERVER: "false",
+  SHOPIFY_TOKEN_ENCRYPTION_KEY: "local-e2e-shopify-encryption-key-32-chars",
 };
 
 const isPortInUse = (port) =>

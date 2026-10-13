@@ -33,3 +33,4 @@ apps/*/next-env.d.ts
 
 # OS and editor files
 .DS_Store
+*.swp

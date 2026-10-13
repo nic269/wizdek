@@ -42,4 +42,19 @@ describe("access-control policy", () => {
       CUSTOM_ROLE_DEFAULT_PERMISSION_KEYS.every((key) => knownKeys.has(key))
     ).toBe(true);
   });
+
+  it("lets members use stores and the console but not manage connections", () => {
+    const keysOf = (role: keyof typeof ROLE_PERMISSION_PRESETS) =>
+      ROLE_PERMISSION_PRESETS[role].map(permissionKey);
+
+    expect(keysOf("Member")).toEqual(
+      expect.arrayContaining(["stores:read", "graphql:query", "graphql:mutate"])
+    );
+    expect(keysOf("Member")).not.toContain("stores:manage");
+    expect(keysOf("Admin")).toContain("stores:manage");
+    expect(keysOf("Owner")).toContain("stores:manage");
+    expect(keysOf("Viewer")).toContain("stores:read");
+    expect(keysOf("Viewer")).not.toContain("graphql:query");
+    expect(keysOf("Viewer")).not.toContain("graphql:mutate");
+  });
 });

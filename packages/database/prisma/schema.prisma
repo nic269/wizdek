@@ -120,13 +120,15 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships  Membership[]
-  roles        Role[]
-  invitations  Invitation[]
-  auditLogs    AuditLog[]
-  files        FileAsset[]
-  integrations IntegrationConnection[]
-  jobs         JobRun[]
+  memberships   Membership[]
+  roles         Role[]
+  invitations   Invitation[]
+  auditLogs     AuditLog[]
+  files         FileAsset[]
+  integrations  IntegrationConnection[]
+  jobs          JobRun[]
+  shopifyApps   ShopifyApp[]
+  shopifyStores ShopifyStore[]
 
   @@map("organization")
 }
@@ -329,4 +331,104 @@ model FeatureFlag {
 
   @@unique([scopeId, key])
   @@map("feature_flag")
+}
+
+enum ShopifyCredentialStrategy {
+  STATIC_TOKEN
+  OAUTH
+  CLIENT_CREDENTIALS
+}
+
+enum ShopifyStoreStatus {
+  PENDING
+  CONNECTED
+  RECONNECT_REQUIRED
+  DISCONNECTED
+}
+
+enum ShopifyTokenMode {
+  NON_EXPIRING
+  EXPIRING
+}
+
+model ShopifyApp {
+  id                    String           @id @default(cuid())
+  organizationId        String
+  name                  String
+  clientId              String
+  clientSecretEncrypted String           @db.Text
+  scopes                String[]
+  installLink           String?          @db.Text
+  tokenMode             ShopifyTokenMode @default(NON_EXPIRING)
+  createdById           String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stores       ShopifyStore[]
+
+  @@unique([organizationId, clientId])
+  @@map("shopify_app")
+}
+
+model ShopifyStore {
+  id                   String                    @id @default(cuid())
+  organizationId       String
+  appId                String?
+  shopDomain           String
+  name                 String
+  strategy             ShopifyCredentialStrategy
+  status               ShopifyStoreStatus        @default(PENDING)
+  scopes               String[]
+  apiVersion           String
+  currencyCode         String?
+  connectedAt          DateTime?
+  lastHealthCheckAt    DateTime?
+  lastHealthCheckError String?                   @db.Text
+  createdById          String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  app          ShopifyApp?         @relation(fields: [appId], references: [id], onDelete: Restrict)
+  tokens       ShopifyToken[]
+  oauthStates  ShopifyOAuthState[]
+
+  @@unique([organizationId, shopDomain])
+  @@unique([id, organizationId])
+  @@index([appId])
+  @@map("shopify_store")
+}
+
+model ShopifyToken {
+  id                    String    @id @default(cuid())
+  storeId               String
+  accessTokenEncrypted  String    @db.Text
+  refreshTokenEncrypted String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scopes                String[]
+  rotatedAt             DateTime?
+  revokedAt             DateTime?
+  createdAt             DateTime  @default(now())
+
+  store ShopifyStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, revokedAt])
+  @@map("shopify_token")
+}
+
+model ShopifyOAuthState {
+  id              String    @id @default(cuid())
+  storeId         String
+  stateHash       String    @unique
+  createdByUserId String
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  store ShopifyStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@map("shopify_oauth_state")
 }

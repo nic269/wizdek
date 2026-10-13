@@ -1,0 +1,36 @@
+{
+  "name": "@repo/shopify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./keys": "./src/keys.ts",
+    "./admin": "./src/admin/index.ts",
+    "./graphql": "./src/graphql/index.ts",
+    "./oauth": "./src/oauth/index.ts",
+    "./stores": "./src/stores/index.ts",
+    "./crypto": "./src/crypto/index.ts",
+    "./testing": "./src/testing/index.ts"
+  },
+  "scripts": {
+    "build": "echo '@repo/shopify is source-only'",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration/token-resolver.integration.test.ts"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "graphql": "^16.11.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

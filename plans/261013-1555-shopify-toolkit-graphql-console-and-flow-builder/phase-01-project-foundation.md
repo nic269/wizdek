@@ -67,15 +67,15 @@ No design change. The result is the boilerplate layout: `apps/app` (Next.js 16, 
 
 ## Todo
 
-- [ ] Generate into the temporary directory with profile `saas`, apps `app,api`
-- [ ] Move output into the repository; preserved directories verified unchanged
-- [ ] `pnpm install --frozen-lockfile` succeeds
-- [ ] Git repository initialised on `main`
-- [ ] Local Postgres running on a non-conflicting port; migrations and seed applied
-- [ ] Validation ladder green
-- [ ] Sign-up and organization creation verified in the browser
-- [ ] Docs skeleton and decision record written
-- [ ] Initial commit created
+- [x] Generate into the temporary directory with profile `saas`, apps `app,api`
+- [x] Move output into the repository; preserved directories verified unchanged
+- [x] `pnpm install --frozen-lockfile` succeeds
+- [x] Git repository initialised on `main`
+- [x] Local Postgres running on a non-conflicting port; migrations and seed applied
+- [x] Validation ladder green
+- [x] Sign-up and organization creation verified in the browser
+- [x] Docs skeleton and decision record written
+- [x] Initial commit created
 
 ## Success Criteria
 

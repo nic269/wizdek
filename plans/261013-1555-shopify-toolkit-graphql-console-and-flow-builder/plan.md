@@ -1,7 +1,7 @@
 ---
 title: "Shopify Toolkit: GraphQL console and flow builder"
 description: "Build a developer toolkit on the wizloft-boilerplate: multi-store Shopify connections, a GraphiQL console with Explorer, and an n8n-style flow builder with durable runs."
-status: pending
+status: in-progress
 priority: P1
 effort: 29d
 tags: [feature, frontend, backend, database, api, auth]

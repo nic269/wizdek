@@ -17,6 +17,9 @@ export const MEMBER_PERMISSIONS = [
   { action: "read", module: "organization" },
   { action: "read", module: "members" },
   { action: "read", module: "roles" },
+  { action: "read", module: "stores" },
+  { action: "query", module: "graphql" },
+  { action: "mutate", module: "graphql" },
 ] as const satisfies readonly KnownPermission[];
 
 export const VIEWER_PERMISSIONS = withoutLabels(

@@ -37,6 +37,7 @@ jobs:
       NEXT_PUBLIC_API_URL: http://localhost:3002
       BETTER_AUTH_SECRET: ci-better-auth-secret-at-least-32-chars
       BETTER_AUTH_URL: http://localhost:3002/api/auth
+      SHOPIFY_TOKEN_ENCRYPTION_KEY: ci-shopify-encryption-key-at-least-32-chars
       SKIP_ENV_VALIDATION: "false"
       MAIL_OUTBOX_DIR: apps/api/.data/mail
       MAIL_PROVIDER: console

@@ -34,6 +34,7 @@
     "db:migrate:status": "pnpm --filter @repo/database db:migrate:status",
     "db:migrate:deploy": "pnpm --filter @repo/database db:migrate:deploy",
     "db:seed": "pnpm --filter @repo/database db:seed",
+    "db:sync-roles": "pnpm --filter @repo/database db:sync-roles",
     "db:studio": "pnpm --filter @repo/database db:studio",
     "boundaries": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-boundaries.ts",
     "clean": "pnpm clean:build",

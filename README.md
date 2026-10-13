@@ -21,7 +21,7 @@ corepack pnpm db:seed
 corepack pnpm dev
 ```
 
-Set a random `BETTER_AUTH_SECRET` of at least 32 characters in `.env`. If port 5432 is already in use, set `POSTGRES_PORT` and the port in `DATABASE_URL` to a free port before starting Postgres.
+Set random values of at least 32 characters for `BETTER_AUTH_SECRET` and `SHOPIFY_TOKEN_ENCRYPTION_KEY` in `.env`. If port 5432 is already in use, set `POSTGRES_PORT` and the port in `DATABASE_URL` to a free port before starting Postgres.
 
 Run `corepack pnpm release:check` before release.
 

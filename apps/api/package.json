@@ -19,6 +19,7 @@
     "@repo/api": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/database": "workspace:*",
+    "@repo/shopify": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
     "hono": "^4.12.27",
     "pg": "^8.22.0",

@@ -18,6 +18,7 @@
     "db:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "db:migrate:status": "dotenv -e ../../.env -- prisma migrate status",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed.ts",
+    "db:sync-roles": "dotenv -e ../../.env -- tsx src/sync-all-system-roles.ts",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "test": "vitest run --passWithNoTests",
     "test:unit": "vitest run --passWithNoTests",

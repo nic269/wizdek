@@ -6,6 +6,7 @@
     "@repo/database": [],
     "@repo/jobs": [],
     "@repo/mail": [],
+    "@repo/shopify": [],
     "@repo/storage": []
   },
   "forbiddenImportExceptions": {},
@@ -22,6 +23,7 @@
       "@repo/logger",
       "@repo/mail",
       "@repo/security",
+      "@repo/shopify",
       "@repo/storage"
     ],
     "@repo/auth": [
@@ -44,6 +46,7 @@
     "@repo/mail": ["@repo/logger"],
     "@repo/observability": [],
     "@repo/security": [],
+    "@repo/shopify": ["@repo/database", "@repo/logger"],
     "@repo/storage": [],
     "@repo/test": [],
     "@repo/typescript-config": []
