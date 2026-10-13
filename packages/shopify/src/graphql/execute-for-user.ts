@@ -40,9 +40,12 @@ export interface GraphqlExecutionResult {
   /** Shopify's JSON, untouched. */
   body: unknown;
   cost: ShopifyQueryCost | null;
+  graphqlErrorCount: number;
   /** Shopify's HTTP status, or 400 when the document was never forwarded. */
   httpStatus: number;
   shopifyRequestId: string | null;
+  /** Errors a mutation reported in its payload despite succeeding. */
+  userErrorCount: number;
 }
 
 /** The caller may run queries on this store but not mutations. */
@@ -68,8 +71,10 @@ const classify = (
       return {
         body: { errors: [{ message: error.message }] },
         cost: null,
+        graphqlErrorCount: 1,
         httpStatus: 400,
         shopifyRequestId: null,
+        userErrorCount: 0,
       };
     }
     throw error;
@@ -138,19 +143,23 @@ export const executeGraphqlForUser = async (
       timeoutMs: CONSOLE_EXECUTE_TIMEOUT_MS,
       variables: input.variables,
     });
+    const graphqlErrorCount = countGraphqlErrors(result.body);
+    const userErrorCount = countUserErrors(result.body);
     await audit({
       actualQueryCost: result.cost?.actualQueryCost ?? null,
-      graphqlErrorCount: countGraphqlErrors(result.body),
+      graphqlErrorCount,
       httpStatus: result.httpStatus,
       requestedQueryCost: result.cost?.requestedQueryCost ?? null,
       shopifyRequestId: result.requestId ?? null,
-      userErrorCount: countUserErrors(result.body),
+      userErrorCount,
     });
     return {
       body: result.body,
       cost: result.cost ?? null,
+      graphqlErrorCount,
       httpStatus: result.httpStatus,
       shopifyRequestId: result.requestId ?? null,
+      userErrorCount,
     };
   } catch (error) {
     if (error instanceof ShopifyTransportError) {

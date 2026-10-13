@@ -2,6 +2,7 @@ import { getCurrentSession } from "@repo/auth/session";
 import { appConfig, dashboardNav } from "@repo/config";
 import {
   AppShell,
+  Braces,
   Home,
   LayoutDashboard,
   Settings,
@@ -16,6 +17,10 @@ import { SignOutButton } from "./dashboard/sign-out-button";
 import { OrganizationSwitcher } from "./lib/active-organization";
 
 const getDashboardNavIcon = (href: string) => {
+  if (href.startsWith("/graphql")) {
+    return <Braces className="h-4 w-4" />;
+  }
+
   if (href.startsWith("/stores")) {
     return <Store className="h-4 w-4" />;
   }

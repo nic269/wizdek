@@ -53,8 +53,10 @@ export const shopifyGraphqlContract = {
           /** Shopify's response body, passed through untouched. */
           body: z.unknown(),
           cost: queryCostSchema.nullable(),
+          graphqlErrorCount: z.number().int().nonnegative(),
           httpStatus: z.number().int(),
           shopifyRequestId: z.string().nullable(),
+          userErrorCount: z.number().int().nonnegative(),
         })
       )
     ),

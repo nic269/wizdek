@@ -3,6 +3,7 @@ export {
   Archive,
   ArrowRight,
   Bell,
+  Braces,
   Check,
   ChevronDown,
   CircleAlert,

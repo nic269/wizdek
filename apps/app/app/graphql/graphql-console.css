@@ -1,0 +1,12 @@
+/*
+ * GraphiQL fills its container, so the console needs a definite height. The
+ * rules are scoped to the console so nothing here reaches the app shell.
+ */
+.graphql-console {
+  height: calc(100vh - 12rem);
+  min-height: 34rem;
+}
+
+.graphql-console .graphiql-container {
+  height: 100%;
+}

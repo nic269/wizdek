@@ -78,6 +78,26 @@ In the app, `app/lib/active-organization.tsx` provides the active organization t
 
 Browser tests run against the in-process fake Shopify server: `playwright.config.ts` starts it and passes its URL to the API as `SHOPIFY_ADMIN_BASE_URL_OVERRIDE`.
 
+## GraphQL console
+
+`shopifyGraphql.execute` (`POST /api/shopify/stores/{storeId}/graphql`) is a proxy: it authorizes the caller, forwards the document with the store's own token, and returns Shopify's body untouched together with status, cost and error counts. The orchestration lives in `executeGraphqlForUser` in `@repo/shopify/graphql`, so the router stays thin:
+
+```text
+session -> requireStorePermission(store, "graphql", "query")
+classifyOperation(query, operationName)
+  parse error            -> GraphQL-shaped error body, nothing forwarded
+  subscription/ambiguous -> 422
+  mutation               -> requires "graphql:mutate"
+store client request (25-second timeout)
+unless introspection -> AuditLog shopify.graphql.query | shopify.graphql.mutation
+```
+
+`shopifyGraphql.versions` lists the store's `publicApiVersions`. `savedQueries.*` stores shared queries in `SavedGraphqlQuery`, unique by name per organization. `requireAppOrigin` in `packages/api/src/origin-check.ts` guards writes under `/api/shopify/*`.
+
+The page lives in `apps/app/app/graphql/`. `graphql-console.tsx` renders GraphiQL with the history, Explorer and saved-queries plugins and is loaded with `ssr: false`. `use-console-fetcher.ts` builds the fetcher; its identity changes only with the store or API version, which is what makes GraphiQL reload the schema without resetting tabs. `console-storage.ts` namespaces GraphiQL's browser storage by user and organization. GraphiQL's stylesheet is imported only by the console module, and the console's own rules are scoped to its container.
+
+User-facing behaviour, permissions, audit contents and limits are in [GraphQL console](./graphql-console.md).
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
@@ -85,10 +105,10 @@ These locations are reserved by the implementation plan and are added phase by p
 | Location | Purpose |
 |----------|---------|
 | `packages/database` | Flow and run models |
-| `packages/api` | Contracts and routers for the GraphQL proxy, flows and runs |
+| `packages/api` | Contracts and routers for flows and runs |
 | `packages/jobs` | `pg-boss` provider behind `JobQueueProvider`; the worker runs inside `apps/api` |
 | Flow engine package | Graph validation, typed node registry and the item-based executor |
-| `apps/app` | GraphiQL console with Explorer, flow builder canvas, run trace |
+| `apps/app` | Flow builder canvas, run trace |
 
 ## Local development
 

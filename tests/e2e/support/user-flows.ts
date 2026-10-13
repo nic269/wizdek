@@ -115,3 +115,21 @@ export const createOrganization = async ({
     page.getByRole("listitem").getByText(name, { exact: true })
   ).toBeVisible();
 };
+
+export const connectStoreWithToken = async ({
+  accessToken,
+  page,
+  shopDomain,
+}: {
+  accessToken: string;
+  page: Page;
+  shopDomain: string;
+}) => {
+  await page.goto("/stores/new");
+  await page.getByLabel("Shop domain", { exact: true }).fill(shopDomain);
+  await page.getByLabel("Admin API access token").fill(accessToken);
+  await page.getByRole("button", { name: "Connect store" }).click();
+  await expect(page.getByTestId(`store-${shopDomain}`)).toContainText(
+    "Connected"
+  );
+};

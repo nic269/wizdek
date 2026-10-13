@@ -5,6 +5,11 @@ import { env } from "./env";
 const apiUrl = env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL;
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // How long the /api rewrite waits for the API. The console's execute
+    // route answers within 25 seconds, so it always beats this limit.
+    proxyTimeout: 30_000,
+  },
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
   async rewrites() {

@@ -21,6 +21,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -37,6 +38,16 @@ type AuditLog = Awaited<
   ReturnType<typeof apiClient.organizations.auditLogs>
 >["data"][number];
 
+const AUDIT_FILTERS = [
+  { actionPrefix: "", label: "All events" },
+  { actionPrefix: "member.", label: "Members" },
+  { actionPrefix: "invitation.", label: "Invitations" },
+  { actionPrefix: "role.", label: "Roles" },
+  { actionPrefix: "shopify.store.", label: "Store connections" },
+  { actionPrefix: "shopify.app.", label: "Shopify apps" },
+  { actionPrefix: "shopify.graphql.", label: "GraphQL console" },
+] as const;
+
 export function AccessPanel() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [organizationId, setOrganizationId] = useState("");
@@ -44,6 +55,9 @@ export function AccessPanel() {
   const [members, setMembers] = useState<Member[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditCursor, setAuditCursor] = useState<string | null>(null);
+  const [auditFilter, setAuditFilter] = useState("");
+  // Mirrors the filter for the organization loader, which is created once.
+  const auditFilterRef = useRef("");
   const [roleName, setRoleName] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([
     ...CUSTOM_ROLE_DEFAULT_PERMISSION_KEYS,
@@ -87,6 +101,9 @@ export function AccessPanel() {
       loadAllRoles(),
       loadAllMembers(),
       apiClient.organizations.auditLogs({
+        ...(auditFilterRef.current
+          ? { actionPrefix: auditFilterRef.current }
+          : {}),
         limit: 20,
         organizationId: selectedOrganizationId,
       }),
@@ -102,12 +119,32 @@ export function AccessPanel() {
       return;
     }
     const response = await apiClient.organizations.auditLogs({
+      ...(auditFilter ? { actionPrefix: auditFilter } : {}),
       cursor: auditCursor,
       limit: 20,
       organizationId,
     });
     setAuditLogs((current) => [...current, ...response.data]);
     setAuditCursor(response.pageInfo.nextCursor);
+  };
+
+  const changeAuditFilter = async (actionPrefix: string) => {
+    setAuditFilter(actionPrefix);
+    auditFilterRef.current = actionPrefix;
+    if (!organizationId) {
+      return;
+    }
+    try {
+      const response = await apiClient.organizations.auditLogs({
+        ...(actionPrefix ? { actionPrefix } : {}),
+        limit: 20,
+        organizationId,
+      });
+      setAuditLogs(response.data);
+      setAuditCursor(response.pageInfo.nextCursor);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Could not load the audit log."));
+    }
   };
 
   useEffect(() => {
@@ -317,6 +354,23 @@ export function AccessPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <select
+            aria-label="Audit log filter"
+            className="mb-3 h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-72"
+            onChange={(event) => changeAuditFilter(event.target.value)}
+            value={auditFilter}
+          >
+            {AUDIT_FILTERS.map((filter) => (
+              <option key={filter.label} value={filter.actionPrefix}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
+          {auditLogs.length === 0 ? (
+            <p className="mb-3 text-muted-foreground text-sm">
+              No events match this filter.
+            </p>
+          ) : null}
           <ul className="divide-y rounded-md border">
             {auditLogs.map((log) => (
               <li
