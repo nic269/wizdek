@@ -126,7 +126,17 @@ export const createApiApp = () => {
     requireAuthEndpointEnabled(context.req.path);
     return auth.handler(context.req.raw);
   });
-  app.use("/api/shopify/*", requireAppOrigin);
+  // Writes that change store data or accept files must come from the app.
+  for (const path of [
+    "/api/shopify/*",
+    "/api/flows/*",
+    "/api/flow-runs/*",
+    "/api/organizations/:organizationId/flows",
+    "/api/organizations/:organizationId/flows/*",
+    "/api/organizations/:organizationId/files",
+  ]) {
+    app.use(path, requireAppOrigin);
+  }
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
   app.use("*", async (context, next) => {
     const { matched, response } = await orpcHandler.handle(context.req.raw, {

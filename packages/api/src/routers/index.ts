@@ -1,4 +1,5 @@
 import { filesRouter } from "./files";
+import { flowsRouter } from "./flows";
 import { healthRouter } from "./health";
 import { os } from "./implementer";
 import { invitationsRouter } from "./invitations";
@@ -11,6 +12,7 @@ import { shopifyStoresRouter } from "./shopify-stores";
 
 export const router = os.router({
   files: filesRouter,
+  flows: flowsRouter,
   health: healthRouter,
   invitations: invitationsRouter,
   jobs: jobsRouter,

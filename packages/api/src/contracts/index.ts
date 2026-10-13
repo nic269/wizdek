@@ -1,5 +1,6 @@
 export { apiContract } from "./base";
 export { filesContract } from "./files";
+export { flowsContract } from "./flows";
 export { healthContract } from "./health";
 export { invitationsContract } from "./invitations";
 export { jobsContract } from "./jobs";
@@ -10,6 +11,7 @@ export { shopifyGraphqlContract } from "./shopify-graphql";
 export { shopifyStoresContract } from "./shopify-stores";
 
 import { filesContract } from "./files";
+import { flowsContract } from "./flows";
 import { healthContract } from "./health";
 import { invitationsContract } from "./invitations";
 import { jobsContract } from "./jobs";
@@ -21,6 +23,7 @@ import { shopifyStoresContract } from "./shopify-stores";
 
 export const contract = {
   files: filesContract,
+  flows: flowsContract,
   health: healthContract,
   invitations: invitationsContract,
   jobs: jobsContract,

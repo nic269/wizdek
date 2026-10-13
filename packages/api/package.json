@@ -34,6 +34,7 @@
     "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/database": "workspace:*",
+    "@repo/flows": "workspace:*",
     "@repo/jobs": "workspace:*",
     "@repo/logger": "workspace:*",
     "@repo/mail": "workspace:*",

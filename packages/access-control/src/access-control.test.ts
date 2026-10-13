@@ -57,4 +57,17 @@ describe("access-control policy", () => {
     expect(keysOf("Viewer")).not.toContain("graphql:query");
     expect(keysOf("Viewer")).not.toContain("graphql:mutate");
   });
+
+  it("lets members run flows but not author them", () => {
+    const keysOf = (role: keyof typeof ROLE_PERMISSION_PRESETS) =>
+      ROLE_PERMISSION_PRESETS[role].map(permissionKey);
+
+    expect(keysOf("Member")).toEqual(
+      expect.arrayContaining(["flows:read", "flows:run"])
+    );
+    expect(keysOf("Member")).not.toContain("flows:manage");
+    expect(keysOf("Admin")).toContain("flows:manage");
+    expect(keysOf("Viewer")).toContain("flows:read");
+    expect(keysOf("Viewer")).not.toContain("flows:run");
+  });
 });

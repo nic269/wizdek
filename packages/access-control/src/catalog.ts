@@ -11,4 +11,9 @@ export const PERMISSION_CATALOG = [
   { action: "manage", label: "Manage Shopify stores", module: "stores" },
   { action: "query", label: "Run GraphQL queries", module: "graphql" },
   { action: "mutate", label: "Run GraphQL mutations", module: "graphql" },
+  { action: "read", label: "View flows and runs", module: "flows" },
+  { action: "manage", label: "Create and edit flows", module: "flows" },
+  // Running a flow changes store data through its action nodes, with the
+  // full scopes of the store's token.
+  { action: "run", label: "Run flows", module: "flows" },
 ] as const;

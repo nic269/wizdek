@@ -110,16 +110,84 @@ pg-boss keeps its tables in its own `pgboss` schema, outside Prisma's migrations
 
 Background Shopify requests use `requestWithRetry` on the store client (`packages/shopify/src/admin/throttle.ts`). It remembers the cost bucket each store last reported and holds a request until the bucket, refilling at its restore rate, can cover the expected cost. A `THROTTLED` answer is waited out and retried, since that request was not executed. Network failures and 5xx answers are retried up to three times with backoff, unless the caller passes `retryUncertain: false` for a mutation that is not safe to repeat. Bucket state is per process; contention from another process is absorbed by the `THROTTLED` path.
 
+## Flow engine
+
+`packages/flows` (`@repo/flows`) holds the flow format, the node registry, the executor and the services behind the flows API. `@repo/flows/definition` is the client-safe part: schemas, validation, templates, conditions and the built-in node specs. The server entry adds behaviour and persistence.
+
+### Definitions are data
+
+A flow version stores `{ schemaVersion: 1, nodes, edges }` as JSON. A node has an id, a type, a name, a canvas position and a `config`; an edge leaves one of its source node's output handles. Nothing in a definition is executable. Templates such as `{{ $json.Total }}` or `{{ $json["Order Name"] }}` look up paths in the item (`$json`), the run's inputs (`$trigger`) and the run (`$run`); they cannot call anything and cannot reach `__proto__`, `constructor` or `prototype`.
+
+Versions are immutable and numbered per flow. Saving takes the version the editor loaded (`baseVersion`) and is refused with 409 when someone else saved in between. A draft may be saved with validation issues; a run needs a valid flow and references the exact version it executed.
+
+`validateFlowDefinition` is a pure function over a definition and the available node specs, so the canvas and the server apply the same rules: exactly one trigger, no cycles, every node reachable from the trigger, config valid against the node's schema, edges attached to existing nodes and output handles.
+
+### Nodes
+
+A node type is a spec (type, category, label, config schema, outputs, `mode`, `idempotent`, `concurrency`) plus an `execute` function, joined with `defineNode`. The spec lives in `src/definition/specs/` and is shared with the browser; the behaviour lives in `src/nodes/`. A node type is added by writing those two files and listing it in `src/nodes/index.ts`. The executor knows nothing about specific node types.
+
+`execute({ item, config, ctx })` returns `{ outputs: [{ handle, json }] }`. `ctx` offers the run and store, `shopify.request` (token resolved, throttle-aware), `storage.readAsset`, `resolve` for templates, persisted `stepState`, a logger and the abort signal. Outputs can also be a function of the config, and `mode` can be `batch`; the executor runs `item` mode today.
+
+Built-in nodes: `trigger.manual`, `data.parseCsv`, `logic.if`, `shopify.findOrder`, `shopify.addTags`.
+
+### The item model
+
+Every node receives and emits items. A `FlowRunItem` row is one input item waiting at one node. When a node finishes an item, one transaction marks that row done and inserts the emitted items as `PENDING` rows of each connected node. That row is at once the checkpoint, the per-item trace and the hand-off between nodes.
+
+Item keys are deterministic, which is what makes the insert safe to repeat: the trigger's item is `0`; a node that turns one item into many appends `.<index>`; a one-to-one node keeps the key. A node with several incoming edges also gets the source node in the key, so items arriving by different paths do not collide.
+
+### Running
+
+A run executes in one store, chosen when it starts. One `flow-run` job per run is queued with the store as its concurrency key, so runs for one store go one at a time and runs for different stores go in parallel.
+
+```text
+load run and version -> order the nodes from the trigger
+for each node:
+  skip it if its step already finished
+  no items arrived -> step SKIPPED
+  loop over PENDING items, `concurrency` at a time:
+    node not idempotent: mark the item IN_PROGRESS before the call
+    execute -> checkpoint (item SUCCEEDED + next nodes' PENDING rows)
+    item error -> item FAILED with its message; the others continue
+    between batches: stop if cancel was requested or the process is stopping
+  step SUCCEEDED
+finish: SUCCEEDED, or PARTIALLY_FAILED when any item is FAILED or UNKNOWN
+```
+
+| Outcome | When |
+|---------|------|
+| Item `FAILED` | Something was wrong with that item: an unknown order, a value that is not a number, `userErrors` from Shopify |
+| Run `FAILED` | The node cannot work at all: the store rejected its credentials, or the config is invalid at run time. Remaining items stay `PENDING`. |
+| Run `CANCELED` | Cancel was requested. The item in progress finishes; the rest stay `PENDING`. |
+| Run interrupted | The process is stopping. The run stays `RUNNING` and the job is delivered again. |
+
+### At-least-once, and what is never repeated
+
+Resuming a run carries on from the first item without a checkpoint. An item whose checkpoint was written is never executed again.
+
+A Shopify call can succeed just before a crash, before its checkpoint is written. What happens next depends on the node:
+
+- An **idempotent** node (`shopify.addTags`, lookups) simply runs the item again. Adding a tag that is already there changes nothing.
+- A node that is **not idempotent** marks the item `IN_PROGRESS` before the call. An item found in that state on resume is recorded as `UNKNOWN` and is not retried, because its effect may or may not have been applied. The same applies when such a call fails in transit. Someone has to check the store.
+
+Limits: 100 nodes per flow, 100,000 items per run, 1 MB per item, 10 MB per uploaded file.
+
+### API
+
+`contracts/flows.ts` and `routers/flows.ts` expose flows under `/api/organizations/{organizationId}/flows` and `/api/flows/{flowId}`, and runs under `/api/flow-runs/{runId}`. Reading needs `flows:read`, authoring `flows:manage`, starting and canceling runs `flows:run`. Members can read and run; authoring stays with Admin, Owner and custom roles. `flows:run` lets a person change store data through any action node with the full scopes of the store's token, so grant it accordingly.
+
+`files.upload` accepts one CSV file per request as multipart form data, up to 10 MB, for use as a run input. The store and any uploaded file must belong to the flow's organization. Writes to the flow, run and upload routes pass the same origin check as `/api/shopify/*`.
+
+Run items hold business data from CSV files and stores. They are organization-scoped and readable with `flows:read`. They are kept indefinitely for now; a retention policy is needed before the product is opened beyond internal use.
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
 
 | Location | Purpose |
 |----------|---------|
-| `packages/database` | Flow and run models |
-| `packages/api` | Contracts and routers for flows and runs |
-| Flow engine package | Graph validation, typed node registry and the item-based executor |
 | `apps/app` | Flow builder canvas, run trace |
+| `packages/flows` | Webhook and schedule triggers, more node types |
 
 ## Local development
 

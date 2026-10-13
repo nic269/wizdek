@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { apiContract, dataEnvelope, emptyInputSchema } from "./base";
+import { organizationIdInput } from "./shopify-shared";
+
+export const MAX_UPLOAD_BYTES = 10_000_000;
 
 export const filesContract = {
   status: apiContract
@@ -21,5 +24,27 @@ export const filesContract = {
         ).shape,
         message: z.string(),
       })
+    ),
+  upload: apiContract
+    .route({
+      method: "POST",
+      operationId: "files.upload",
+      path: "/api/organizations/{organizationId}/files",
+      successStatus: 201,
+      summary: "Upload a CSV file to use as a flow input",
+    })
+    .input(
+      organizationIdInput.extend({
+        file: z.file().max(MAX_UPLOAD_BYTES, "Files are limited to 10 MB."),
+      })
+    )
+    .output(
+      dataEnvelope(
+        z.object({
+          fileName: z.string(),
+          id: z.string(),
+          sizeBytes: z.number().int(),
+        })
+      )
     ),
 };

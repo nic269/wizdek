@@ -1,3 +1,8 @@
+import {
+  builtInRegistry,
+  createAssetReader,
+  createFlowRunJob,
+} from "@repo/flows";
 import { createLocalJobProvider, type JobQueueProvider } from "@repo/jobs";
 import { keys } from "@repo/jobs/keys";
 import { createPgBossJobProvider } from "@repo/jobs/pg-boss";
@@ -26,6 +31,11 @@ export const getJobProvider = (): JobQueueProvider => {
  * Registers every background job the API can run. Called once at startup,
  * before the provider starts.
  */
-export const registerJobs = (_provider: JobQueueProvider): void => {
-  // Job definitions are added here as features introduce them.
+export const registerJobs = (target: JobQueueProvider): void => {
+  target.register(
+    createFlowRunJob({
+      readAsset: createAssetReader(),
+      registry: builtInRegistry,
+    })
+  );
 };

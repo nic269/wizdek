@@ -232,6 +232,9 @@ importers:
       '@repo/database':
         specifier: workspace:*
         version: link:../database
+      '@repo/flows':
+        specifier: workspace:*
+        version: link:../flows
       '@repo/jobs':
         specifier: workspace:*
         version: link:../jobs
