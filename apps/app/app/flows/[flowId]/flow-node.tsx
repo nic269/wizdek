@@ -12,6 +12,64 @@ export const NodeIssuesContext = createContext<ReadonlyMap<string, number>>(
   new Map()
 );
 
+export interface NodeRunOverlay {
+  /** Items at this node in each status. */
+  counts: Record<string, number>;
+  status: string | null;
+}
+
+/** Run progress per node id. Absent in the builder, present in a run trace. */
+export const RunOverlayContext = createContext<ReadonlyMap<
+  string,
+  NodeRunOverlay
+> | null>(null);
+
+const STEP_STATUS_LABELS: Record<string, string> = {
+  FAILED: "Failed",
+  PENDING: "Waiting",
+  RUNNING: "Running",
+  SKIPPED: "Skipped",
+  SUCCEEDED: "Done",
+};
+
+const STEP_STATUS_STYLES: Record<string, string> = {
+  FAILED: "bg-destructive text-white",
+  RUNNING: "bg-sky-600 text-white",
+  SUCCEEDED: "bg-emerald-600 text-white",
+};
+
+const total = (counts: Record<string, number>) =>
+  Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+function RunOverlay({ overlay }: { overlay: NodeRunOverlay }) {
+  const status = overlay.status ?? "PENDING";
+  const troubled = (overlay.counts.FAILED ?? 0) + (overlay.counts.UNKNOWN ?? 0);
+  return (
+    <div className="mt-2 space-y-1 border-t pt-2 text-[11px]">
+      <span
+        className={cn(
+          "inline-block rounded px-1.5 py-0.5 font-medium",
+          STEP_STATUS_STYLES[status] ?? "bg-muted text-muted-foreground"
+        )}
+      >
+        {STEP_STATUS_LABELS[status] ?? status}
+      </span>
+      <p className="text-muted-foreground">
+        {total(overlay.counts)} in · {overlay.counts.SUCCEEDED ?? 0} ok
+        {troubled > 0 ? (
+          <span className="font-medium text-destructive">
+            {" "}
+            · {overlay.counts.FAILED ?? 0} failed
+            {overlay.counts.UNKNOWN
+              ? ` · ${overlay.counts.UNKNOWN} unknown`
+              : ""}
+          </span>
+        ) : null}
+      </p>
+    </div>
+  );
+}
+
 const CATEGORY_STYLES: Record<string, string> = {
   action: "border-l-emerald-500",
   data: "border-l-sky-500",
@@ -28,6 +86,7 @@ const handleOffset = (index: number, count: number) =>
 
 export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
   const issueCount = useContext(NodeIssuesContext).get(id) ?? 0;
+  const overlay = useContext(RunOverlayContext)?.get(id);
   const spec = specsByType.get(data.nodeType);
   const outputs = outputsOf(data.nodeType, data.config);
   const isTrigger = spec?.category === "trigger";
@@ -74,6 +133,7 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
           ))}
         </div>
       ) : null}
+      {overlay ? <RunOverlay overlay={overlay} /> : null}
       {outputs.map((output, index) => (
         <Handle
           aria-label={`${title} output ${output}`}

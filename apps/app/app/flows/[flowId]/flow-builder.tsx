@@ -2,7 +2,12 @@
 
 import "@xyflow/react/dist/style.css";
 import "./flow-builder.css";
-import { Button, ErrorState, LoadingState } from "@repo/design-system";
+import {
+  Button,
+  buttonVariants,
+  ErrorState,
+  LoadingState,
+} from "@repo/design-system";
 import { Badge } from "@repo/design-system/components/ui/badge";
 import {
   Dialog,
@@ -12,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/design-system/components/ui/dialog";
+import type { FlowDefinition } from "@repo/flows/definition";
 import {
   Background,
   Controls,
@@ -34,7 +40,8 @@ import { CANVAS_NODE_TYPE } from "./flow-definition-mapping";
 import { FlowNodeCard, NodeIssuesContext } from "./flow-node";
 import { NodeConfigPanel } from "./node-config-panel";
 import { NodePalette, PALETTE_DRAG_TYPE } from "./node-palette";
-import { useFlowEditor } from "./use-flow-editor";
+import { RunDialog, type RunInput } from "./run-dialog";
+import { type Flow, type FlowEditor, useFlowEditor } from "./use-flow-editor";
 import { ValidationPanel } from "./validation-panel";
 
 const CANVAS_NODE_TYPES = { [CANVAS_NODE_TYPE]: FlowNodeCard };
@@ -45,13 +52,108 @@ const FIT_VIEW_OPTIONS = { maxZoom: 1, padding: 0.15 };
 /** Low enough that a long flow still fits a narrow canvas when framed. */
 const MIN_ZOOM = 0.15;
 
-function Builder({ canManage, flowId }: FlowBuilderProps) {
+/** Why the Run button is disabled, shown as its tooltip. */
+const runBlockedReason = (isDirty: boolean, issueCount: number) => {
+  if (isDirty) {
+    return "Save your changes before running the flow.";
+  }
+  return issueCount > 0
+    ? "Fix the flow's problems before running it."
+    : undefined;
+};
+
+/** The inputs the manual trigger asks for when a run starts. */
+const triggerInputs = (definition: FlowDefinition): RunInput[] => {
+  const trigger = definition.nodes.find(
+    (node) => node.type === "trigger.manual"
+  );
+  const inputs = trigger?.config.inputs;
+  return Array.isArray(inputs) ? (inputs as RunInput[]) : [];
+};
+
+function BuilderToolbar({
+  canManage,
+  canRun,
+  editor,
+  flow,
+  onRun,
+  onValidate,
+}: {
+  canManage: boolean;
+  canRun: boolean;
+  editor: FlowEditor;
+  flow: Flow;
+  onRun: () => void;
+  onValidate: () => void;
+}) {
+  const { isDirty } = editor;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <a
+          className="text-muted-foreground text-sm hover:underline"
+          href="/flows"
+        >
+          Flows
+        </a>
+        <h1 className="truncate font-semibold text-xl">{flow.name}</h1>
+        <Badge variant="outline">{FLOW_STATUS_LABELS[flow.status]}</Badge>
+        <span className="text-muted-foreground text-xs">
+          Version {editor.version}
+        </span>
+        {canManage ? null : <Badge variant="secondary">Read-only</Badge>}
+        {isDirty ? (
+          <span className="text-amber-600 text-xs dark:text-amber-400">
+            Unsaved changes
+          </span>
+        ) : null}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button onClick={onValidate} type="button" variant="outline">
+          Validate
+        </Button>
+        <a
+          className={buttonVariants({ variant: "outline" })}
+          href={`/flows/${flow.id}/runs`}
+        >
+          Runs
+        </a>
+        {canManage ? (
+          <Button
+            disabled={editor.isSaving || !isDirty}
+            onClick={() => {
+              onValidate();
+              editor.save();
+            }}
+            type="button"
+          >
+            {editor.isSaving ? "Saving..." : "Save"}
+          </Button>
+        ) : null}
+        {canRun ? (
+          <Button
+            disabled={isDirty || editor.issues.length > 0}
+            onClick={onRun}
+            title={runBlockedReason(isDirty, editor.issues.length)}
+            type="button"
+            variant={canManage ? "outline" : "default"}
+          >
+            Run
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
   const editor = useFlowEditor(flowId, canManage);
   const { addNode, isDirty } = editor;
   const { fitView, screenToFlowPosition } = useReactFlow();
   const theme = useAppTheme();
   const [showValidation, setShowValidation] = useState(false);
   const [needsFit, setNeedsFit] = useState(false);
+  const [isRunDialogOpen, setIsRunDialogOpen] = useState(false);
   const nodesInitialized = useNodesInitialized();
 
   // Closing or leaving the page with unsaved changes asks first.
@@ -154,52 +256,14 @@ function Builder({ canManage, flowId }: FlowBuilderProps) {
   return (
     <NodeIssuesContext.Provider value={issuesByNode}>
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <a
-              className="text-muted-foreground text-sm hover:underline"
-              href="/flows"
-            >
-              Flows
-            </a>
-            <h1 className="truncate font-semibold text-xl">
-              {editor.flow.name}
-            </h1>
-            <Badge variant="outline">
-              {FLOW_STATUS_LABELS[editor.flow.status]}
-            </Badge>
-            <span className="text-muted-foreground text-xs">
-              Version {editor.version}
-            </span>
-            {canManage ? null : <Badge variant="secondary">Read-only</Badge>}
-            {isDirty ? (
-              <span className="text-amber-600 text-xs dark:text-amber-400">
-                Unsaved changes
-              </span>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setShowValidation(true)}
-              type="button"
-              variant="outline"
-            >
-              Validate
-            </Button>
-            {canManage ? (
-              <Button
-                disabled={editor.isSaving || !isDirty}
-                onClick={() => {
-                  setShowValidation(true);
-                  editor.save();
-                }}
-                type="button"
-              >
-                {editor.isSaving ? "Saving..." : "Save"}
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        <BuilderToolbar
+          canManage={canManage}
+          canRun={canRun}
+          editor={editor}
+          flow={editor.flow}
+          onRun={() => setIsRunDialogOpen(true)}
+          onValidate={() => setShowValidation(true)}
+        />
 
         {editor.error ? <ErrorState message={editor.error} /> : null}
         {showValidation ? (
@@ -282,6 +346,14 @@ function Builder({ canManage, flowId }: FlowBuilderProps) {
           </div>
         </div>
       </div>
+
+      <RunDialog
+        flowId={flowId}
+        inputs={triggerInputs(editor.definition)}
+        onOpenChange={setIsRunDialogOpen}
+        open={isRunDialogOpen}
+        organizationId={editor.flow.organizationId}
+      />
 
       <Dialog
         onOpenChange={(open) => {

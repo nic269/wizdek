@@ -101,18 +101,21 @@ const runsRouter = {
     return {
       data: {
         nodes: Object.fromEntries(
-          Object.entries(detail.nodes).map(([nodeId, { counts, step }]) => [
-            nodeId,
-            {
-              counts,
-              step: step && {
-                completedAt: step.completedAt,
-                error: step.error,
-                startedAt: step.startedAt,
-                status: step.status,
+          Object.entries(detail.nodes).map(
+            ([nodeId, { counts, emitted, step }]) => [
+              nodeId,
+              {
+                counts,
+                emitted,
+                step: step && {
+                  completedAt: step.completedAt,
+                  error: step.error,
+                  startedAt: step.startedAt,
+                  status: step.status,
+                },
               },
-            },
-          ])
+            ]
+          )
         ),
         run: toPublicRun(detail.run),
         version: toPublicVersion(version),
@@ -163,7 +166,12 @@ const runsRouter = {
       limit: input.limit,
     });
     return {
-      data: page.items.map(toPublicRun),
+      data: page.items.map((run) => ({
+        ...toPublicRun(run),
+        itemCounts: run.itemCounts,
+        startedByName: run.startedByName,
+        storeName: run.storeName,
+      })),
       pageInfo: { nextCursor: page.nextCursor },
     };
   }),

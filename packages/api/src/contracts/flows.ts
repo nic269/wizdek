@@ -99,6 +99,8 @@ export const flowRunSchema = z.object({
 export const flowRunNodeSchema = z.object({
   /** How many of the node's items are in each status. */
   counts: z.record(z.string(), z.number().int()),
+  /** How many items the node sent out of each output handle. */
+  emitted: z.record(z.string(), z.number().int()),
   step: z
     .object({
       completedAt: z.date().nullable(),
@@ -248,7 +250,15 @@ export const flowsContract = {
         summary: "List a flow's runs, newest first",
       })
       .input(flowIdInput.extend(cursorPaginationInputSchema.shape))
-      .output(paginatedDataEnvelope(flowRunSchema)),
+      .output(
+        paginatedDataEnvelope(
+          flowRunSchema.extend({
+            itemCounts: z.record(z.string(), z.number().int()),
+            startedByName: z.string().nullable(),
+            storeName: z.string(),
+          })
+        )
+      ),
     start: apiContract
       .route({
         method: "POST",

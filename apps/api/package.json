@@ -10,7 +10,7 @@
     "check-types": "tsc --noEmit",
     "test": "echo 'api app tests live in @repo/api'",
     "test:unit": "echo 'api app unit tests live in @repo/api'",
-    "test:integration": "echo 'api app integration tests live in @repo/api'"
+    "test:integration": "vitest run integration"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.8",
@@ -19,8 +19,10 @@
     "@repo/api": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/database": "workspace:*",
+    "@repo/flows": "workspace:*",
     "@repo/jobs": "workspace:*",
     "@repo/shopify": "workspace:*",
+    "@repo/storage": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
     "hono": "^4.12.27",
     "pg": "^8.22.0",
@@ -31,6 +33,7 @@
     "@types/node": "^26.1.0",
     "tsup": "^8.5.1",
     "tsx": "^4.23.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

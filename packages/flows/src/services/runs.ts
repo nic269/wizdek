@@ -32,6 +32,9 @@ const TERMINAL_STATUSES = new Set([
   "CANCELED",
 ]);
 
+/** Fan-out rows read for edge counts; such rows are few (one per file). */
+const FAN_OUT_ROW_LIMIT = 1000;
+
 const runNotFound = () =>
   new FlowServiceError("RUN_NOT_FOUND", "Run not found.");
 
@@ -199,25 +202,65 @@ export const cancelFlowRun = async (
   });
 };
 
+export interface FlowRunListItem extends FlowRunRecord {
+  /** Items of the run in each status, across all nodes. */
+  itemCounts: Record<string, number>;
+  startedByName: string | null;
+  storeName: string;
+}
+
 export const listFlowRuns = async (
   scope: FlowScope,
   page: { cursor?: string | undefined; limit: number }
-): Promise<{ items: FlowRunRecord[]; nextCursor: string | null }> => {
+): Promise<{ items: FlowRunListItem[]; nextCursor: string | null }> => {
   const rows = await prisma.flowRun.findMany({
+    include: { store: { select: { name: true } } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: page.limit + 1,
     where: { flowId: scope.flowId, organizationId: scope.organizationId },
     ...(page.cursor ? { cursor: { id: page.cursor }, skip: 1 } : {}),
   });
-  const items = rows.slice(0, page.limit);
+  const runs = rows.slice(0, page.limit);
+  const runIds = runs.map(({ id }) => id);
+  const starterIds = [
+    ...new Set(runs.map(({ startedById }) => startedById).filter(Boolean)),
+  ] as string[];
+  const [groups, starters] = await Promise.all([
+    prisma.flowRunItem.groupBy({
+      _count: { _all: true },
+      by: ["runId", "status"],
+      where: { runId: { in: runIds } },
+    }),
+    prisma.user.findMany({
+      select: { id: true, name: true },
+      where: { id: { in: starterIds } },
+    }),
+  ]);
+  const names = new Map(starters.map(({ id, name }) => [id, name]));
+  const counts = new Map<string, Record<string, number>>();
+  for (const group of groups) {
+    const entry = counts.get(group.runId) ?? {};
+    entry[group.status] = group._count._all;
+    counts.set(group.runId, entry);
+  }
   return {
-    items,
-    nextCursor: rows.length > page.limit ? (items.at(-1)?.id ?? null) : null,
+    items: runs.map(({ store, ...run }) => ({
+      ...run,
+      itemCounts: counts.get(run.id) ?? {},
+      startedByName: run.startedById
+        ? (names.get(run.startedById) ?? null)
+        : null,
+      storeName: store.name,
+    })),
+    nextCursor: rows.length > page.limit ? (runs.at(-1)?.id ?? null) : null,
   };
 };
 
 export interface RunNodeSummary {
+  /** Items in each status at this node. */
   counts: Record<string, number>;
+  /** Items the node sent out of each output handle. */
+  emitted: Record<string, number>;
   step: FlowRunStepRecord | null;
 }
 
@@ -231,24 +274,56 @@ export const getFlowRun = async (
   if (!run) {
     throw runNotFound();
   }
-  const [steps, groups] = await Promise.all([
+  const [steps, groups, routed, fannedOut] = await Promise.all([
     prisma.flowRunStep.findMany({ where: { runId: run.id } }),
     prisma.flowRunItem.groupBy({
       _count: { _all: true },
       by: ["nodeId", "status"],
       where: { runId: run.id },
     }),
+    // Items that left by a single output handle.
+    prisma.flowRunItem.groupBy({
+      _count: { _all: true },
+      by: ["nodeId", "outputHandle"],
+      where: {
+        outputHandle: { not: null },
+        runId: run.id,
+        status: "SUCCEEDED",
+      },
+    }),
+    // Items that became several; each records how many left by each handle.
+    prisma.flowRunItem.findMany({
+      select: { nodeId: true, output: true },
+      take: FAN_OUT_ROW_LIMIT,
+      where: { outputHandle: null, runId: run.id, status: "SUCCEEDED" },
+    }),
   ]);
   const nodes: Record<string, RunNodeSummary> = {};
   const summaryOf = (nodeId: string) => {
-    nodes[nodeId] ??= { counts: {}, step: null };
+    nodes[nodeId] ??= { counts: {}, emitted: {}, step: null };
     return nodes[nodeId];
+  };
+  const addEmitted = (nodeId: string, handle: string, count: number) => {
+    const { emitted } = summaryOf(nodeId);
+    emitted[handle] = (emitted[handle] ?? 0) + count;
   };
   for (const step of steps) {
     summaryOf(step.nodeId).step = step;
   }
   for (const group of groups) {
     summaryOf(group.nodeId).counts[group.status] = group._count._all;
+  }
+  for (const group of routed) {
+    if (group.outputHandle) {
+      addEmitted(group.nodeId, group.outputHandle, group._count._all);
+    }
+  }
+  for (const item of fannedOut) {
+    const handles = (item.output as { handles?: Record<string, number> } | null)
+      ?.handles;
+    for (const [handle, count] of Object.entries(handles ?? {})) {
+      addEmitted(item.nodeId, handle, count);
+    }
   }
   return { nodes, run };
 };

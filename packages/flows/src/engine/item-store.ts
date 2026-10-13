@@ -37,10 +37,16 @@ const snapshotOutputs = (outputs: NodeOutput[]) => {
   if (only && others.length === 0) {
     return { handle: only.handle, output: only.json };
   }
+  const handles: Record<string, number> = {};
+  for (const { handle } of outputs) {
+    handles[handle] = (handles[handle] ?? 0) + 1;
+  }
   return {
     handle: null,
     output: {
       count: outputs.length,
+      // How many items left by each output, for the counts shown on edges.
+      handles,
       sample: outputs.slice(0, OUTPUT_SAMPLE_SIZE),
     },
   };

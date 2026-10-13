@@ -190,13 +190,20 @@ Each built-in node has a form under `config-forms/`. Any other node type gets `g
 
 The page shell reads the caller's `flows:manage` permission on the server and passes it down. Without it the canvas is read-only: no palette, no save, inputs disabled. That is a convenience; `flows.saveVersion` enforces the permission.
 
+### Runs and trace
+
+`run-dialog.tsx` starts a run from the builder: it uploads any file input through `files.upload`, then calls `flows.runs.start` with the returned id. The run page (`runs/[runId]/run-trace.tsx`) renders the definition of the run's own version on the same canvas and node component as the builder, read-only, with per-node status and counts supplied through `RunOverlayContext`. Edge labels come from `emitted`, the number of items each node sent out of each output handle, which `flows.runs.get` computes with grouped queries. `use-run-polling.ts` refetches every two seconds while the run is queued or running and stops once it is final. Items are paged on the server, 50 at a time.
+
+`apps/api/integration/flow-run-resume.integration.test.ts` runs the built API as its own process, kills it with `SIGKILL` part-way through a 300-row run, starts it again, and checks that the run finishes with every order tagged exactly once.
+
+User-facing behaviour is in [Flows](./flows.md).
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
 
 | Location | Purpose |
 |----------|---------|
-| `apps/app` | Run dialog and run trace |
 | `packages/flows` | Webhook and schedule triggers, more node types |
 
 ## Local development

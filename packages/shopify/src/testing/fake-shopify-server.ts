@@ -52,6 +52,8 @@ export interface FakeShopifyServer {
   rejectNextTokenRequests(count?: number): void;
   revokeToken(token: string): void;
   seedOrder(order: FakeOrder): void;
+  /** Delays every Admin response, to make a run last long enough to observe. */
+  setLatency(milliseconds: number): void;
   /** Answers every `interval`-th Admin request with THROTTLED; 0 turns it off. */
   setThrottleEvery(interval: number): void;
   /** Delays every token response, to widen race windows in tests. */
@@ -64,6 +66,11 @@ export interface FakeShopifyServer {
 
 const ADMIN_PATH = /^\/admin\/api\/([^/]+)\/graphql\.json$/;
 const TOKEN_PATH = "/admin/oauth/access_token";
+/**
+ * Lets a test in another process seed orders when the server runs on its own,
+ * as it does for the browser suite. Accepts a JSON array of orders.
+ */
+export const SEED_ORDERS_PATH = "/__control/orders";
 /** Readiness probe for test runners that wait on a URL. */
 export const HEALTH_PATH = "/health";
 const NAME_QUERY = /name:\s*"?([^"\s]+)"?/;
@@ -162,6 +169,7 @@ export const startFakeShopifyServer = async (
   let rejectedTokenRequests = 0;
   let tokenDelay = 0;
   let throttleEvery = 0;
+  let latency = 0;
   let adminRequestCount = 0;
 
   const rootValue = {
@@ -317,6 +325,9 @@ export const startFakeShopifyServer = async (
     const cost = costDebug
       ? { ...COST, fields: [{ path: ["shop"], requestedTotalCost: 1 }] }
       : COST;
+    if (latency > 0) {
+      await new Promise((resolve) => setTimeout(resolve, latency));
+    }
     adminRequestCount += 1;
     if (throttleEvery > 0 && adminRequestCount % throttleEvery === 0) {
       throttled += 1;
@@ -353,7 +364,14 @@ export const startFakeShopifyServer = async (
       sendJson(response, 200, { status: "ok" });
       return;
     }
-    if (request.method === "POST" && path === TOKEN_PATH) {
+    if (request.method === "POST" && path === SEED_ORDERS_PATH) {
+      handled = readBody(request).then((raw) => {
+        for (const order of JSON.parse(raw) as FakeOrder[]) {
+          orders.set(order.id, { ...order, tags: [...order.tags] });
+        }
+        sendJson(response, 200, { seeded: true });
+      });
+    } else if (request.method === "POST" && path === TOKEN_PATH) {
       handled = handleToken(request, response);
     } else if (request.method === "POST" && apiVersion) {
       handled = handleGraphql(request, response, apiVersion);
@@ -396,6 +414,9 @@ export const startFakeShopifyServer = async (
     },
     seedOrder: (order) => {
       orders.set(order.id, { ...order, tags: [...order.tags] });
+    },
+    setLatency: (milliseconds) => {
+      latency = milliseconds;
     },
     setThrottleEvery: (interval) => {
       throttleEvery = interval;

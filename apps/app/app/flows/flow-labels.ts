@@ -40,3 +40,48 @@ export const formatDateTime = (value: string | null) =>
         timeStyle: "short",
       })
     : "never";
+
+const ACTIVE_RUN_STATUSES: ReadonlySet<FlowRunStatus> = new Set([
+  "QUEUED",
+  "RUNNING",
+]);
+
+/** Whether a run can still change, and so is worth refreshing. */
+export const isRunActive = (status: FlowRunStatus) =>
+  ACTIVE_RUN_STATUSES.has(status);
+
+/** How long a run took, or has taken so far. */
+export const formatDuration = (
+  startedAt: string | null,
+  completedAt: string | null
+): string => {
+  if (!startedAt) {
+    return "not started";
+  }
+  const end = completedAt ? new Date(completedAt).getTime() : Date.now();
+  const seconds = Math.max(
+    0,
+    Math.round((end - new Date(startedAt).getTime()) / 1000)
+  );
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  return minutes < 60
+    ? `${minutes}m ${seconds % 60}s`
+    : `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+};
+
+const ITEM_COUNT_ORDER = [
+  ["SUCCEEDED", "succeeded"],
+  ["FAILED", "failed"],
+  ["UNKNOWN", "unknown"],
+  ["IN_PROGRESS", "in progress"],
+  ["PENDING", "pending"],
+] as const;
+
+/** "48 succeeded, 2 failed", leaving out statuses with no items. */
+export const formatItemCounts = (counts: Record<string, number>): string =>
+  ITEM_COUNT_ORDER.filter(([status]) => (counts[status] ?? 0) > 0)
+    .map(([status, label]) => `${counts[status]} ${label}`)
+    .join(", ") || "no items";

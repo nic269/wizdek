@@ -2,6 +2,7 @@ import { DesignSystemProvider } from "@repo/design-system";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ActiveOrganizationProvider } from "./lib/active-organization";
+import { Providers } from "./providers";
 import "./styles.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <DesignSystemProvider>
-          <ActiveOrganizationProvider>{children}</ActiveOrganizationProvider>
+          <Providers>
+            <ActiveOrganizationProvider>{children}</ActiveOrganizationProvider>
+          </Providers>
         </DesignSystemProvider>
       </body>
     </html>
