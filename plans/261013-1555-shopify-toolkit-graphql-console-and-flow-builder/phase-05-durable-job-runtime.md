@@ -102,14 +102,14 @@ Bucket state is kept in memory per process. Cross-process contention is absorbed
 
 ## Todo
 
-- [ ] pg-boss API confirmed against the installed version
-- [ ] Interface extended; local provider and tests updated
-- [ ] Env contract registered
-- [ ] pg-boss provider implemented
-- [ ] Integration tests green, including crash re-delivery and per-key serialisation
-- [ ] Provider wired into the API process with graceful shutdown
-- [ ] Throttle-aware retry on the store client with tests
-- [ ] Decision record and docs written; phase committed
+- [x] pg-boss API confirmed against the installed version
+- [x] Interface extended; local provider and tests updated
+- [x] Env contract registered
+- [x] pg-boss provider implemented
+- [x] Integration tests green, including crash re-delivery and per-key serialisation
+- [x] Provider wired into the API process with graceful shutdown
+- [x] Throttle-aware retry on the store client with tests
+- [x] Decision record and docs written; phase committed
 
 ## Success Criteria
 
