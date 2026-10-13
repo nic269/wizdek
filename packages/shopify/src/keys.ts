@@ -40,7 +40,17 @@ export const keys = () => {
       SHOPIFY_ADMIN_BASE_URL_OVERRIDE: z.string().url().optional(),
       SHOPIFY_API_VERSION: z.string().regex(API_VERSION_PATTERN).optional(),
       SHOPIFY_TOKEN_ENCRYPTION_KEY: z.string().min(32),
+      /** Public origin Shopify can reach, for webhook deliveries. */
+      SHOPIFY_WEBHOOK_BASE_URL: z.string().url().optional(),
     },
     skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
   });
+};
+
+const TRAILING_SLASH = /\/+$/;
+
+/** The origin webhooks are delivered to, when one is configured. */
+export const webhookBaseUrl = (): string | undefined => {
+  const configured = process.env.SHOPIFY_WEBHOOK_BASE_URL?.trim();
+  return configured ? configured.replace(TRAILING_SLASH, "") : undefined;
 };

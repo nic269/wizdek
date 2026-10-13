@@ -80,18 +80,51 @@ export interface NodeExecuteResult {
   outputs: NodeOutput[];
 }
 
+export interface NodeBatchInput<TConfig> {
+  config: TConfig;
+  ctx: NodeContext;
+  /** Every item waiting at the node, in arrival order. */
+  items: FlowItem[];
+}
+
+/** The outcome of one item of a batch, matched to its item by key. */
+export type NodeBatchItemResult =
+  | { key: string; outputs: NodeOutput[] }
+  | {
+      error: string;
+      key: string;
+      /** True when the item's effect may have been applied anyway. */
+      uncertain?: boolean;
+    };
+
 export interface NodeDefinition<TConfig = unknown> extends NodeSpec<TConfig> {
-  execute(input: NodeExecuteInput<TConfig>): Promise<NodeExecuteResult>;
+  /** Handles one item. Required for `mode: "item"`. */
+  execute?(input: NodeExecuteInput<TConfig>): Promise<NodeExecuteResult>;
+  /**
+   * Handles all of the node's items in one call. Required for
+   * `mode: "batch"`. The node keeps what it needs to resume in `stepState`.
+   */
+  executeBatch?(
+    input: NodeBatchInput<TConfig>
+  ): Promise<{ results: NodeBatchItemResult[] }>;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: node types differ in their config
 export type AnyNodeDefinition = NodeDefinition<any>;
 
-/** Attaches behaviour to a node spec. */
+/** Attaches per-item behaviour to a node spec. */
 export const defineNode = <TConfig>(
   spec: NodeSpec<TConfig>,
-  execute: NodeDefinition<TConfig>["execute"]
-): NodeDefinition<TConfig> => ({ ...spec, execute });
+  execute: NonNullable<NodeDefinition<TConfig>["execute"]>
+): NodeDefinition<TConfig> & {
+  execute: NonNullable<NodeDefinition<TConfig>["execute"]>;
+} => ({ ...spec, execute });
+
+/** Attaches whole-batch behaviour to a node spec whose mode is `batch`. */
+export const defineBatchNode = <TConfig>(
+  spec: NodeSpec<TConfig>,
+  executeBatch: NonNullable<NodeDefinition<TConfig>["executeBatch"]>
+): NodeDefinition<TConfig> => ({ ...spec, executeBatch });
 
 /**
  * Thrown for a problem with the item being processed. The item is recorded as

@@ -76,13 +76,39 @@ export const countNodeItems = (runId: string, nodeId: string) =>
 export const listPendingItems = (
   runId: string,
   nodeId: string,
-  limit: number
+  limit: number,
+  afterOrdinal?: number
 ): Promise<FlowRunItemRecord[]> =>
   prisma.flowRunItem.findMany({
     orderBy: { ordinal: "asc" },
     take: limit,
-    where: { nodeId, runId, status: "PENDING" },
+    where: {
+      nodeId,
+      runId,
+      status: "PENDING",
+      ...(afterOrdinal === undefined ? {} : { ordinal: { gt: afterOrdinal } }),
+    },
   });
+
+/** Every pending item of a node, read in pages. For batch nodes. */
+export const listAllPendingItems = async (
+  runId: string,
+  nodeId: string
+): Promise<FlowRunItemRecord[]> => {
+  const items: FlowRunItemRecord[] = [];
+  for (;;) {
+    const page = await listPendingItems(
+      runId,
+      nodeId,
+      INSERT_CHUNK_SIZE,
+      items.at(-1)?.ordinal
+    );
+    items.push(...page);
+    if (page.length < INSERT_CHUNK_SIZE) {
+      return items;
+    }
+  }
+};
 
 /**
  * Marks an item as started before a call that must not be repeated. If the

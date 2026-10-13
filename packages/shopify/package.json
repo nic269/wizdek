@@ -11,7 +11,8 @@
     "./oauth": "./src/oauth/index.ts",
     "./stores": "./src/stores/index.ts",
     "./crypto": "./src/crypto/index.ts",
-    "./testing": "./src/testing/index.ts"
+    "./testing": "./src/testing/index.ts",
+    "./webhooks": "./src/webhooks/index.ts"
   },
   "scripts": {
     "build": "echo '@repo/shopify is source-only'",

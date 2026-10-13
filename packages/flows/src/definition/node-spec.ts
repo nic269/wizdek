@@ -15,9 +15,10 @@ export interface NodeSpec<TConfig = unknown> {
   description: string;
   /**
    * Whether repeating the node's effect for the same item is harmless. Items
-   * of a node that is not idempotent are never run twice after a crash.
+   * of a node that is not idempotent are never run twice after a crash. May
+   * depend on the configuration, for a node that can both read and write.
    */
-  idempotent: boolean;
+  idempotent: boolean | ((config: TConfig) => boolean);
   label: string;
   /** `item` handles one item at a time; `batch` receives all of them at once. */
   mode: "item" | "batch";
@@ -42,5 +43,13 @@ export const resolveOutputs = <TConfig>(
   config: TConfig
 ): readonly string[] =>
   typeof spec.outputs === "function" ? spec.outputs(config) : spec.outputs;
+
+export const resolveIdempotent = <TConfig>(
+  spec: NodeSpec<TConfig>,
+  config: TConfig
+): boolean =>
+  typeof spec.idempotent === "function"
+    ? spec.idempotent(config)
+    : spec.idempotent;
 
 export const MAIN_OUTPUT = "main";

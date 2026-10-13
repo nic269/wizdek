@@ -10,7 +10,7 @@ import {
   StoreNotFoundError,
   StoreReconnectRequiredError,
 } from "@repo/shopify/stores";
-import { resolveOutputs } from "../definition/node-spec";
+import { resolveIdempotent, resolveOutputs } from "../definition/node-spec";
 import {
   type FlowDefinition,
   type FlowNode,
@@ -38,6 +38,7 @@ import {
   ensureTriggerItem,
   type FlowRunItemRecord,
   type FlowRunStepRecord,
+  listAllPendingItems,
   listPendingItems,
   markInterruptedItemsUnknown,
   markItemFailed,
@@ -145,7 +146,7 @@ const routeOutputs = (
 
 const createNodeContext = (
   context: RunContext,
-  definition: AnyNodeDefinition,
+  idempotent: boolean,
   step: FlowRunStepRecord
 ): NodeContext => {
   const { run, storeClient } = context;
@@ -169,7 +170,7 @@ const createNodeContext = (
             { query, variables },
             {
               // A repeated request is only safe when the node says so.
-              retryUncertain: definition.idempotent,
+              retryUncertain: idempotent,
               signal: context.signal,
             }
           );
@@ -216,37 +217,52 @@ const createNodeContext = (
   };
 };
 
+interface NodeRun {
+  config: unknown;
+  definition: AnyNodeDefinition;
+  idempotent: boolean;
+  node: FlowNode;
+  nodeContext: NodeContext;
+}
+
+const assertKnownOutputs = (nodeRun: NodeRun, outputs: NodeOutput[]) => {
+  const allowed = resolveOutputs(nodeRun.definition, nodeRun.config);
+  const unknown = outputs.find(({ handle }) => !allowed.includes(handle));
+  if (unknown) {
+    throw new Error(
+      `The node emitted to an unknown output "${unknown.handle}".`
+    );
+  }
+};
+
 /**
  * Runs one item through a node and records the outcome. Returns normally for
  * success and for an item failure; throws only when the run cannot go on.
  */
 const processItem = async (
   context: RunContext,
-  node: FlowNode,
-  definition: AnyNodeDefinition,
-  config: unknown,
-  nodeContext: NodeContext,
+  nodeRun: NodeRun,
   item: FlowRunItemRecord
 ): Promise<void> => {
+  const { definition, idempotent, node } = nodeRun;
   const startedAt = Date.now();
-  if (!definition.idempotent) {
+  if (!definition.execute) {
+    throw new FlowFatalError(
+      `"${node.name || node.type}" cannot process single items.`
+    );
+  }
+  if (!idempotent) {
     await markItemInProgress(item.id);
   }
   try {
     const { outputs } = await definition.execute({
-      config,
-      ctx: nodeContext,
+      config: nodeRun.config,
+      ctx: nodeRun.nodeContext,
       item: { json: asObject(item.input), key: item.itemKey },
     });
-    const allowed = resolveOutputs(definition, config);
-    const unknown = outputs.find(({ handle }) => !allowed.includes(handle));
-    if (unknown) {
-      throw new Error(
-        `The node emitted to an unknown output "${unknown.handle}".`
-      );
-    }
+    assertKnownOutputs(nodeRun, outputs);
     await checkpointItem({
-      attemptCounted: !definition.idempotent,
+      attemptCounted: !idempotent,
       durationMs: Date.now() - startedAt,
       item,
       outputs,
@@ -259,14 +275,14 @@ const processItem = async (
       throw new RunInterrupted();
     }
     if (error instanceof FlowFatalError) {
-      if (!definition.idempotent) {
+      if (!idempotent) {
         await markItemPending(item.id);
       }
       throw error;
     }
     // A request that never got an answer may still have been applied.
     const uncertain =
-      !definition.idempotent &&
+      !idempotent &&
       (error instanceof ShopifyTransportError ||
         (error instanceof ShopifyGraphqlError && error.httpStatus >= 500));
     await markItemFailed(
@@ -275,6 +291,98 @@ const processItem = async (
       error,
       Date.now() - startedAt
     );
+  }
+};
+
+/** Items go through the node a few at a time, each with its own checkpoint. */
+const runItemMode = async (context: RunContext, nodeRun: NodeRun) => {
+  const batchSize = Math.max(1, nodeRun.definition.concurrency ?? 1);
+  for (;;) {
+    await assertNotStopping(context);
+    const batch = await listPendingItems(
+      context.run.id,
+      nodeRun.node.id,
+      batchSize
+    );
+    if (batch.length === 0) {
+      return;
+    }
+    const results = await Promise.allSettled(
+      batch.map((item) => processItem(context, nodeRun, item))
+    );
+    const failure = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected"
+    );
+    if (failure) {
+      throw failure.reason;
+    }
+  }
+};
+
+/**
+ * The node receives every pending item in one call and reports an outcome per
+ * item. The node is responsible for resuming its own work; the executor only
+ * records what it reports.
+ */
+const runBatchMode = async (context: RunContext, nodeRun: NodeRun) => {
+  const { definition, node } = nodeRun;
+  if (!definition.executeBatch) {
+    throw new FlowFatalError(
+      `"${node.name || node.type}" cannot process a batch.`
+    );
+  }
+  await assertNotStopping(context);
+  const items = await listAllPendingItems(context.run.id, node.id);
+  if (items.length === 0) {
+    return;
+  }
+  const startedAt = Date.now();
+  let results: Awaited<
+    ReturnType<NonNullable<AnyNodeDefinition["executeBatch"]>>
+  >["results"];
+  try {
+    ({ results } = await definition.executeBatch({
+      config: nodeRun.config,
+      ctx: nodeRun.nodeContext,
+      items: items.map((item) => ({
+        json: asObject(item.input),
+        key: item.itemKey,
+      })),
+    }));
+  } catch (error) {
+    if (context.signal.aborted) {
+      throw new RunInterrupted();
+    }
+    throw error instanceof FlowFatalError
+      ? error
+      : new FlowFatalError(
+          error instanceof Error ? error.message : "The batch failed."
+        );
+  }
+
+  const byKey = new Map(results.map((result) => [result.key, result]));
+  const durationMs = Date.now() - startedAt;
+  for (const item of items) {
+    const result = byKey.get(item.itemKey);
+    if (result && "outputs" in result) {
+      assertKnownOutputs(nodeRun, result.outputs);
+      await checkpointItem({
+        attemptCounted: false,
+        durationMs,
+        item,
+        outputs: result.outputs,
+        routed: routeOutputs(context, node, item, result.outputs),
+      });
+    } else {
+      await markItemFailed(
+        item.id,
+        result?.uncertain ? "UNKNOWN" : "FAILED",
+        new Error(
+          result?.error ?? "The batch returned no result for this item."
+        ),
+        durationMs
+      );
+    }
   }
 };
 
@@ -318,36 +426,21 @@ const runNode = async (context: RunContext, node: FlowNode): Promise<void> => {
       `"${node.name || node.type}" is not configured correctly: ${parsed.error.issues[0]?.message ?? "invalid configuration"}.`
     );
   }
-  if (definition.mode !== "item") {
-    throw new FlowFatalError(
-      `"${node.name || node.type}" uses a mode this engine cannot run yet.`
-    );
-  }
   await updateStep(step.id, {
     status: "RUNNING",
     ...(step.startedAt ? {} : { startedAt: new Date() }),
   });
-  const nodeContext = createNodeContext(context, definition, step);
-  const batchSize = Math.max(1, definition.concurrency ?? 1);
-
-  for (;;) {
-    await assertNotStopping(context);
-    const batch = await listPendingItems(context.run.id, node.id, batchSize);
-    if (batch.length === 0) {
-      break;
-    }
-    const results = await Promise.allSettled(
-      batch.map((item) =>
-        processItem(context, node, definition, parsed.data, nodeContext, item)
-      )
-    );
-    const failure = results.find(
-      (result): result is PromiseRejectedResult => result.status === "rejected"
-    );
-    if (failure) {
-      throw failure.reason;
-    }
-  }
+  const idempotent = resolveIdempotent(definition, parsed.data);
+  const nodeRun: NodeRun = {
+    config: parsed.data,
+    definition,
+    idempotent,
+    node,
+    nodeContext: createNodeContext(context, idempotent, step),
+  };
+  await (definition.mode === "batch"
+    ? runBatchMode(context, nodeRun)
+    : runItemMode(context, nodeRun));
   await updateStep(step.id, { completedAt: new Date(), status: "SUCCEEDED" });
 };
 

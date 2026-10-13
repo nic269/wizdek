@@ -7,7 +7,8 @@ export interface NodeTypeMetadata {
   /** The config schema as JSON Schema, for rendering a form. */
   configSchema: unknown;
   description: string;
-  idempotent: boolean;
+  /** Null when it depends on the node's configuration. */
+  idempotent: boolean | null;
   label: string;
   mode: NodeSpec["mode"];
   /** Fixed output handles, or null when they depend on the configuration. */
@@ -44,7 +45,8 @@ export const createNodeRegistry = (
         category: node.category,
         configSchema: z.toJSONSchema(node.configSchema, { io: "input" }),
         description: node.description,
-        idempotent: node.idempotent,
+        idempotent:
+          typeof node.idempotent === "function" ? null : node.idempotent,
         label: node.label,
         mode: node.mode,
         outputs: typeof node.outputs === "function" ? null : node.outputs,

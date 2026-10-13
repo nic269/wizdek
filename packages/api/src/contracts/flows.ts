@@ -72,7 +72,7 @@ export const flowNodeTypeSchema = z.object({
   category: z.enum(["trigger", "data", "logic", "action"]),
   configSchema: z.unknown(),
   description: z.string(),
-  idempotent: z.boolean(),
+  idempotent: z.boolean().nullable(),
   label: z.string(),
   mode: z.enum(["item", "batch"]),
   outputs: z.array(z.string()).nullable(),

@@ -375,28 +375,31 @@ model ShopifyApp {
 }
 
 model ShopifyStore {
-  id                   String                    @id @default(cuid())
-  organizationId       String
-  appId                String?
-  shopDomain           String
-  name                 String
-  strategy             ShopifyCredentialStrategy
-  status               ShopifyStoreStatus        @default(PENDING)
-  scopes               String[]
-  apiVersion           String
-  currencyCode         String?
-  connectedAt          DateTime?
-  lastHealthCheckAt    DateTime?
-  lastHealthCheckError String?                   @db.Text
-  createdById          String?
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
+  id                     String                    @id @default(cuid())
+  organizationId         String
+  appId                  String?
+  shopDomain             String
+  name                   String
+  strategy               ShopifyCredentialStrategy
+  status                 ShopifyStoreStatus        @default(PENDING)
+  scopes                 String[]
+  apiVersion             String
+  currencyCode           String?
+  connectedAt            DateTime?
+  lastHealthCheckAt      DateTime?
+  lastHealthCheckError   String?                   @db.Text
+  // Signs webhooks for stores connected by a pasted token, which have no app.
+  webhookSecretEncrypted String?                   @db.Text
+  createdById            String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  app          ShopifyApp?         @relation(fields: [appId], references: [id], onDelete: Restrict)
-  tokens       ShopifyToken[]
-  oauthStates  ShopifyOAuthState[]
-  flowRuns     FlowRun[]
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  app             ShopifyApp?         @relation(fields: [appId], references: [id], onDelete: Restrict)
+  tokens          ShopifyToken[]
+  oauthStates     ShopifyOAuthState[]
+  flowRuns        FlowRun[]
+  flowActivations FlowActivation[]
 
   @@unique([organizationId, shopDomain])
   @@unique([id, organizationId])
@@ -495,9 +498,10 @@ model Flow {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   versions     FlowVersion[]
   runs         FlowRun[]
+  activations  FlowActivation[]
 
   @@index([organizationId, updatedAt])
   @@map("flow")
@@ -511,8 +515,9 @@ model FlowVersion {
   createdById String?
   createdAt   DateTime @default(now())
 
-  flow Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
-  runs FlowRun[]
+  flow        Flow             @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  runs        FlowRun[]
+  activations FlowActivation[]
 
   @@unique([flowId, version])
   @@map("flow_version")
@@ -586,4 +591,31 @@ model FlowRunItem {
   @@unique([runId, nodeId, itemKey])
   @@index([runId, nodeId, status, ordinal])
   @@map("flow_run_item")
+}
+
+enum FlowActivationStatus {
+  ACTIVE
+  FAILED
+  INACTIVE
+}
+
+model FlowActivation {
+  id                    String               @id @default(cuid())
+  flowId                String
+  storeId               String
+  flowVersionId         String
+  status                FlowActivationStatus
+  webhookSubscriptionId String?
+  error                 String?              @db.Text
+  activatedById         String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  flow        Flow         @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  store       ShopifyStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  flowVersion FlowVersion  @relation(fields: [flowVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([flowId, storeId])
+  @@index([storeId])
+  @@map("flow_activation")
 }
