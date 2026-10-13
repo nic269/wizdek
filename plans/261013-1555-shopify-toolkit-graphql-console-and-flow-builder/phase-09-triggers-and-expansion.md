@@ -124,18 +124,18 @@ UI: an Activate control in the builder toolbar with a store picker and the list 
 
 ## Todo
 
-- [ ] Webhook verification and subscription helpers
-- [ ] Activation model, env and migration
-- [ ] Activation service
-- [ ] Webhook route with signed-fixture tests
-- [ ] Webhook and schedule trigger nodes and the schedule job
-- [ ] Activation API and UI; webhook secret for static-token stores
-- [ ] Filter, set-fields, switch and generic GraphQL nodes
-- [ ] Engine directory confirmed untouched by the node additions
-- [ ] Bulk mutation node with resume
-- [ ] Integration tests green
+- [x] Webhook verification and subscription helpers
+- [x] Activation model, env and migration
+- [x] Activation service
+- [x] Webhook route with signed-fixture tests
+- [x] Webhook and schedule trigger nodes and the schedule job
+- [x] Activation API and UI; webhook secret for static-token stores
+- [x] Filter, set-fields, switch and generic GraphQL nodes
+- [x] Engine directory confirmed untouched by the node additions
+- [x] Bulk mutation node with resume
+- [x] Integration tests green
 - [ ] Manual acceptance on a dev store
-- [ ] Docs updated; phase committed
+- [x] Docs updated; phase committed
 
 ## Success Criteria
 
