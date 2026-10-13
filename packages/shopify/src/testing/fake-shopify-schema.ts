@@ -37,7 +37,37 @@ export const fakeShopifySchema = buildSchema(`
 
   type ApiVersion { handle: String! displayName: String! supported: Boolean! }
 
+  type StagedUploadParameter { name: String! value: String! }
+  type StagedMediaUploadTarget {
+    url: String
+    resourceUrl: String
+    parameters: [StagedUploadParameter!]!
+  }
+  input StagedUploadInput {
+    resource: String!
+    filename: String!
+    mimeType: String!
+    httpMethod: String
+  }
+  type StagedUploadsCreatePayload {
+    stagedTargets: [StagedMediaUploadTarget!]
+    userErrors: [UserError!]!
+  }
+  type BulkOperation {
+    id: ID!
+    status: String!
+    errorCode: String
+    objectCount: String
+    url: String
+    partialDataUrl: String
+  }
+  type BulkOperationRunMutationPayload {
+    bulkOperation: BulkOperation
+    userErrors: [UserError!]!
+  }
+
   type Query {
+    bulkOperation(id: ID!): BulkOperation
     publicApiVersions: [ApiVersion!]!
     shop: Shop!
     currentAppInstallation: AppInstallation!
@@ -58,6 +88,11 @@ export const fakeShopifySchema = buildSchema(`
   }
 
   type Mutation {
+    stagedUploadsCreate(input: [StagedUploadInput!]!): StagedUploadsCreatePayload
+    bulkOperationRunMutation(
+      mutation: String!
+      stagedUploadPath: String!
+    ): BulkOperationRunMutationPayload
     webhookSubscriptionCreate(
       topic: WebhookSubscriptionTopic!
       webhookSubscription: WebhookSubscriptionInput!

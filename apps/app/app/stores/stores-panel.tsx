@@ -6,6 +6,7 @@ import {
   buttonVariants,
   EmptyState,
   ErrorState,
+  Input,
   LoadingState,
 } from "@repo/design-system";
 import { Badge } from "@repo/design-system/components/ui/badge";
@@ -36,6 +37,29 @@ const STATUS_VARIANTS: Record<
   RECONNECT_REQUIRED: "destructive",
 };
 
+/** Shown for stores connected by a pasted token, which have no app secret. */
+function WebhookSecretButton({
+  onToggle,
+  store,
+}: {
+  onToggle: () => void;
+  store: Store;
+}) {
+  if (store.strategy !== "STATIC_TOKEN") {
+    return null;
+  }
+  return (
+    <Button
+      onClick={onToggle}
+      size="sm"
+      title="The secret Shopify signs this store's webhooks with. Webhook flows need it."
+      variant="ghost"
+    >
+      {store.hasWebhookSecret ? "Webhook secret saved" : "Add webhook secret"}
+    </Button>
+  );
+}
+
 export function StoresPanel() {
   const {
     error: organizationError,
@@ -48,7 +72,10 @@ export function StoresPanel() {
   const [confirmingStoreId, setConfirmingStoreId] = useState<string | null>(
     null
   );
+  const [secretStoreId, setSecretStoreId] = useState<string | null>(null);
+  const [secret, setSecret] = useState("");
   const organizationId = organization?.id;
+  const secretStore = stores?.find((store) => store.id === secretStoreId);
 
   const loadStores = useCallback(async () => {
     if (!organizationId) {
@@ -223,6 +250,15 @@ export function StoresPanel() {
                             >
                               Reconnect
                             </a>
+                            <WebhookSecretButton
+                              onToggle={() => {
+                                setSecretStoreId(
+                                  secretStoreId === store.id ? null : store.id
+                                );
+                                setSecret("");
+                              }}
+                              store={store}
+                            />
                             <Button
                               disabled={store.status === "DISCONNECTED"}
                               onClick={() => setConfirmingStoreId(store.id)}
@@ -241,6 +277,43 @@ export function StoresPanel() {
             </TableBody>
           </Table>
         </div>
+      ) : null}
+      {secretStore ? (
+        <form
+          className="flex max-w-2xl flex-wrap items-center gap-2 rounded-md border p-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            runAction(
+              secretStore.id,
+              () =>
+                apiClient.shopifyStores.setWebhookSecret({
+                  secret,
+                  storeId: secretStore.id,
+                }),
+              "Could not save the webhook secret."
+            ).then(() => setSecretStoreId(null));
+          }}
+        >
+          <p className="w-full text-sm">
+            Webhook signing secret for{" "}
+            <span className="font-medium">{secretStore.name}</span>. This is the
+            client secret (API secret key) of the custom app whose token
+            connected the store. It is stored encrypted and never shown again.
+          </p>
+          <Input
+            aria-label="Webhook signing secret"
+            autoComplete="off"
+            className="max-w-sm"
+            minLength={8}
+            onChange={(event) => setSecret(event.target.value)}
+            required
+            type="password"
+            value={secret}
+          />
+          <Button size="sm" type="submit">
+            Save secret
+          </Button>
+        </form>
       ) : null}
     </div>
   );

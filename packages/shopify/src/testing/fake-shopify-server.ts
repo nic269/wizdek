@@ -43,6 +43,8 @@ export interface FakeShopifyServerOptions {
 export interface FakeShopifyServer {
   /** Makes a token valid for Admin requests, as if it had been issued. */
   acceptToken(token: string): void;
+  /** Bulk mutations submitted so far, oldest first. */
+  bulkOperations: { id: string; lineCount: number; status: string }[];
   close(): Promise<void>;
   /** The next `count` Admin requests answer HTTP 401. */
   failNextWithUnauthorized(count?: number): void;
@@ -52,6 +54,8 @@ export interface FakeShopifyServer {
   rejectNextTokenRequests(count?: number): void;
   revokeToken(token: string): void;
   seedOrder(order: FakeOrder): void;
+  /** How many times an operation reports RUNNING before it completes. */
+  setBulkPollsUntilComplete(polls: number): void;
   /** Delays every Admin response, to make a run last long enough to observe. */
   setLatency(milliseconds: number): void;
   /** Answers every `interval`-th Admin request with THROTTLED; 0 turns it off. */
@@ -73,6 +77,8 @@ const TOKEN_PATH = "/admin/oauth/access_token";
  * as it does for the browser suite. Accepts a JSON array of orders.
  */
 export const SEED_ORDERS_PATH = "/__control/orders";
+const STAGED_UPLOAD_PATH = "/__staged-upload";
+const BULK_RESULT_PATH = "/__bulk-result";
 /** Readiness probe for test runners that wait on a URL. */
 export const HEALTH_PATH = "/health";
 const NAME_QUERY = /name:\s*"?([^"\s]+)"?/;
@@ -87,13 +93,16 @@ const COST = {
   },
 };
 
-const readBody = async (request: IncomingMessage): Promise<string> => {
+const readRawBody = async (request: IncomingMessage): Promise<Buffer> => {
   const chunks: Buffer[] = [];
   for await (const chunk of request) {
     chunks.push(chunk as Buffer);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
 };
+
+const readBody = async (request: IncomingMessage): Promise<string> =>
+  (await readRawBody(request)).toString("utf8");
 
 const sendJson = (
   response: ServerResponse,
@@ -167,6 +176,18 @@ export const startFakeShopifyServer = async (
     string,
     { topic: string; uri: string }
   >();
+  const stagedUploads = new Map<string, string>();
+  const bulkOperations: {
+    id: string;
+    lineCount: number;
+    lines: string[];
+    mutation: string;
+    pollsLeft: number;
+    result: string | null;
+    status: string;
+  }[] = [];
+  let bulkPollsUntilComplete = 2;
+  let baseUrl = "";
   const tokenRequests: FakeTokenRequest[] = [];
   const graphqlRequests: FakeGraphqlRequest[] = [];
   let issued = 0;
@@ -179,6 +200,75 @@ export const startFakeShopifyServer = async (
   let adminRequestCount = 0;
 
   const rootValue = {
+    bulkOperation: async ({ id }: { id: string }) => {
+      const operation = bulkOperations.find((entry) => entry.id === id);
+      if (!operation) {
+        return null;
+      }
+      if (operation.status === "RUNNING") {
+        operation.pollsLeft -= 1;
+        if (operation.pollsLeft <= 0) {
+          // Each input line runs the mutation on its own, as Shopify does.
+          const results: string[] = [];
+          for (const [lineNumber, line] of operation.lines.entries()) {
+            const outcome = await graphql({
+              rootValue,
+              schema: fakeShopifySchema,
+              source: operation.mutation,
+              variableValues: JSON.parse(line) as Record<string, unknown>,
+            });
+            results.push(
+              JSON.stringify({ ...outcome, __lineNumber: lineNumber })
+            );
+          }
+          operation.result = `${results.join("\n")}\n`;
+          operation.status = "COMPLETED";
+        }
+      }
+      return {
+        errorCode: null,
+        id: operation.id,
+        objectCount: String(operation.lineCount),
+        partialDataUrl: null,
+        status: operation.status,
+        url:
+          operation.status === "COMPLETED"
+            ? `${baseUrl}${BULK_RESULT_PATH}/${encodeURIComponent(operation.id)}`
+            : null,
+      };
+    },
+    bulkOperationRunMutation: ({
+      mutation,
+      stagedUploadPath,
+    }: {
+      mutation: string;
+      stagedUploadPath: string;
+    }) => {
+      const uploaded = stagedUploads.get(stagedUploadPath);
+      if (uploaded === undefined) {
+        return {
+          bulkOperation: null,
+          userErrors: [
+            { field: ["stagedUploadPath"], message: "File not found" },
+          ],
+        };
+      }
+      const lines = uploaded.split("\n").filter(Boolean);
+      const operation = {
+        id: `gid://shopify/BulkOperation/${bulkOperations.length + 1}-${Date.now()}`,
+        lineCount: lines.length,
+        lines,
+        mutation,
+        pollsLeft: bulkPollsUntilComplete,
+        result: null,
+        status: "RUNNING",
+      };
+      bulkOperations.push(operation);
+      return {
+        bulkOperation: { id: operation.id, status: "CREATED", url: null },
+        userErrors: [],
+      };
+    },
     currentAppInstallation: () => ({
       accessScopes: scopes.map((handle) => ({ handle })),
       id: "gid://shopify/AppInstallation/1",
@@ -210,6 +300,20 @@ export const startFakeShopifyServer = async (
       { displayName: "unstable", handle: "unstable", supported: false },
     ],
     shop: () => ({ id: "gid://shopify/Shop/1", ...shop }),
+    stagedUploadsCreate: ({ input }: { input: { filename: string }[] }) => ({
+      stagedTargets: input.map(({ filename }) => {
+        const key = `tmp/bulk/${Date.now()}-${Math.random().toString(16).slice(2)}/${filename}`;
+        return {
+          parameters: [
+            { name: "key", value: key },
+            { name: "Content-Type", value: "text/jsonl" },
+          ],
+          resourceUrl: null,
+          url: `${baseUrl}${STAGED_UPLOAD_PATH}`,
+        };
+      }),
+      userErrors: [],
+    }),
     tagsAdd: ({ id, tags }: { id: string; tags: string[] }) => {
       const order = orders.get(id);
       if (!order) {
@@ -384,26 +488,80 @@ export const startFakeShopifyServer = async (
     sendJson(response, 200, { ...result, extensions: { cost } });
   };
 
-  const server = createServer((request, response) => {
-    const path = new URL(request.url ?? "/", "http://fake").pathname;
-    const apiVersion = path.match(ADMIN_PATH)?.[1];
-    let handled: Promise<void> | undefined;
-    if (request.method === "GET" && path === HEALTH_PATH) {
-      sendJson(response, 200, { status: "ok" });
+  const handleBulkResult = (path: string, response: ServerResponse) => {
+    const id = decodeURIComponent(path.slice(BULK_RESULT_PATH.length + 1));
+    const operation = bulkOperations.find((entry) => entry.id === id);
+    response.writeHead(operation?.result ? 200 : 404, {
+      "Content-Type": "application/jsonl",
+    });
+    response.end(operation?.result ?? "");
+  };
+
+  const handleStagedUpload = async (
+    request: IncomingMessage,
+    response: ServerResponse
+  ): Promise<void> => {
+    // The web platform parses the multipart form for us.
+    const form = await new Response(
+      new Uint8Array(await readRawBody(request)),
+      {
+        headers: { "content-type": request.headers["content-type"] ?? "" },
+      }
+    ).formData();
+    const file = form.get("file");
+    stagedUploads.set(
+      String(form.get("key")),
+      typeof file === "string" ? file : await (file as File).text()
+    );
+    response.writeHead(201);
+    response.end();
+  };
+
+  const handleSeedOrders = async (
+    request: IncomingMessage,
+    response: ServerResponse
+  ): Promise<void> => {
+    for (const order of JSON.parse(await readBody(request)) as FakeOrder[]) {
+      orders.set(order.id, { ...order, tags: [...order.tags] });
+    }
+    sendJson(response, 200, { seeded: true });
+  };
+
+  /** Picks the handler for a request; undefined means there is none. */
+  const route = (
+    request: IncomingMessage,
+    response: ServerResponse,
+    path: string
+  ): Promise<void> | undefined => {
+    if (request.method === "GET") {
+      if (path === HEALTH_PATH) {
+        sendJson(response, 200, { status: "ok" });
+        return Promise.resolve();
+      }
+      if (path.startsWith(`${BULK_RESULT_PATH}/`)) {
+        handleBulkResult(path, response);
+        return Promise.resolve();
+      }
       return;
     }
-    if (request.method === "POST" && path === SEED_ORDERS_PATH) {
-      handled = readBody(request).then((raw) => {
-        for (const order of JSON.parse(raw) as FakeOrder[]) {
-          orders.set(order.id, { ...order, tags: [...order.tags] });
-        }
-        sendJson(response, 200, { seeded: true });
-      });
-    } else if (request.method === "POST" && path === TOKEN_PATH) {
-      handled = handleToken(request, response);
-    } else if (request.method === "POST" && apiVersion) {
-      handled = handleGraphql(request, response, apiVersion);
+    if (request.method !== "POST") {
+      return;
     }
+    const postRoutes: Record<string, () => Promise<void>> = {
+      [SEED_ORDERS_PATH]: () => handleSeedOrders(request, response),
+      [STAGED_UPLOAD_PATH]: () => handleStagedUpload(request, response),
+      [TOKEN_PATH]: () => handleToken(request, response),
+    };
+    const apiVersion = path.match(ADMIN_PATH)?.[1];
+    if (apiVersion) {
+      return handleGraphql(request, response, apiVersion);
+    }
+    return postRoutes[path]?.();
+  };
+
+  const server = createServer((request, response) => {
+    const path = new URL(request.url ?? "/", "http://fake").pathname;
+    const handled = route(request, response, path);
     if (!handled) {
       sendJson(response, 404, { errors: "Not Found" });
       return;
@@ -419,11 +577,13 @@ export const startFakeShopifyServer = async (
     server.listen(options.port ?? 0, "127.0.0.1", resolve);
   });
   const { port } = server.address() as AddressInfo;
+  baseUrl = `http://127.0.0.1:${port}`;
 
   return {
     acceptToken: (token) => {
       validTokens.add(token);
     },
+    bulkOperations,
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.closeAllConnections();
@@ -442,6 +602,9 @@ export const startFakeShopifyServer = async (
     },
     seedOrder: (order) => {
       orders.set(order.id, { ...order, tags: [...order.tags] });
+    },
+    setBulkPollsUntilComplete: (polls) => {
+      bulkPollsUntilComplete = polls;
     },
     setLatency: (milliseconds) => {
       latency = milliseconds;

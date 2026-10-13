@@ -6,6 +6,7 @@ import { logicFilterNode } from "./logic-filter";
 import { logicIfNode } from "./logic-if";
 import { logicSwitchNode } from "./logic-switch";
 import { shopifyAddTagsNode } from "./shopify-add-tags";
+import { shopifyBulkMutationNode } from "./shopify-bulk-mutation";
 import { shopifyFindOrderNode } from "./shopify-find-order";
 import { shopifyGraphqlNode } from "./shopify-graphql";
 import { triggerManualNode } from "./trigger-manual";
@@ -24,6 +25,7 @@ export const builtInNodes: readonly AnyNodeDefinition[] = [
   shopifyFindOrderNode,
   shopifyAddTagsNode,
   shopifyGraphqlNode,
+  shopifyBulkMutationNode,
 ];
 
 /** The registry used in production. Tests may build their own. */

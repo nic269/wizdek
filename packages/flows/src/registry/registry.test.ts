@@ -13,6 +13,11 @@ describe("node registry", () => {
         "logic.if",
         "shopify.findOrder",
         "shopify.addTags",
+        "shopify.graphql",
+        "shopify.bulkMutation",
+        "logic.filter",
+        "logic.switch",
+        "data.setFields",
       ])
     );
     expect(builtInRegistry.get("logic.if")?.label).toBe("If");
@@ -47,6 +52,16 @@ describe("node registry", () => {
       ["file"]
     );
     expect(() => JSON.stringify(metadata)).not.toThrow();
+    // Outputs and repeat-safety that depend on configuration are reported as unknown.
+    expect(
+      metadata.find(({ type }) => type === "logic.switch")?.outputs
+    ).toBeNull();
+    expect(
+      metadata.find(({ type }) => type === "shopify.graphql")?.idempotent
+    ).toBeNull();
+    expect(
+      metadata.find(({ type }) => type === "shopify.bulkMutation")
+    ).toMatchObject({ idempotent: false, mode: "batch" });
   });
 
   it("refuses to register a node type twice", () => {

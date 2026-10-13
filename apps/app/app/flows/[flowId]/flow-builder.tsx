@@ -35,6 +35,7 @@ import {
 } from "react";
 import { useAppTheme } from "../../lib/use-app-theme";
 import { FLOW_STATUS_LABELS } from "../flow-labels";
+import { ActivationPanel } from "./activation-panel";
 import type { FlowBuilderProps } from "./flow-builder-loader";
 import { CANVAS_NODE_TYPE } from "./flow-definition-mapping";
 import { FlowNodeCard, NodeIssuesContext } from "./flow-node";
@@ -76,6 +77,7 @@ function BuilderToolbar({
   canRun,
   editor,
   flow,
+  onActivate,
   onRun,
   onValidate,
 }: {
@@ -83,10 +85,17 @@ function BuilderToolbar({
   canRun: boolean;
   editor: FlowEditor;
   flow: Flow;
+  onActivate: () => void;
   onRun: () => void;
   onValidate: () => void;
 }) {
   const { isDirty } = editor;
+  const triggerType = editor.definition.nodes.find((node) =>
+    node.type.startsWith("trigger.")
+  )?.type;
+  const startsManually = triggerType === "trigger.manual";
+  const startsAutomatically =
+    triggerType === "trigger.webhook" || triggerType === "trigger.schedule";
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex min-w-0 items-center gap-3">
@@ -130,7 +139,7 @@ function BuilderToolbar({
             {editor.isSaving ? "Saving..." : "Save"}
           </Button>
         ) : null}
-        {canRun ? (
+        {canRun && startsManually ? (
           <Button
             disabled={isDirty || editor.issues.length > 0}
             onClick={onRun}
@@ -139,6 +148,11 @@ function BuilderToolbar({
             variant={canManage ? "outline" : "default"}
           >
             Run
+          </Button>
+        ) : null}
+        {startsAutomatically ? (
+          <Button onClick={onActivate} type="button" variant="outline">
+            Activation
           </Button>
         ) : null}
       </div>
@@ -154,6 +168,7 @@ function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
   const [showValidation, setShowValidation] = useState(false);
   const [needsFit, setNeedsFit] = useState(false);
   const [isRunDialogOpen, setIsRunDialogOpen] = useState(false);
+  const [isActivationOpen, setIsActivationOpen] = useState(false);
   const nodesInitialized = useNodesInitialized();
 
   // Closing or leaving the page with unsaved changes asks first.
@@ -261,6 +276,7 @@ function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
           canRun={canRun}
           editor={editor}
           flow={editor.flow}
+          onActivate={() => setIsActivationOpen(true)}
           onRun={() => setIsRunDialogOpen(true)}
           onValidate={() => setShowValidation(true)}
         />
@@ -347,6 +363,14 @@ function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
         </div>
       </div>
 
+      <ActivationPanel
+        canManage={canManage}
+        flowId={flowId}
+        hasUnsavedChanges={isDirty}
+        onOpenChange={setIsActivationOpen}
+        open={isActivationOpen}
+        organizationId={editor.flow.organizationId}
+      />
       <RunDialog
         flowId={flowId}
         inputs={triggerInputs(editor.definition)}

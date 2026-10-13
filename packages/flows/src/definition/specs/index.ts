@@ -5,6 +5,7 @@ import { logicFilterSpec } from "./logic-filter";
 import { logicIfSpec } from "./logic-if";
 import { logicSwitchSpec } from "./logic-switch";
 import { shopifyAddTagsSpec } from "./shopify-add-tags";
+import { shopifyBulkMutationSpec } from "./shopify-bulk-mutation";
 import { shopifyFindOrderSpec } from "./shopify-find-order";
 import { shopifyGraphqlSpec } from "./shopify-graphql";
 import { triggerManualSpec } from "./trigger-manual";
@@ -17,6 +18,7 @@ export * from "./logic-filter";
 export * from "./logic-if";
 export * from "./logic-switch";
 export * from "./shopify-add-tags";
+export * from "./shopify-bulk-mutation";
 export * from "./shopify-find-order";
 export * from "./shopify-graphql";
 export * from "./trigger-manual";
@@ -36,4 +38,5 @@ export const builtInNodeSpecs: readonly AnyNodeSpec[] = [
   shopifyFindOrderSpec,
   shopifyAddTagsSpec,
   shopifyGraphqlSpec,
+  shopifyBulkMutationSpec,
 ];
