@@ -94,17 +94,17 @@ Node types and their JSON Schemas come from `flows.nodeTypes`; client-side valid
 
 ## Todo
 
-- [ ] Dependencies and transpile settings
-- [ ] Flows list page
-- [ ] Definition mapping with round-trip tests
-- [ ] Connection rules with tests
-- [ ] Canvas, custom node, palette
-- [ ] Config panel, five bespoke forms, generic form
-- [ ] Validation panel and node badges
-- [ ] Save with conflict handling and unsaved-changes guard
-- [ ] Read-only mode
-- [ ] Navigation entry
-- [ ] Playwright test green; phase committed
+- [x] Dependencies and transpile settings
+- [x] Flows list page
+- [x] Definition mapping with round-trip tests
+- [x] Connection rules with tests
+- [x] Canvas, custom node, palette
+- [x] Config panel, five bespoke forms, generic form
+- [x] Validation panel and node badges
+- [x] Save with conflict handling and unsaved-changes guard
+- [x] Read-only mode
+- [x] Navigation entry
+- [x] Playwright test green; phase committed
 
 ## Success Criteria
 
