@@ -174,18 +174,18 @@ API (oRPC):
 
 ## Todo
 
-- [ ] Package scaffolded; boundary rules registered
-- [ ] Definition schema, validation, templates and conditions with unit tests
-- [ ] Node contract and registry
-- [ ] Prisma models migrated
-- [ ] Item store and executor
-- [ ] Five built-in nodes with tests
-- [ ] `flow-run` job registered
-- [ ] Flow and run services, contracts and routers
-- [ ] File upload route
-- [ ] Permissions added and roles resynced
-- [ ] Integration suite green
-- [ ] Docs updated and phase committed
+- [x] Package scaffolded; boundary rules registered
+- [x] Definition schema, validation, templates and conditions with unit tests
+- [x] Node contract and registry
+- [x] Prisma models migrated
+- [x] Item store and executor
+- [x] Five built-in nodes with tests
+- [x] `flow-run` job registered
+- [x] Flow and run services, contracts and routers
+- [x] File upload route
+- [x] Permissions added and roles resynced
+- [x] Integration suite green
+- [x] Docs updated and phase committed
 
 ## Success Criteria
 
