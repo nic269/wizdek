@@ -13,6 +13,7 @@
     "./contract": "./src/contracts/index.ts",
     "./errors": "./src/errors.ts",
     "./health": "./src/health.ts",
+    "./jobs": "./src/jobs.ts",
     "./openapi": "./src/openapi.ts"
   },
   "scripts": {

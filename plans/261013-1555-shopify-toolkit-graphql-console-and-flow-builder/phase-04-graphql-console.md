@@ -135,19 +135,19 @@ Bundling decision gate, evaluated in step 1:
 
 ## Todo
 
-- [ ] Bundling spike done and decision recorded
-- [ ] Origin check mounted for `/api/shopify/*`
-- [ ] `execute` and `versions` routes with tests; execute timeout aligned with the rewrite proxy
-- [ ] Audit list filter by action prefix
-- [ ] Saved queries model, routes and tests
-- [ ] Console page with Explorer, toolbar and namespaced storage
-- [ ] Status bar and saved-queries plugin
-- [ ] Theme and stylesheet isolation
-- [ ] Navigation entry
-- [ ] Integration and Playwright tests green
+- [x] Bundling spike done and decision recorded
+- [x] Origin check mounted for `/api/shopify/*`
+- [x] `execute` and `versions` routes with tests; execute timeout aligned with the rewrite proxy
+- [x] Audit list filter by action prefix
+- [x] Saved queries model, routes and tests
+- [x] Console page with Explorer, toolbar and namespaced storage
+- [x] Status bar and saved-queries plugin
+- [x] Theme and stylesheet isolation
+- [x] Navigation entry
+- [x] Integration and Playwright tests green
 - [ ] Schema load measured; cache decision recorded
 - [ ] Manual acceptance on a dev store
-- [ ] Docs written and phase committed
+- [x] Docs written and phase committed
 
 ## Success Criteria
 

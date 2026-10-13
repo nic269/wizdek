@@ -1,12 +1,13 @@
 import { keys as auth } from "@repo/auth/keys";
 import { keys as database } from "@repo/database/keys";
+import { keys as jobs } from "@repo/jobs/keys";
 import { keys as shopify } from "@repo/shopify/keys";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
 export const env = createEnv({
   emptyStringAsUndefined: true,
-  extends: [auth(), database(), shopify()],
+  extends: [auth(), database(), jobs(), shopify()],
   runtimeEnv: process.env,
   server: {
     NEXT_PUBLIC_API_URL: z.string().url(),

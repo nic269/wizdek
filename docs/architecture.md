@@ -98,6 +98,18 @@ The page lives in `apps/app/app/graphql/`. `graphql-console.tsx` renders GraphiQ
 
 User-facing behaviour, permissions, audit contents and limits are in [GraphQL console](./graphql-console.md).
 
+## Background jobs
+
+`@repo/jobs` defines `JobQueueProvider` with two implementations. The local provider keeps jobs in memory and is the default for tests. The pg-boss provider (`@repo/jobs/pg-boss`) stores jobs in Postgres so queued and running work survives a restart; `JOBS_PROVIDER=pgboss` selects it, and production refuses to start without it.
+
+A job definition can ask to run one job at a time per `concurrencyKey` (`serialPerKey`), declare a heartbeat so a dead worker's job is delivered again, and set retries and a timeout. Jobs can be enqueued with an idempotency key inside a scope key, a start delay, or on a cron schedule. Handlers receive `{ runId, signal }`; the signal aborts when the provider stops.
+
+`packages/api/src/jobs.ts` owns the process-wide provider (`getJobProvider`) and the list of registered jobs (`registerJobs`). `apps/api/src/index.ts` starts the provider before serving and stops it on `SIGTERM` and `SIGINT`, which aborts running handlers and waits for them. Set `JOBS_WORKER_ENABLED=false` on a process that should enqueue jobs but not run them.
+
+pg-boss keeps its tables in its own `pgboss` schema, outside Prisma's migrations. `prisma migrate reset` leaves it in place; drop the schema explicitly for a clean local queue. [Decision 0004](./decisions/0004-durable-jobs-on-pg-boss.md) records the mapping, what was tested, and the behaviours worth knowing.
+
+Background Shopify requests use `requestWithRetry` on the store client (`packages/shopify/src/admin/throttle.ts`). It remembers the cost bucket each store last reported and holds a request until the bucket, refilling at its restore rate, can cover the expected cost. A `THROTTLED` answer is waited out and retried, since that request was not executed. Network failures and 5xx answers are retried up to three times with backoff, unless the caller passes `retryUncertain: false` for a mutation that is not safe to repeat. Bucket state is per process; contention from another process is absorbed by the `THROTTLED` path.
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
@@ -106,7 +118,6 @@ These locations are reserved by the implementation plan and are added phase by p
 |----------|---------|
 | `packages/database` | Flow and run models |
 | `packages/api` | Contracts and routers for flows and runs |
-| `packages/jobs` | `pg-boss` provider behind `JobQueueProvider`; the worker runs inside `apps/api` |
 | Flow engine package | Graph validation, typed node registry and the item-based executor |
 | `apps/app` | Flow builder canvas, run trace |
 

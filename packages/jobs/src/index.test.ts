@@ -8,12 +8,14 @@ import {
 
 describe("local job provider", () => {
   it("reports that local job execution is ephemeral", () => {
+    vi.stubEnv("JOBS_PROVIDER", "");
     expect(getJobProviderStatus()).toEqual({
       configured: true,
       mode: "ephemeral",
       provider: "local",
       state: "configured",
     });
+    vi.unstubAllEnvs();
   });
 
   it("runs registered jobs and records completion", async () => {
@@ -27,7 +29,10 @@ describe("local job provider", () => {
     });
     await provider.waitUntilIdle();
 
-    expect(handler).toHaveBeenCalledWith({ email: "user@example.com" });
+    expect(handler).toHaveBeenCalledWith(
+      { email: "user@example.com" },
+      { runId, signal: expect.any(AbortSignal) }
+    );
     await expect(provider.getRun(runId)).resolves.toMatchObject({
       attempts: 1,
       scopeKey: GLOBAL_JOB_SCOPE_KEY,
@@ -119,5 +124,47 @@ describe("local job provider", () => {
     await expect(
       provider.enqueue({ name: "sync", payload: {}, scopeKey: "  " })
     ).rejects.toThrow("Job scope key cannot be empty");
+  });
+
+  it("aborts the handler signal on stop and waits for the handler", async () => {
+    const provider = createLocalJobProvider();
+    let finished = false;
+    provider.register({
+      handler: (_payload, { signal }) =>
+        new Promise<void>((resolve) => {
+          signal.addEventListener("abort", () => {
+            finished = true;
+            resolve();
+          });
+        }),
+      name: "long.task",
+    });
+    await provider.start();
+    await provider.enqueue({ name: "long.task", payload: {} });
+
+    await provider.stop();
+
+    expect(finished).toBe(true);
+  });
+
+  it("rejects schedules with a clear message", async () => {
+    const provider = createLocalJobProvider();
+    await expect(
+      provider.schedule({ cron: "* * * * *", key: "k", name: "x", payload: {} })
+    ).rejects.toThrow("not supported by the local job provider");
+    await expect(provider.unschedule("x", "k")).rejects.toThrow(
+      "not supported by the local job provider"
+    );
+  });
+
+  it("selects the durable provider from the environment", () => {
+    vi.stubEnv("JOBS_PROVIDER", "pgboss");
+    expect(getJobProviderStatus()).toEqual({
+      configured: true,
+      mode: "durable",
+      provider: "pgboss",
+      state: "configured",
+    });
+    vi.unstubAllEnvs();
   });
 });

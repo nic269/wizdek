@@ -4,17 +4,28 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./keys": "./src/keys.ts",
+    "./pg-boss": "./src/providers/pg-boss.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:unit": "vitest run --passWithNoTests",
-    "test:integration": "echo 'jobs integration tests require worker runtime'"
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration/pg-boss.integration.test.ts"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.22.0",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.13.11",
+    "pg-boss": "^12.37.1",
+    "zod": "^4.4.3"
   }
 }

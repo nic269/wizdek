@@ -4,6 +4,7 @@ import {
   executeAdminGraphql,
   unwrapAdminGraphqlData,
 } from "../admin/admin-client";
+import { type RetryOptions, sendWithRetry } from "../admin/throttle";
 import { resolveAccessToken } from "./access-token-resolver";
 import {
   getStore,
@@ -32,6 +33,14 @@ export interface StoreClient {
   request(request: StoreGraphqlRequest): Promise<AdminGraphqlResult>;
   /** Returns `data`, throwing `ShopifyGraphqlError` on any reported error. */
   requestOrThrow<TData = unknown>(request: StoreGraphqlRequest): Promise<TData>;
+  /**
+   * For background work: paces the request against the store's cost bucket,
+   * waits out THROTTLED answers and retries transient failures.
+   */
+  requestWithRetry(
+    request: StoreGraphqlRequest,
+    options?: RetryOptions
+  ): Promise<AdminGraphqlResult>;
   store: Omit<ShopifyStoreWithApp, "app">;
 }
 
@@ -73,6 +82,12 @@ export const createStoreClient = async (
       unwrapAdminGraphqlData<TData>(
         await request(graphqlRequest),
         graphqlRequest.operationName
+      ),
+    requestWithRetry: (graphqlRequest, retryOptions) =>
+      sendWithRetry(
+        store.shopDomain,
+        () => request(graphqlRequest),
+        retryOptions
       ),
     store,
   };

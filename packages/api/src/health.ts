@@ -44,10 +44,21 @@ const withRequirement = <TStatus extends ProviderStatus>(
   required,
 });
 
+/**
+ * In-memory jobs are lost on restart, which is acceptable for development
+ * and tests only. Production must select the durable provider.
+ */
+const getJobStatus = (production: boolean) => {
+  const status = getJobProviderStatus();
+  return production && status.mode === "ephemeral"
+    ? ({ ...status, state: "misconfigured" } as const)
+    : status;
+};
+
 export const getApiProviderReadiness = () => {
   const production = process.env.NODE_ENV === "production";
   return {
-    jobs: withRequirement(getJobProviderStatus(), featureConfig.jobs),
+    jobs: withRequirement(getJobStatus(production), featureConfig.jobs),
     mail: withRequirement(
       getMailProviderStatus(),
       production && authMailRequired

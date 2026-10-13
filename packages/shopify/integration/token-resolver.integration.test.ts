@@ -281,4 +281,23 @@ describe("store client", () => {
     );
     expect(server.tokenRequests).toHaveLength(0);
   });
+
+  it("waits out THROTTLED answers for background requests", async () => {
+    const scope = await createConnectedStore("CLIENT_CREDENTIALS");
+    const client = await createStoreClient(scope);
+    server.graphqlRequests.length = 0;
+    server.throttleNext(2);
+    const startedAt = Date.now();
+
+    const result = await client.requestWithRetry({
+      query: "{ shop { name } }",
+    });
+
+    expect(result.body).toMatchObject({
+      data: { shop: { name: "Fake Store" } },
+    });
+    expect(server.graphqlRequests).toHaveLength(3);
+    // Each THROTTLED answer reported an empty bucket, so each was waited out.
+    expect(Date.now() - startedAt).toBeGreaterThanOrEqual(50);
+  });
 });

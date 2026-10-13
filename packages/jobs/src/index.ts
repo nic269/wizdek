@@ -1,82 +1,41 @@
-export type JobPayload = Record<string, unknown>;
-export type JobRunStatus = "queued" | "running" | "completed" | "failed";
+import type {
+  JobDefinition,
+  JobPayload,
+  JobQueueProvider,
+  JobRunRecord,
+} from "./types";
+import { resolveJobScopeKey } from "./types";
 
-export const GLOBAL_JOB_SCOPE_KEY = "global";
+export * from "./types";
 
-export const createOrganizationJobScopeKey = (organizationId: string) => {
-  const normalizedOrganizationId = organizationId.trim();
-  if (!normalizedOrganizationId) {
-    throw new Error(
-      "Organization ID is required for an organization job scope."
-    );
-  }
-  return `organization:${normalizedOrganizationId}`;
-};
+const selectedProvider = () =>
+  process.env.JOBS_PROVIDER === "pgboss" ? "pgboss" : "local";
 
-const resolveJobScopeKey = (scopeKey?: string) => {
-  if (scopeKey === undefined) {
-    return GLOBAL_JOB_SCOPE_KEY;
-  }
-
-  const normalizedScopeKey = scopeKey.trim();
-  if (!normalizedScopeKey) {
-    throw new Error("Job scope key cannot be empty.");
-  }
-  return normalizedScopeKey;
-};
-
-export interface JobDefinition<TPayload extends JobPayload = JobPayload> {
-  handler(payload: TPayload): Promise<void>;
-  name: string;
-  retry?: { attempts: number; delayMs: number };
-}
-
-export interface EnqueueJobInput<TPayload extends JobPayload = JobPayload> {
-  idempotencyKey?: string;
-  name: string;
-  payload: TPayload;
-  scopeKey?: string;
-}
-
-export interface JobRunRecord {
-  attempts: number;
-  completedAt?: Date;
-  error?: string | undefined;
-  failedAt?: Date;
-  idempotencyKey?: string;
-  name: string;
-  queuedAt: Date;
-  runId: string;
-  scopeKey: string;
-  startedAt?: Date;
-  status: JobRunStatus;
-}
-
-export interface JobQueueProvider {
-  enqueue<TPayload extends JobPayload>(
-    input: EnqueueJobInput<TPayload>
-  ): Promise<{ runId: string }>;
-  getRun(runId: string): Promise<JobRunRecord | undefined>;
-  listRuns(): Promise<JobRunRecord[]>;
-  register<TPayload extends JobPayload>(
-    definition: JobDefinition<TPayload>
-  ): void;
-  waitUntilIdle(): Promise<void>;
-}
-
+/**
+ * Reports which provider the environment selects. The local provider keeps
+ * jobs in memory, so they are lost when the process exits.
+ */
 export const getJobProviderStatus = () =>
-  ({
-    configured: true,
-    mode: "ephemeral",
-    provider: "local",
-    state: "configured",
-  }) as const;
+  selectedProvider() === "pgboss"
+    ? ({
+        configured: true,
+        mode: "durable",
+        provider: "pgboss",
+        state: "configured",
+      } as const)
+    : ({
+        configured: true,
+        mode: "ephemeral",
+        provider: "local",
+        state: "configured",
+      } as const);
 
 export const createLocalJobProvider = (): JobQueueProvider => {
   const definitions = new Map<string, JobDefinition>();
   const runs = new Map<string, JobRunRecord>();
   const idempotency = new Map<string, string>();
   const pending = new Set<Promise<void>>();
+  const shutdown = new AbortController();
 
   const delay = (delayMs: number) =>
     new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -98,7 +57,7 @@ export const createLocalJobProvider = (): JobQueueProvider => {
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       run.attempts = attempt;
       try {
-        await definition.handler(payload);
+        await definition.handler(payload, { runId, signal: shutdown.signal });
         run.status = "completed";
         run.completedAt = new Date();
         run.error = undefined;
@@ -177,7 +136,24 @@ export const createLocalJobProvider = (): JobQueueProvider => {
       );
     },
     register(definition) {
-      definitions.set(definition.name, definition);
+      definitions.set(definition.name, definition as JobDefinition);
+    },
+    schedule() {
+      return Promise.reject(
+        new Error("Schedules are not supported by the local job provider.")
+      );
+    },
+    start() {
+      return Promise.resolve();
+    },
+    async stop() {
+      shutdown.abort();
+      await Promise.allSettled([...pending]);
+    },
+    unschedule() {
+      return Promise.reject(
+        new Error("Schedules are not supported by the local job provider.")
+      );
     },
     async waitUntilIdle() {
       while (pending.size > 0) {
