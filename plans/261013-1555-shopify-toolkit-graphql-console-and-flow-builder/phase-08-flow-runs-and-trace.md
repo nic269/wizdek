@@ -98,16 +98,16 @@ assert: run SUCCEEDED; every order tagged; fake server saw at most one extra tag
 
 ## Todo
 
-- [ ] Query provider mounted
-- [ ] Run dialog with file upload
-- [ ] Runs list
-- [ ] Run trace canvas with overlays
-- [ ] Items panel with filter and pagination
-- [ ] Polling and cancel
-- [ ] Process-level kill-and-restart test green
-- [ ] Playwright run journey green
+- [x] Query provider mounted
+- [x] Run dialog with file upload
+- [x] Runs list
+- [x] Run trace canvas with overlays
+- [x] Items panel with filter and pagination
+- [x] Polling and cancel
+- [x] Process-level kill-and-restart test green
+- [x] Playwright run journey green
 - [ ] Manual acceptance on a dev store recorded
-- [ ] User documentation written; phase committed
+- [x] User documentation written; phase committed
 
 ## Success Criteria
 
