@@ -13,6 +13,10 @@ import {
   handleShopifyOAuthCallback,
   SHOPIFY_OAUTH_CALLBACK_PATH,
 } from "./shopify-oauth-callback";
+import {
+  handleShopifyWebhook,
+  SHOPIFY_WEBHOOK_ROUTE,
+} from "./shopify-webhook-route";
 
 const orpcHandler = new OpenAPIHandler(router, {
   clientInterceptors: [
@@ -138,6 +142,7 @@ export const createApiApp = () => {
     app.use(path, requireAppOrigin);
   }
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
+  app.post(SHOPIFY_WEBHOOK_ROUTE, handleShopifyWebhook);
   app.use("*", async (context, next) => {
     const { matched, response } = await orpcHandler.handle(context.req.raw, {
       context: {

@@ -1,14 +1,17 @@
 import { prisma } from "@repo/database";
 import {
+  activateFlow,
   builtInRegistry,
   cancelFlowRun,
   createFlow,
+  deactivateFlow,
   type FlowRecord,
   type FlowRunRecord,
   type FlowVersionRecord,
   flowDefinitionSchema,
   getFlow,
   getFlowRun,
+  listActivations,
   listFlowRunItems,
   listFlowRuns,
   listFlows,
@@ -206,7 +209,82 @@ const parseDefinition = (definition: unknown) => {
   return parsed.data;
 };
 
+type ActivationWithStore = Awaited<ReturnType<typeof listActivations>>[number];
+
+const toPublicActivation = (activation: ActivationWithStore) => ({
+  createdAt: activation.createdAt,
+  error: activation.error,
+  flowVersionId: activation.flowVersionId,
+  id: activation.id,
+  status: activation.status,
+  storeId: activation.storeId,
+  storeName: activation.store.name,
+  updatedAt: activation.updatedAt,
+});
+
+/** The activation for one store, with the store's name for display. */
+const findActivation = async (
+  scope: { flowId: string; organizationId: string },
+  storeId: string
+) =>
+  (await listActivations(scope)).find(
+    (activation) => activation.storeId === storeId
+  );
+
+const activationsRouter = {
+  activate: os.flows.activations.activate.handler(
+    async ({ context, input }) => {
+      const { flow, user } = await requireFlowPermission(
+        context.headers,
+        input.flowId,
+        "manage"
+      );
+      await withFlowErrors(() =>
+        activateFlow(
+          scopeOf(flow),
+          { actorId: user.id, storeId: input.storeId },
+          { jobs: getJobProvider() }
+        )
+      );
+      const activation = await findActivation(scopeOf(flow), input.storeId);
+      if (!activation) {
+        throw new ApiError("NOT_FOUND", "Activation not found.", 404);
+      }
+      return { data: toPublicActivation(activation) };
+    }
+  ),
+  deactivate: os.flows.activations.deactivate.handler(
+    async ({ context, input }) => {
+      const { flow } = await requireFlowPermission(
+        context.headers,
+        input.flowId,
+        "manage"
+      );
+      await withFlowErrors(() =>
+        deactivateFlow(
+          scopeOf(flow),
+          { storeId: input.storeId },
+          { jobs: getJobProvider() }
+        )
+      );
+      const activation = await findActivation(scopeOf(flow), input.storeId);
+      return { data: activation ? toPublicActivation(activation) : null };
+    }
+  ),
+  list: os.flows.activations.list.handler(async ({ context, input }) => {
+    const { flow } = await requireFlowPermission(
+      context.headers,
+      input.flowId,
+      "read"
+    );
+    return {
+      data: (await listActivations(scopeOf(flow))).map(toPublicActivation),
+    };
+  }),
+};
+
 export const flowsRouter = {
+  activations: activationsRouter,
   create: os.flows.create.handler(async ({ context, input }) => {
     const user = await requireOrganizationAccess(
       context.headers,

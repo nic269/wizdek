@@ -5,9 +5,13 @@ import { logicIfNode } from "./logic-if";
 import { shopifyAddTagsNode } from "./shopify-add-tags";
 import { shopifyFindOrderNode } from "./shopify-find-order";
 import { triggerManualNode } from "./trigger-manual";
+import { triggerScheduleNode } from "./trigger-schedule";
+import { triggerWebhookNode } from "./trigger-webhook";
 
 export const builtInNodes: readonly AnyNodeDefinition[] = [
   triggerManualNode,
+  triggerWebhookNode,
+  triggerScheduleNode,
   dataParseCsvNode,
   logicIfNode,
   shopifyFindOrderNode,

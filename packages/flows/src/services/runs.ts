@@ -178,6 +178,34 @@ export const startFlowRun = async (
 };
 
 /**
+ * Starts a run for an activated flow, without a person. The run uses the
+ * version the flow was activated with, so later edits wait for reactivation.
+ */
+export const startTriggeredRun = async (
+  activation: {
+    flowId: string;
+    flowVersionId: string;
+    organizationId: string;
+    storeId: string;
+  },
+  trigger: { payload: Record<string, unknown>; type: "webhook" | "schedule" },
+  jobs: JobQueueProvider
+): Promise<FlowRunRecord> => {
+  const run = await prisma.flowRun.create({
+    data: {
+      flowId: activation.flowId,
+      flowVersionId: activation.flowVersionId,
+      organizationId: activation.organizationId,
+      storeId: activation.storeId,
+      triggerPayload: trigger.payload as Prisma.InputJsonObject,
+      triggerType: trigger.type,
+    },
+  });
+  await enqueueFlowRun(jobs, run);
+  return run;
+};
+
+/**
  * Asks a run to stop. The executor checks between items, so the item being
  * processed finishes and the rest stay pending.
  */

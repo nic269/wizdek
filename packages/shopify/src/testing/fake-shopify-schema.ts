@@ -45,7 +45,24 @@ export const fakeShopifySchema = buildSchema(`
     orders(first: Int, query: String): OrderConnection!
   }
 
+  scalar WebhookSubscriptionTopic
+  type WebhookSubscription { id: ID! topic: String! uri: String! }
+  input WebhookSubscriptionInput { uri: String }
+  type WebhookSubscriptionCreatePayload {
+    webhookSubscription: WebhookSubscription
+    userErrors: [UserError!]!
+  }
+  type WebhookSubscriptionDeletePayload {
+    deletedWebhookSubscriptionId: ID
+    userErrors: [UserError!]!
+  }
+
   type Mutation {
+    webhookSubscriptionCreate(
+      topic: WebhookSubscriptionTopic!
+      webhookSubscription: WebhookSubscriptionInput!
+    ): WebhookSubscriptionCreatePayload
+    webhookSubscriptionDelete(id: ID!): WebhookSubscriptionDeletePayload
     tagsAdd(id: ID!, tags: [String!]!): TagsAddPayload
   }
 `);

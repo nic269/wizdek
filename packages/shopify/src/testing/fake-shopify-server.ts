@@ -62,6 +62,8 @@ export interface FakeShopifyServer {
   throttleNext(count?: number): void;
   tokenRequests: FakeTokenRequest[];
   url: string;
+  /** Webhook subscriptions currently registered, by id. */
+  webhookSubscriptions: Map<string, { topic: string; uri: string }>;
 }
 
 const ADMIN_PATH = /^\/admin\/api\/([^/]+)\/graphql\.json$/;
@@ -161,6 +163,10 @@ export const startFakeShopifyServer = async (
   const validTokens = new Set<string>();
   const refreshTokens = new Set<string>();
   const orders = new Map<string, FakeOrder>();
+  const webhookSubscriptions = new Map<
+    string,
+    { topic: string; uri: string }
+  >();
   const tokenRequests: FakeTokenRequest[] = [];
   const graphqlRequests: FakeGraphqlRequest[] = [];
   let issued = 0;
@@ -221,6 +227,28 @@ export const startFakeShopifyServer = async (
         userErrors: [],
       };
     },
+    webhookSubscriptionCreate: ({
+      topic,
+      webhookSubscription,
+    }: {
+      topic: string;
+      webhookSubscription: { uri?: string };
+    }) => {
+      const uri = webhookSubscription.uri ?? "";
+      if (!(uri.startsWith("https://") || uri.startsWith("http://"))) {
+        return {
+          userErrors: [{ field: ["uri"], message: "Address is invalid" }],
+          webhookSubscription: null,
+        };
+      }
+      const id = `gid://shopify/WebhookSubscription/${webhookSubscriptions.size + 1}-${Date.now()}`;
+      webhookSubscriptions.set(id, { topic, uri });
+      return { userErrors: [], webhookSubscription: { id, topic, uri } };
+    },
+    webhookSubscriptionDelete: ({ id }: { id: string }) => ({
+      deletedWebhookSubscriptionId: webhookSubscriptions.delete(id) ? id : null,
+      userErrors: [],
+    }),
   };
 
   const issueToken = (grant: FakeTokenRequest["grant"], expiring: boolean) => {
@@ -429,5 +457,6 @@ export const startFakeShopifyServer = async (
     },
     tokenRequests,
     url: `http://127.0.0.1:${port}`,
+    webhookSubscriptions,
   };
 };

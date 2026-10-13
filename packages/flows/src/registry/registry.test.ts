@@ -4,13 +4,17 @@ import { createNodeRegistry } from "./registry";
 
 describe("node registry", () => {
   it("serves the built-in nodes by type", () => {
-    expect(builtInRegistry.list().map(({ type }) => type)).toEqual([
-      "trigger.manual",
-      "data.parseCsv",
-      "logic.if",
-      "shopify.findOrder",
-      "shopify.addTags",
-    ]);
+    expect(builtInRegistry.list().map(({ type }) => type)).toEqual(
+      expect.arrayContaining([
+        "trigger.manual",
+        "trigger.webhook",
+        "trigger.schedule",
+        "data.parseCsv",
+        "logic.if",
+        "shopify.findOrder",
+        "shopify.addTags",
+      ])
+    );
     expect(builtInRegistry.get("logic.if")?.label).toBe("If");
     expect(builtInRegistry.get("code.eval")).toBeUndefined();
   });

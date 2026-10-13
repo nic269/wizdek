@@ -125,13 +125,58 @@ export const flowRunItemSchema = z.object({
   updatedAt: z.date(),
 });
 
+export const flowActivationSchema = z.object({
+  createdAt: z.date(),
+  /** Why activation failed, or what could not be cleaned up. */
+  error: z.string().nullable(),
+  flowVersionId: z.string(),
+  id: z.string(),
+  status: z.enum(["ACTIVE", "FAILED", "INACTIVE"]),
+  storeId: z.string(),
+  storeName: z.string(),
+  updatedAt: z.date(),
+});
+
 const flowIdInput = z.object({ flowId: z.string().min(1) });
 const runIdInput = z.object({ runId: z.string().min(1) });
 const nameSchema = z.string().trim().min(1).max(120);
 const descriptionSchema = z.string().trim().max(500);
 const definitionInput = z.record(z.string(), z.unknown());
 
+const activationInput = flowIdInput.extend({ storeId: z.string().min(1) });
+
+const activationsContract = {
+  activate: apiContract
+    .route({
+      method: "POST",
+      operationId: "flows.activations.activate",
+      path: "/api/flows/{flowId}/activations",
+      summary: "Turn a webhook or scheduled flow on for a store",
+    })
+    .input(activationInput)
+    .output(dataEnvelope(flowActivationSchema)),
+  deactivate: apiContract
+    .route({
+      method: "DELETE",
+      operationId: "flows.activations.deactivate",
+      path: "/api/flows/{flowId}/activations/{storeId}",
+      summary: "Turn a flow off for a store",
+    })
+    .input(activationInput)
+    .output(dataEnvelope(flowActivationSchema.nullable())),
+  list: apiContract
+    .route({
+      method: "GET",
+      operationId: "flows.activations.list",
+      path: "/api/flows/{flowId}/activations",
+      summary: "List the stores a flow is activated on",
+    })
+    .input(flowIdInput)
+    .output(dataEnvelope(z.array(flowActivationSchema))),
+};
+
 export const flowsContract = {
+  activations: activationsContract,
   create: apiContract
     .route({
       method: "POST",

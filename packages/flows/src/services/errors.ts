@@ -9,6 +9,7 @@ export type FlowServiceFailure =
   | "STORE_NOT_AVAILABLE"
   | "INPUT_INVALID"
   | "RUN_NOT_CANCELABLE"
+  | "ACTIVATION_INVALID"
   | "UPLOAD_REJECTED";
 
 /** A flow or run request that cannot be carried out, with a reason a caller can act on. */

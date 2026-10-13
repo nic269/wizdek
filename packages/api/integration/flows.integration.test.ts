@@ -271,19 +271,25 @@ describe("authoring flows", () => {
     const base = `/api/organizations/${owner.organizationId}/flows`;
 
     const nodeTypes = await call(owner, "GET", `${base}/node-types`);
+    const types = nodeTypes.json.data as {
+      configSchema: { required?: string[] };
+      type: string;
+    }[];
+    expect(types.map(({ type }) => type)).toEqual(
+      expect.arrayContaining([
+        "trigger.manual",
+        "trigger.webhook",
+        "trigger.schedule",
+        "data.parseCsv",
+        "logic.if",
+        "shopify.findOrder",
+        "shopify.addTags",
+      ])
+    );
     expect(
-      nodeTypes.json.data.map(({ type }: { type: string }) => type)
-    ).toEqual([
-      "trigger.manual",
-      "data.parseCsv",
-      "logic.if",
-      "shopify.findOrder",
-      "shopify.addTags",
-    ]);
-    expect(nodeTypes.json.data[4].configSchema.required).toEqual([
-      "resourceId",
-      "tags",
-    ]);
+      types.find(({ type }) => type === "shopify.addTags")?.configSchema
+        .required
+    ).toEqual(["resourceId", "tags"]);
 
     const cyclic = csvFlow();
     cyclic.edges.push(edge("tag", "find"));

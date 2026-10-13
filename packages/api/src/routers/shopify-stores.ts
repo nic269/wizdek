@@ -1,5 +1,7 @@
 import { keys } from "@repo/auth/keys";
 import { hasPermission } from "@repo/auth/permissions";
+import { deactivateStoreActivations } from "@repo/flows";
+import { encryptSecret } from "@repo/shopify/crypto";
 import {
   beginOAuthConnection,
   completeOAuthConnection,
@@ -10,7 +12,9 @@ import {
   listStores,
   runStoreHealthCheck,
   type ShopifyStoreRecord,
+  updateStore,
 } from "@repo/shopify/stores";
+import { getJobProvider } from "../jobs";
 import { SHOPIFY_OAUTH_CALLBACK_PATH } from "../shopify-oauth-callback";
 import {
   requireOrganizationAccess,
@@ -26,6 +30,7 @@ export const toPublicStore = (store: ShopifyStoreRecord) => ({
   connectedAt: store.connectedAt,
   createdAt: store.createdAt,
   currencyCode: store.currencyCode,
+  hasWebhookSecret: Boolean(store.webhookSecretEncrypted),
   id: store.id,
   lastHealthCheckAt: store.lastHealthCheckAt,
   lastHealthCheckError: store.lastHealthCheckError,
@@ -143,6 +148,9 @@ export const shopifyStoresRouter = {
         "stores",
         "manage"
       );
+      // Flows activated on the store are turned off first, while its
+      // credentials can still remove their webhook subscriptions.
+      await deactivateStoreActivations(store, { jobs: getJobProvider() });
       const disconnected = await withShopifyErrors(() =>
         disconnectStore(scopeOf(store), user.id)
       );
@@ -168,4 +176,19 @@ export const shopifyStoresRouter = {
     const stores = await listStores(input.organizationId);
     return { data: stores.map(toPublicStore) };
   }),
+  setWebhookSecret: os.shopifyStores.setWebhookSecret.handler(
+    async ({ context, input }) => {
+      const { store } = await requireStorePermission(
+        context.headers,
+        input.storeId,
+        "stores",
+        "manage"
+      );
+      const scope = scopeOf(store);
+      await updateStore(scope, {
+        webhookSecretEncrypted: encryptSecret(input.secret),
+      });
+      return { data: toPublicStore(await getStore(scope)) };
+    }
+  ),
 };

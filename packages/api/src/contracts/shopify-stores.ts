@@ -28,6 +28,8 @@ export const shopifyStoreSchema = z.object({
   connectedAt: z.date().nullable(),
   createdAt: z.date(),
   currencyCode: z.string().nullable(),
+  /** Whether a webhook signing secret is saved; the secret is never returned. */
+  hasWebhookSecret: z.boolean(),
   id: z.string(),
   lastHealthCheckAt: z.date().nullable(),
   lastHealthCheckError: z.string().nullable(),
@@ -163,4 +165,13 @@ export const shopifyStoresContract = {
     })
     .input(organizationIdInput)
     .output(dataEnvelope(z.array(shopifyStoreSchema))),
+  setWebhookSecret: apiContract
+    .route({
+      method: "PUT",
+      operationId: "shopifyStores.setWebhookSecret",
+      path: "/api/shopify/stores/{storeId}/webhook-secret",
+      summary: "Save the secret that signs a store's webhooks",
+    })
+    .input(storeIdInput.extend({ secret: z.string().trim().min(8).max(512) }))
+    .output(dataEnvelope(shopifyStoreSchema)),
 };

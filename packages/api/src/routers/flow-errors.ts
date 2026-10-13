@@ -5,6 +5,7 @@ const FAILURE_RESPONSES: Record<
   FlowServiceFailure,
   { code: string; status: 404 | 409 | 422 }
 > = {
+  ACTIVATION_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   DEFINITION_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   FLOW_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   FLOW_NOT_FOUND: { code: "NOT_FOUND", status: 404 },

@@ -2,6 +2,7 @@ import {
   builtInRegistry,
   createAssetReader,
   createFlowRunJob,
+  createFlowScheduleJob,
 } from "@repo/flows";
 import { createLocalJobProvider, type JobQueueProvider } from "@repo/jobs";
 import { keys } from "@repo/jobs/keys";
@@ -38,4 +39,5 @@ export const registerJobs = (target: JobQueueProvider): void => {
       registry: builtInRegistry,
     })
   );
+  target.register(createFlowScheduleJob(target));
 };
