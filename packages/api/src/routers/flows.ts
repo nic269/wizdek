@@ -245,8 +245,15 @@ export const flowsRouter = {
       "flows",
       "read"
     );
+    const flows = await listFlows(input.organizationId);
     return {
-      data: (await listFlows(input.organizationId)).map(toPublicFlow),
+      data: flows.map((flow) => ({
+        ...toPublicFlow(flow),
+        lastRun: flow.lastRun && {
+          ...flow.lastRun,
+          status: flow.lastRun.status as FlowRunRecord["status"],
+        },
+      })),
     };
   }),
   nodeTypes: os.flows.nodeTypes.handler(async ({ context, input }) => {

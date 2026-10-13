@@ -1,0 +1,17 @@
+/*
+ * The canvas fills its grid cell, so the builder needs a definite height.
+ * Scoped to the builder so nothing here reaches the app shell.
+ */
+.flow-builder {
+  height: calc(100vh - 13rem);
+  min-height: 30rem;
+}
+
+.flow-builder > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.flow-builder aside {
+  height: 100%;
+}

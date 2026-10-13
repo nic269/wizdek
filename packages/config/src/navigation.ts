@@ -5,6 +5,7 @@ export const createDashboardNav = (organizationInvitations: boolean) =>
     { href: "/dashboard", label: "Dashboard" },
     { href: "/stores", label: "Stores" },
     { href: "/graphql", label: "GraphQL" },
+    { href: "/flows", label: "Flows" },
     { href: "/settings", label: "Settings" },
     ...(organizationInvitations
       ? [{ href: "/settings/members", label: "Members" }]

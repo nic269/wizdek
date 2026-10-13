@@ -6,7 +6,7 @@ export const IF_TRUE_OUTPUT = "true";
 export const IF_FALSE_OUTPUT = "false";
 
 export const conditionSchema = z.object({
-  left: z.string().max(500),
+  left: z.string().min(1, "Choose the value to check.").max(500),
   operator: z.enum(CONDITION_OPERATORS),
   right: z.string().max(500).default(""),
   valueType: z.enum(["string", "number"]).default("string"),
@@ -16,7 +16,10 @@ export const logicIfSpec = defineNodeSpec({
   category: "logic",
   configSchema: z.object({
     combinator: z.enum(["all", "any"]).default("all"),
-    conditions: z.array(conditionSchema).min(1).max(20),
+    conditions: z
+      .array(conditionSchema)
+      .min(1, "Add at least one condition.")
+      .max(20),
   }),
   description: "Sends each item down the true or false branch.",
   idempotent: true,

@@ -8,8 +8,8 @@
     "build": "dotenv -e ../../.env -- next build",
     "start": "next start --port ${PORT:-3000}",
     "check-types": "tsc --noEmit",
-    "test": "echo 'no app tests yet'",
-    "test:unit": "echo 'no app unit tests yet'",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
     "test:integration": "echo 'no app integration tests yet'"
   },
   "dependencies": {
@@ -21,9 +21,11 @@
     "@repo/config": "workspace:*",
     "@repo/database": "workspace:*",
     "@repo/design-system": "workspace:*",
+    "@repo/flows": "workspace:*",
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tailwindcss/typography": "^0.5.20",
     "@tanstack/react-query": "^5.101.2",
+    "@xyflow/react": "^12.12.0",
     "graphiql": "^5.4.0",
     "graphql": "^16.14.2",
     "next": "^16.2.10",
@@ -39,6 +41,7 @@
     "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }

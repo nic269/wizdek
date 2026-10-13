@@ -15,6 +15,7 @@ import {
 import { GraphiQL, HISTORY_PLUGIN } from "graphiql";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useActiveOrganization } from "../lib/active-organization";
+import { useAppTheme } from "../lib/use-app-theme";
 import type { Store } from "../stores/store-labels";
 import { createConsoleStorage } from "./console-storage";
 import { type ApiVersion, ConsoleToolbar } from "./console-toolbar";
@@ -34,22 +35,6 @@ query ShopName {
   }
 }
 `;
-
-/** Follows the app's light or dark mode, which is a class on the root element. */
-const useAppTheme = (): "light" | "dark" => {
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  );
-  useEffect(() => {
-    const root = document.documentElement;
-    const observer = new MutationObserver(() =>
-      setIsDark(root.classList.contains("dark"))
-    );
-    observer.observe(root, { attributeFilter: ["class"], attributes: true });
-    return () => observer.disconnect();
-  }, []);
-  return isDark ? "dark" : "light";
-};
 
 function Console({
   organizationId,

@@ -6,8 +6,11 @@ export const shopifyAddTagsSpec = defineNodeSpec({
   concurrency: 4,
   configSchema: z.object({
     /** A template for the resource to tag, such as {{ $json.order.id }}. */
-    resourceId: z.string().min(1).max(500),
-    tags: z.array(z.string().min(1).max(255)).min(1).max(50),
+    resourceId: z.string().min(1, "Choose what to tag.").max(500),
+    tags: z
+      .array(z.string().min(1, "A tag cannot be empty.").max(255))
+      .min(1, "Add at least one tag.")
+      .max(50),
   }),
   description:
     "Adds tags to an order, customer, product or draft order. Tags already present are left as they are.",

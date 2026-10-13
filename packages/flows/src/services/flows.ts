@@ -37,11 +37,34 @@ const flowNotFound = () =>
 export const findFlowById = (flowId: string): Promise<FlowRecord | null> =>
   prisma.flow.findUnique({ where: { id: flowId } });
 
-export const listFlows = (organizationId: string): Promise<FlowRecord[]> =>
-  prisma.flow.findMany({
+export interface FlowListItem extends FlowRecord {
+  lastRun: { createdAt: Date; id: string; status: string } | null;
+}
+
+export const listFlows = async (
+  organizationId: string
+): Promise<FlowListItem[]> => {
+  const flows = await prisma.flow.findMany({
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     where: { organizationId },
   });
+  const lastRuns = await prisma.flowRun.findMany({
+    distinct: ["flowId"],
+    orderBy: [{ flowId: "asc" }, { createdAt: "desc" }],
+    select: { createdAt: true, flowId: true, id: true, status: true },
+    where: { organizationId },
+  });
+  const byFlow = new Map(lastRuns.map((run) => [run.flowId, run]));
+  return flows.map((flow) => {
+    const run = byFlow.get(flow.id);
+    return {
+      ...flow,
+      lastRun: run
+        ? { createdAt: run.createdAt, id: run.id, status: run.status }
+        : null,
+    };
+  });
+};
 
 export const getFlow = async (scope: FlowScope): Promise<FlowWithVersion> => {
   const flow = await prisma.flow.findFirst({

@@ -6,7 +6,7 @@ export const dataParseCsvSpec = defineNodeSpec({
   configSchema: z.object({
     delimiter: z.enum([",", ";", "\t", "|"]).default(","),
     /** A template that resolves to an uploaded file, such as {{ $json.csvFile }}. */
-    file: z.string().min(1).max(500),
+    file: z.string().min(1, "Choose the file to read.").max(500),
     hasHeader: z.boolean().default(true),
     skipEmptyRows: z.boolean().default(true),
     trimValues: z.boolean().default(true),

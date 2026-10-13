@@ -19,5 +19,6 @@ export {
   Shield,
   Store,
   Users,
+  Workflow,
   X,
 } from "lucide-react";

@@ -19,5 +19,6 @@ describe("dashboard navigation", () => {
   it("links the store connections and console surfaces", () => {
     expect(dashboardNav).toContainEqual({ href: "/stores", label: "Stores" });
     expect(dashboardNav).toContainEqual({ href: "/graphql", label: "GraphQL" });
+    expect(dashboardNav).toContainEqual({ href: "/flows", label: "Flows" });
   });
 });

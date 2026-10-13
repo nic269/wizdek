@@ -7,7 +7,7 @@ export const manualInputSchema = z.object({
     .min(1)
     .max(64)
     .regex(/^[A-Za-z_][\w]*$/, "Use a name like csvFile."),
-  label: z.string().min(1).max(120),
+  label: z.string().min(1, "Give the input a label.").max(120),
   type: z.enum(["file", "text", "number"]),
 });
 

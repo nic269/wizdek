@@ -9,6 +9,7 @@ import {
   Shield,
   Store,
   Users,
+  Workflow,
 } from "@repo/design-system";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -17,6 +18,10 @@ import { SignOutButton } from "./dashboard/sign-out-button";
 import { OrganizationSwitcher } from "./lib/active-organization";
 
 const getDashboardNavIcon = (href: string) => {
+  if (href.startsWith("/flows")) {
+    return <Workflow className="h-4 w-4" />;
+  }
+
   if (href.startsWith("/graphql")) {
     return <Braces className="h-4 w-4" />;
   }

@@ -172,7 +172,21 @@ export const flowsContract = {
       summary: "List an organization's flows",
     })
     .input(organizationIdInput)
-    .output(dataEnvelope(z.array(flowSchema))),
+    .output(
+      dataEnvelope(
+        z.array(
+          flowSchema.extend({
+            lastRun: z
+              .object({
+                createdAt: z.date(),
+                id: z.string(),
+                status: flowRunStatusSchema,
+              })
+              .nullable(),
+          })
+        )
+      )
+    ),
   nodeTypes: apiContract
     .route({
       method: "GET",

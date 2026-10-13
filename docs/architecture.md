@@ -180,13 +180,23 @@ Limits: 100 nodes per flow, 100,000 items per run, 1 MB per item, 10 MB per uplo
 
 Run items hold business data from CSV files and stores. They are organization-scoped and readable with `flows:read`. They are kept indefinitely for now; a retention policy is needed before the product is opened beyond internal use.
 
+### Flow builder
+
+The builder at `/flows/[flowId]` edits the same definition the engine runs. `flow-definition-mapping.ts` translates between a definition and the canvas nodes and edges of `@xyflow/react`; applying it in both directions changes nothing, so "unsaved" simply means the canvas no longer matches the saved definition. `use-flow-editor.ts` holds that state and the save, which sends `baseVersion` and opens a dialog on a 409 while keeping the local edits.
+
+Validation in the browser calls the same `validateFlowDefinition` the server uses, with the built-in specs from `@repo/flows/definition`, so issues appear as the flow is edited. The server stays the authority on save and run. `connection-rules.ts` refuses, while a connection is being made, anything that would form a loop, connect a step to itself or lead into a trigger.
+
+Each built-in node has a form under `config-forms/`. Any other node type gets `generic-form.tsx`, which builds a form from the JSON Schema that `flows.nodeTypes` returns: text, number, yes/no, choice and text-list fields get a control, and anything else is edited as JSON. A new node type is therefore configurable without UI work.
+
+The page shell reads the caller's `flows:manage` permission on the server and passes it down. Without it the canvas is read-only: no palette, no save, inputs disabled. That is a convenience; `flows.saveVersion` enforces the permission.
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
 
 | Location | Purpose |
 |----------|---------|
-| `apps/app` | Flow builder canvas, run trace |
+| `apps/app` | Run dialog and run trace |
 | `packages/flows` | Webhook and schedule triggers, more node types |
 
 ## Local development

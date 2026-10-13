@@ -7,7 +7,7 @@ export const shopifyFindOrderSpec = defineNodeSpec({
   configSchema: z.object({
     by: z.enum(["name", "id"]).default("name"),
     /** A template for the order name (#1001) or id. */
-    value: z.string().min(1).max(500),
+    value: z.string().min(1, "Say which order to look up.").max(500),
   }),
   description:
     "Looks an order up in the store and adds it to the item as `order`.",
