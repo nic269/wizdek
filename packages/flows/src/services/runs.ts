@@ -1,0 +1,287 @@
+import { type Prisma, prisma } from "@repo/database";
+import type { JobQueueProvider } from "@repo/jobs";
+import type { z } from "zod";
+import type { manualInputSchema } from "../definition/specs/trigger-manual";
+import { enqueueFlowRun } from "../engine/run-job";
+import { builtInRegistry } from "../nodes";
+import type { NodeRegistry } from "../registry/registry";
+import { FlowServiceError } from "./errors";
+import {
+  type FlowScope,
+  getFlow,
+  readDefinition,
+  validateDefinition,
+} from "./flows";
+
+export type FlowRunRecord = Prisma.FlowRunGetPayload<object>;
+export type FlowRunStepRecord = Prisma.FlowRunStepGetPayload<object>;
+export type FlowRunItemRecord = Prisma.FlowRunItemGetPayload<object>;
+
+type ManualInput = z.infer<typeof manualInputSchema>;
+
+export interface RunScope {
+  organizationId: string;
+  runId: string;
+}
+
+const MANUAL_TRIGGER = "trigger.manual";
+const TERMINAL_STATUSES = new Set([
+  "SUCCEEDED",
+  "PARTIALLY_FAILED",
+  "FAILED",
+  "CANCELED",
+]);
+
+const runNotFound = () =>
+  new FlowServiceError("RUN_NOT_FOUND", "Run not found.");
+
+const invalidInput = (message: string) =>
+  new FlowServiceError("INPUT_INVALID", message);
+
+/** Unscoped lookup, for deciding which organization a run id belongs to. */
+export const findRunById = (runId: string): Promise<FlowRunRecord | null> =>
+  prisma.flowRun.findUnique({ where: { id: runId } });
+
+const readInput = async (
+  input: ManualInput,
+  value: unknown,
+  organizationId: string
+): Promise<string | number> => {
+  if (input.type === "number") {
+    const number = typeof value === "number" ? value : Number(value);
+    if (value === "" || !Number.isFinite(number)) {
+      throw invalidInput(`"${input.label}" must be a number.`);
+    }
+    return number;
+  }
+  if (typeof value !== "string" || !value.trim()) {
+    throw invalidInput(`"${input.label}" is required.`);
+  }
+  if (input.type === "file") {
+    // The value is the id of an uploaded file, which must belong to the
+    // same organization as the flow.
+    const asset = await prisma.fileAsset.findFirst({
+      select: { id: true },
+      where: { deletedAt: null, id: value, organizationId },
+    });
+    if (!asset) {
+      throw invalidInput(`The file for "${input.label}" could not be found.`);
+    }
+  }
+  return value;
+};
+
+/** Checks the values a run is started with against the trigger's inputs. */
+const readManualInputs = async (
+  declared: ManualInput[],
+  provided: Record<string, unknown>,
+  organizationId: string
+) => {
+  const values: Record<string, string | number> = {};
+  for (const input of declared) {
+    values[input.key] = await readInput(
+      input,
+      provided[input.key],
+      organizationId
+    );
+  }
+  return values;
+};
+
+/**
+ * Starts a run of the flow's current version against one store. The store and
+ * any uploaded file must belong to the flow's organization, and the flow must
+ * pass validation.
+ */
+export const startFlowRun = async (
+  scope: FlowScope,
+  input: {
+    actorId: string;
+    inputs?: Record<string, unknown> | undefined;
+    storeId: string;
+  },
+  dependencies: { jobs: JobQueueProvider; registry?: NodeRegistry }
+): Promise<FlowRunRecord> => {
+  const registry = dependencies.registry ?? builtInRegistry;
+  const { flow, version } = await getFlow(scope);
+  if (!version) {
+    throw new FlowServiceError(
+      "FLOW_INVALID",
+      "The flow has no saved version."
+    );
+  }
+  if (flow.status === "ARCHIVED") {
+    throw new FlowServiceError(
+      "FLOW_INVALID",
+      "An archived flow cannot be run."
+    );
+  }
+  const definition = readDefinition(version);
+  const validation = validateDefinition(definition, registry);
+  if (!validation.valid) {
+    throw new FlowServiceError(
+      "FLOW_INVALID",
+      "The flow has problems that must be fixed before it can run.",
+      validation.issues
+    );
+  }
+  const store = await prisma.shopifyStore.findFirst({
+    select: { id: true, status: true },
+    where: { id: input.storeId, organizationId: scope.organizationId },
+  });
+  if (!store) {
+    throw new FlowServiceError("STORE_NOT_AVAILABLE", "Store not found.");
+  }
+  if (store.status !== "CONNECTED") {
+    throw new FlowServiceError(
+      "STORE_NOT_AVAILABLE",
+      "The store is not connected. Reconnect it before running a flow."
+    );
+  }
+
+  const trigger = definition.nodes.find(
+    (node) => registry.get(node.type)?.category === "trigger"
+  );
+  if (trigger?.type !== MANUAL_TRIGGER) {
+    throw new FlowServiceError(
+      "FLOW_INVALID",
+      "This flow does not start manually."
+    );
+  }
+  const declared = (
+    registry.get(MANUAL_TRIGGER)?.configSchema.parse(trigger.config) as {
+      inputs: ManualInput[];
+    }
+  ).inputs;
+  const triggerPayload = await readManualInputs(
+    declared,
+    input.inputs ?? {},
+    scope.organizationId
+  );
+
+  const run = await prisma.flowRun.create({
+    data: {
+      flowId: flow.id,
+      flowVersionId: version.id,
+      organizationId: scope.organizationId,
+      startedById: input.actorId,
+      storeId: store.id,
+      triggerPayload,
+      triggerType: "manual",
+    },
+  });
+  await enqueueFlowRun(dependencies.jobs, run);
+  return run;
+};
+
+/**
+ * Asks a run to stop. The executor checks between items, so the item being
+ * processed finishes and the rest stay pending.
+ */
+export const cancelFlowRun = async (
+  scope: RunScope
+): Promise<FlowRunRecord> => {
+  const run = await prisma.flowRun.findFirst({
+    where: { id: scope.runId, organizationId: scope.organizationId },
+  });
+  if (!run) {
+    throw runNotFound();
+  }
+  if (TERMINAL_STATUSES.has(run.status)) {
+    throw new FlowServiceError(
+      "RUN_NOT_CANCELABLE",
+      "The run has already finished."
+    );
+  }
+  return prisma.flowRun.update({
+    data: { cancelRequestedAt: run.cancelRequestedAt ?? new Date() },
+    where: { id: run.id },
+  });
+};
+
+export const listFlowRuns = async (
+  scope: FlowScope,
+  page: { cursor?: string | undefined; limit: number }
+): Promise<{ items: FlowRunRecord[]; nextCursor: string | null }> => {
+  const rows = await prisma.flowRun.findMany({
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: page.limit + 1,
+    where: { flowId: scope.flowId, organizationId: scope.organizationId },
+    ...(page.cursor ? { cursor: { id: page.cursor }, skip: 1 } : {}),
+  });
+  const items = rows.slice(0, page.limit);
+  return {
+    items,
+    nextCursor: rows.length > page.limit ? (items.at(-1)?.id ?? null) : null,
+  };
+};
+
+export interface RunNodeSummary {
+  counts: Record<string, number>;
+  step: FlowRunStepRecord | null;
+}
+
+/** A run with its steps and, per node, how many items are in each status. */
+export const getFlowRun = async (
+  scope: RunScope
+): Promise<{ nodes: Record<string, RunNodeSummary>; run: FlowRunRecord }> => {
+  const run = await prisma.flowRun.findFirst({
+    where: { id: scope.runId, organizationId: scope.organizationId },
+  });
+  if (!run) {
+    throw runNotFound();
+  }
+  const [steps, groups] = await Promise.all([
+    prisma.flowRunStep.findMany({ where: { runId: run.id } }),
+    prisma.flowRunItem.groupBy({
+      _count: { _all: true },
+      by: ["nodeId", "status"],
+      where: { runId: run.id },
+    }),
+  ]);
+  const nodes: Record<string, RunNodeSummary> = {};
+  const summaryOf = (nodeId: string) => {
+    nodes[nodeId] ??= { counts: {}, step: null };
+    return nodes[nodeId];
+  };
+  for (const step of steps) {
+    summaryOf(step.nodeId).step = step;
+  }
+  for (const group of groups) {
+    summaryOf(group.nodeId).counts[group.status] = group._count._all;
+  }
+  return { nodes, run };
+};
+
+export const listFlowRunItems = async (
+  scope: RunScope,
+  filter: {
+    cursor?: string | undefined;
+    limit: number;
+    nodeId?: string | undefined;
+    status?: FlowRunItemRecord["status"] | undefined;
+  }
+): Promise<{ items: FlowRunItemRecord[]; nextCursor: string | null }> => {
+  const run = await prisma.flowRun.findFirst({
+    select: { id: true },
+    where: { id: scope.runId, organizationId: scope.organizationId },
+  });
+  if (!run) {
+    throw runNotFound();
+  }
+  const rows = await prisma.flowRunItem.findMany({
+    orderBy: { ordinal: "asc" },
+    take: filter.limit + 1,
+    where: {
+      runId: run.id,
+      ...(filter.nodeId ? { nodeId: filter.nodeId } : {}),
+      ...(filter.status ? { status: filter.status } : {}),
+    },
+    ...(filter.cursor ? { cursor: { id: filter.cursor }, skip: 1 } : {}),
+  });
+  const items = rows.slice(0, filter.limit);
+  return {
+    items,
+    nextCursor: rows.length > filter.limit ? (items.at(-1)?.id ?? null) : null,
+  };
+};

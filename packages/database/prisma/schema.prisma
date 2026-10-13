@@ -130,6 +130,8 @@ model Organization {
   shopifyApps         ShopifyApp[]
   shopifyStores       ShopifyStore[]
   savedGraphqlQueries SavedGraphqlQuery[]
+  flows               Flow[]
+  flowRuns            FlowRun[]
 
   @@map("organization")
 }
@@ -394,6 +396,7 @@ model ShopifyStore {
   app          ShopifyApp?         @relation(fields: [appId], references: [id], onDelete: Restrict)
   tokens       ShopifyToken[]
   oauthStates  ShopifyOAuthState[]
+  flowRuns     FlowRun[]
 
   @@unique([organizationId, shopDomain])
   @@unique([id, organizationId])
@@ -448,4 +451,139 @@ model SavedGraphqlQuery {
 
   @@unique([organizationId, name])
   @@map("saved_graphql_query")
+}
+
+enum FlowStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum FlowRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  PARTIALLY_FAILED
+  FAILED
+  CANCELED
+}
+
+enum FlowStepStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+}
+
+enum FlowItemStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCEEDED
+  FAILED
+  UNKNOWN
+}
+
+model Flow {
+  id               String     @id @default(cuid())
+  organizationId   String
+  name             String
+  description      String?
+  status           FlowStatus @default(DRAFT)
+  currentVersionId String?
+  createdById      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions     FlowVersion[]
+  runs         FlowRun[]
+
+  @@index([organizationId, updatedAt])
+  @@map("flow")
+}
+
+model FlowVersion {
+  id          String   @id @default(cuid())
+  flowId      String
+  version     Int
+  definition  Json
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  flow Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  runs FlowRun[]
+
+  @@unique([flowId, version])
+  @@map("flow_version")
+}
+
+model FlowRun {
+  id                String        @id @default(cuid())
+  organizationId    String
+  flowId            String
+  flowVersionId     String
+  storeId           String
+  status            FlowRunStatus @default(QUEUED)
+  triggerType       String
+  triggerPayload    Json?
+  itemCount         Int           @default(0)
+  startedById       String?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  cancelRequestedAt DateTime?
+  error             Json?
+  createdAt         DateTime      @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  flow         Flow          @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  flowVersion  FlowVersion   @relation(fields: [flowVersionId], references: [id], onDelete: Cascade)
+  store        ShopifyStore  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  steps        FlowRunStep[]
+  items        FlowRunItem[]
+
+  @@index([flowId, createdAt])
+  @@index([organizationId, createdAt])
+  @@map("flow_run")
+}
+
+model FlowRunStep {
+  id          String         @id @default(cuid())
+  runId       String
+  nodeId      String
+  nodeType    String
+  status      FlowStepStatus @default(PENDING)
+  state       Json?
+  error       Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  run FlowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, nodeId])
+  @@map("flow_run_step")
+}
+
+model FlowRunItem {
+  id           String         @id @default(cuid())
+  // Insertion order, so a node's items are processed in the order they arrived.
+  ordinal      Int            @default(autoincrement())
+  runId        String
+  nodeId       String
+  itemKey      String
+  status       FlowItemStatus @default(PENDING)
+  input        Json
+  output       Json?
+  outputHandle String?
+  error        Json?
+  attempts     Int            @default(0)
+  durationMs   Int?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  run FlowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, nodeId, itemKey])
+  @@index([runId, nodeId, status, ordinal])
+  @@map("flow_run_item")
 }

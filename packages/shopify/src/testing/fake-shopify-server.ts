@@ -52,6 +52,8 @@ export interface FakeShopifyServer {
   rejectNextTokenRequests(count?: number): void;
   revokeToken(token: string): void;
   seedOrder(order: FakeOrder): void;
+  /** Answers every `interval`-th Admin request with THROTTLED; 0 turns it off. */
+  setThrottleEvery(interval: number): void;
   /** Delays every token response, to widen race windows in tests. */
   setTokenDelay(milliseconds: number): void;
   /** The next `count` Admin requests answer with a THROTTLED error. */
@@ -159,6 +161,8 @@ export const startFakeShopifyServer = async (
   let unauthorized = 0;
   let rejectedTokenRequests = 0;
   let tokenDelay = 0;
+  let throttleEvery = 0;
+  let adminRequestCount = 0;
 
   const rootValue = {
     currentAppInstallation: () => ({
@@ -313,6 +317,10 @@ export const startFakeShopifyServer = async (
     const cost = costDebug
       ? { ...COST, fields: [{ path: ["shop"], requestedTotalCost: 1 }] }
       : COST;
+    adminRequestCount += 1;
+    if (throttleEvery > 0 && adminRequestCount % throttleEvery === 0) {
+      throttled += 1;
+    }
     if (throttled > 0) {
       throttled -= 1;
       sendJson(response, 200, {
@@ -388,6 +396,9 @@ export const startFakeShopifyServer = async (
     },
     seedOrder: (order) => {
       orders.set(order.id, { ...order, tags: [...order.tags] });
+    },
+    setThrottleEvery: (interval) => {
+      throttleEvery = interval;
     },
     setTokenDelay: (milliseconds) => {
       tokenDelay = milliseconds;
