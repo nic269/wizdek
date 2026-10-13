@@ -1,0 +1,56 @@
+{
+  "name": "@repo/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./callback-url": "./src/callback-url.ts",
+    "./client": "./src/client.ts",
+    "./middleware": "./src/middleware.ts",
+    "./permissions": "./src/permissions.ts",
+    "./access-control": "./src/access-control.ts",
+    "./invitations": "./src/invitations.ts",
+    "./session": "./src/session.ts",
+    "./organizations": "./src/organizations.ts",
+    "./keys": "./src/keys.ts"
+  },
+  "scripts": {
+    "build": "echo '@repo/auth is source-only'",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration/postgres.integration.test.ts"
+  },
+  "dependencies": {
+    "@repo/access-control": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/database": "workspace:*",
+    "@repo/mail": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "better-auth": "1.6.23",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "@types/react": "^19.2.17",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "peerDependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  }
+}

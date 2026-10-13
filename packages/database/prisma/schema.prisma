@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+enum JobRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  emailVerified Boolean    @default(false)
+  image         String?
+  status        UserStatus @default(ACTIVE)
+  isSuperAdmin  Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  memberships     Membership[]
+  auditLogs       AuditLog[]   @relation("AuditActor")
+  invitationsSent Invitation[] @relation("InvitationInviter")
+  files           FileAsset[]  @relation("FileOwner")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships  Membership[]
+  roles        Role[]
+  invitations  Invitation[]
+  auditLogs    AuditLog[]
+  files        FileAsset[]
+  integrations IntegrationConnection[]
+  jobs         JobRun[]
+
+  @@map("organization")
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  roleId         String?
+  status         MembershipStatus @default(ACTIVE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@map("membership")
+}
+
+model Role {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  memberships  Membership[]
+  invitations  Invitation[]
+
+  @@unique([organizationId, name])
+  @@map("role")
+}
+
+model RolePermission {
+  id        String   @id @default(cuid())
+  roleId    String
+  module    String
+  action    String
+  createdAt DateTime @default(now())
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module, action])
+  @@map("role_permission")
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  email          String
+  roleId         String?
+  tokenHash      String           @unique
+  status         InvitationStatus @default(PENDING)
+  invitedById    String?
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, email])
+  @@index([status, expiresAt])
+  @@map("invitation")
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String?
+  actorId        String?
+  action         String
+  targetType     String?
+  targetId       String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  actor        User?         @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("audit_log")
+}
+
+model FileAsset {
+  id             String         @id @default(cuid())
+  organizationId String?
+  ownerId        String?
+  provider       String
+  bucket         String?
+  objectKey      String
+  fileName       String
+  contentType    String
+  sizeBytes      BigInt
+  visibility     FileVisibility @default(PRIVATE)
+  checksum       String?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  owner        User?         @relation("FileOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@map("file_asset")
+}
+
+model WebhookEvent {
+  id           String             @id @default(cuid())
+  provider     String
+  eventType    String
+  externalId   String?
+  status       WebhookEventStatus @default(RECEIVED)
+  payload      Json
+  receivedAt   DateTime           @default(now())
+  processedAt  DateTime?
+  errorMessage String?
+
+  @@unique([provider, externalId])
+  @@index([provider, eventType, receivedAt])
+  @@index([status, receivedAt])
+  @@map("webhook_event")
+}
+
+model JobRun {
+  id             String       @id @default(cuid())
+  organizationId String?
+  scopeKey       String       @default("global")
+  name           String
+  status         JobRunStatus @default(QUEUED)
+  idempotencyKey String?
+  payload        Json?
+  progress       Int          @default(0)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  logs         JobLog[]
+
+  @@unique([scopeKey, name, idempotencyKey])
+  @@index([organizationId, createdAt])
+  @@index([status, createdAt])
+  @@map("job_run")
+}
+
+model JobLog {
+  id        String   @id @default(cuid())
+  runId     String
+  level     String
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  run JobRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, createdAt])
+  @@map("job_log")
+}
+
+model IntegrationConnection {
+  id             String   @id @default(cuid())
+  organizationId String?
+  provider       String
+  externalId     String?
+  displayName    String
+  status         String   @default("DISABLED")
+  config         Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider, externalId])
+  @@index([organizationId, provider])
+  @@map("integration_connection")
+}
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  scopeId   String   @default("global")
+  key       String
+  enabled   Boolean  @default(false)
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scopeId, key])
+  @@map("feature_flag")
+}

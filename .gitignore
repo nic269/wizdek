@@ -1,0 +1,35 @@
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+dist/
+storybook-static/
+.react-email/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+apps/*/next-env.d.ts
+
+# Local environment and data
+.env
+.env.*
+!.env.example
+!.env.test.example
+.data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.log
+*.pid
+
+# Agent tooling runtime output
+.claude/hooks/.logs/
+
+# OS and editor files
+.DS_Store

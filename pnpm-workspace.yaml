@@ -1,0 +1,34 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+onlyBuiltDependencies:
+  - "@prisma/engines"
+  - "@prisma/client"
+  - "core-js-pure"
+  - "esbuild"
+  - "prisma"
+  - "sharp"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  core-js-pure: true
+  esbuild: true
+  prisma: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@orpc/client@1.14.7'
+  - '@orpc/contract@1.14.7'
+  - '@orpc/interop@1.14.7'
+  - '@orpc/json-schema@1.14.7'
+  - '@orpc/openapi-client@1.14.7'
+  - '@orpc/openapi@1.14.7'
+  - '@orpc/server@1.14.7'
+  - '@orpc/shared@1.14.7'
+  - '@orpc/standard-server-aws-lambda@1.14.7'
+  - '@orpc/standard-server-fastify@1.14.7'
+  - '@orpc/standard-server-fetch@1.14.7'
+  - '@orpc/standard-server-node@1.14.7'
+  - '@orpc/standard-server-peer@1.14.7'
+  - '@orpc/standard-server@1.14.7'
+  - '@orpc/zod@1.14.7'

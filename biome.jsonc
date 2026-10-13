@@ -1,0 +1,85 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next"
+  ],
+  "files": {
+    // Agent tooling and plan records are vendored or prose, not product source.
+    "includes": ["!.claude", "!.agentkit", "!plans"]
+  },
+  "linter": {
+    "rules": {
+      "performance": {
+        "noAwaitInLoops": "off",
+        "noBarrelFile": "off",
+        "noJsxPropsBind": "off"
+      },
+      "style": {
+        "useConsistentMethodSignatures": "off",
+        "useErrorCause": "off"
+      },
+      "suspicious": {
+        "noUnnecessaryConditions": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.tweakcn.css"],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["packages/design-system/src/components/ui/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": "off",
+            "noNoninteractiveElementInteractions": "off",
+            "noRedundantRoles": "off",
+            "useAriaPropsForRole": "off",
+            "useFocusableInteractive": "off",
+            "useKeyWithClickEvents": "off",
+            "useSemanticElements": "off"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          },
+          "correctness": {
+            "noNestedComponentDefinitions": "off",
+            "useExhaustiveDependencies": "off"
+          },
+          "performance": {
+            "noNamespaceImport": "off"
+          },
+          "security": {
+            "noDangerouslySetInnerHtml": "off"
+          },
+          "style": {
+            "noExportedImports": "off",
+            "noNestedTernary": "off",
+            "useConsistentTypeDefinitions": "off"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "off",
+            "noDocumentCookie": "off",
+            "noDoubleEquals": "off",
+            "noDuplicateJsxProps": "off",
+            "noEqualsToNull": "off",
+            "noLeakedRender": "off",
+            "noShadow": "off"
+          }
+        }
+      }
+    }
+  ]
+}

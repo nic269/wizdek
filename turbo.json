@@ -1,0 +1,173 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": [".env.example", ".env.test.example"],
+  "globalEnv": ["NODE_ENV", "SKIP_ENV_VALIDATION"],
+  "envMode": "strict",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "env": [
+        "API_INTERNAL_URL",
+        "APP_INTERNAL_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CMS_TOKEN",
+        "DATABASE_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "LOCAL_STORAGE_DIR",
+        "MAIL_OUTBOX_DIR",
+        "MAIL_PROVIDER",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_DOCS_URL",
+        "NEXT_PUBLIC_POSTHOG_KEY",
+        "NEXT_PUBLIC_WEB_URL",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "S3_ACCESS_KEY_ID",
+        "S3_BUCKET",
+        "S3_ENDPOINT",
+        "S3_FORCE_PATH_STYLE",
+        "S3_REGION",
+        "S3_SECRET_ACCESS_KEY",
+        "SENTRY_DSN",
+        "SMTP_URL",
+        "SMTP_FROM_EMAIL",
+        "STORAGE_PROVIDER",
+        "STRIPE_PRO_PRICE_ID",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "!.next/dev/**",
+        "!.next/diagnostics/**",
+        "!.next/turbopack/**",
+        "!.next/trace",
+        "!.next/trace-build",
+        "dist/**",
+        "storybook-static/**",
+        ".react-email/**"
+      ]
+    },
+    "@repo/api-app#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "env": [
+        "API_INTERNAL_URL",
+        "APP_INTERNAL_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CMS_TOKEN",
+        "DATABASE_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "LOCAL_STORAGE_DIR",
+        "MAIL_OUTBOX_DIR",
+        "MAIL_PROVIDER",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_DOCS_URL",
+        "NEXT_PUBLIC_POSTHOG_KEY",
+        "NEXT_PUBLIC_WEB_URL",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "S3_ACCESS_KEY_ID",
+        "S3_BUCKET",
+        "S3_ENDPOINT",
+        "S3_FORCE_PATH_STYLE",
+        "S3_REGION",
+        "S3_SECRET_ACCESS_KEY",
+        "SENTRY_DSN",
+        "SMTP_URL",
+        "SMTP_FROM_EMAIL",
+        "STORAGE_PROVIDER",
+        "STRIPE_PRO_PRICE_ID",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ]
+    },
+    "test:unit": {
+      "dependsOn": ["^test:unit"],
+      "env": ["BETTER_AUTH_SECRET", "DATABASE_URL"]
+    },
+    "test:integration": {
+      "dependsOn": ["^test:integration"],
+      "env": [
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "DATABASE_URL",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_DOCS_URL",
+        "NEXT_PUBLIC_WEB_URL"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "env": [
+        "API_INTERNAL_URL",
+        "APP_INTERNAL_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CMS_TOKEN",
+        "DATABASE_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "LOCAL_STORAGE_DIR",
+        "MAIL_OUTBOX_DIR",
+        "MAIL_PROVIDER",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_DOCS_URL",
+        "NEXT_PUBLIC_POSTHOG_KEY",
+        "NEXT_PUBLIC_WEB_URL",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+        "S3_ACCESS_KEY_ID",
+        "S3_BUCKET",
+        "S3_ENDPOINT",
+        "S3_FORCE_PATH_STYLE",
+        "S3_REGION",
+        "S3_SECRET_ACCESS_KEY",
+        "SENTRY_DSN",
+        "SMTP_URL",
+        "SMTP_FROM_EMAIL",
+        "STORAGE_PROVIDER",
+        "STRIPE_PRO_PRICE_ID",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET"
+      ],
+      "persistent": true
+    },
+    "generate": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:push": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:dev": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:migrate:deploy": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    },
+    "db:seed": {
+      "cache": false,
+      "env": ["DATABASE_URL"]
+    }
+  }
+}

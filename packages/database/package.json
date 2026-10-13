@@ -1,0 +1,41 @@
+{
+  "name": "@repo/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./keys": "./src/keys.ts",
+    "./transaction-conflicts": "./src/transaction-conflicts.ts"
+  },
+  "scripts": {
+    "build": "dotenv -e ../../.env -- prisma generate",
+    "check-types": "tsc --noEmit",
+    "generate": "dotenv -e ../../.env -- prisma generate",
+    "db:push": "dotenv -e ../../.env -- prisma db push",
+    "db:migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "db:migrate:status": "dotenv -e ../../.env -- prisma migrate status",
+    "db:seed": "dotenv -e ../../.env -- tsx src/seed.ts",
+    "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "echo 'database integration tests require a test database'"
+  },
+  "dependencies": {
+    "@repo/access-control": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@t3-oss/env-core": "^0.13.11",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "prisma": "^7.8.0",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

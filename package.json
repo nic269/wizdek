@@ -1,0 +1,58 @@
+{
+  "name": "shopify-toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Anh Nguyen",
+  "license": "MIT",
+  "description": "Shopify Toolkit application monorepo.",
+  "type": "module",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11.23.0"
+  },
+  "prisma": {
+    "schema": "packages/database/prisma/schema.prisma",
+    "seed": "tsx packages/database/src/seed.ts"
+  },
+  "scripts": {
+    "build": "dotenv -e .env -- turbo run build",
+    "dev": "node scripts/check-dev-migrations.mjs && dotenv -e .env -- turbo run dev",
+    "check": "ultracite fix",
+    "check:ci": "ultracite check",
+    "check-types": "turbo run check-types",
+    "test": "dotenv -e .env -- turbo run test",
+    "test:unit": "dotenv -e .env -- turbo run test:unit",
+    "test:integration": "dotenv -e .env -- turbo run test:integration",
+    "test:e2e": "dotenv -e .env -- playwright test",
+    "test:e2e:db": "node scripts/e2e-with-db.mjs",
+    "docker:validate": "node scripts/docker/validate-production-runtimes.mjs",
+    "release:check": "pnpm check:ci && pnpm check-types && pnpm test && pnpm boundaries && pnpm build",
+    "db:generate": "pnpm --filter @repo/database generate",
+    "db:push": "pnpm --filter @repo/database db:push",
+    "db:migrate:dev": "pnpm --filter @repo/database db:migrate:dev",
+    "db:migrate:status": "pnpm --filter @repo/database db:migrate:status",
+    "db:migrate:deploy": "pnpm --filter @repo/database db:migrate:deploy",
+    "db:seed": "pnpm --filter @repo/database db:seed",
+    "db:studio": "pnpm --filter @repo/database db:studio",
+    "boundaries": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-boundaries.ts",
+    "clean": "pnpm clean:build",
+    "clean:build": "pnpm -r exec rm -rf dist .next storybook-static && pnpm exec rm -rf .turbo test-results playwright-report",
+    "clean:deps": "pnpm -r exec rm -rf node_modules && pnpm exec rm -rf node_modules",
+    "upgrade:deps": "pnpm up --latest -r && pnpm up --latest",
+    "ui:gen": "pnpm --filter @repo/design-system gen-components",
+    "postinstall": "node scripts/postinstall.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.2",
+    "@playwright/test": "^1.61.1",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "dotenv-cli": "^11.0.0",
+    "tsx": "^4.23.0",
+    "turbo": "^2.10.3",
+    "typescript": "^6.0.3",
+    "ultracite": "7.9.0",
+    "vitest": "^4.1.9"
+  }
+}

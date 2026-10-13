@@ -1,0 +1,26 @@
+{
+  "name": "@repo/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./app": "./src/app.ts",
+    "./features": "./src/features.ts",
+    "./navigation": "./src/navigation.ts",
+    "./routes": "./src/routes.ts",
+    "./plans": "./src/plans.ts",
+    "./templates": "./src/templates.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "echo 'no integration tests for @repo/config'"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

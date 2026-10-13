@@ -1,0 +1,25 @@
+{
+  "name": "@repo/access-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog.ts",
+    "./guards": "./src/guards.ts",
+    "./roles": "./src/roles.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "build": "echo '@repo/access-control is source-only'",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "echo 'access-control integration lives in @repo/auth'"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@repo/helpers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./array": "./src/array/index.ts",
+    "./async": "./src/async/index.ts",
+    "./date": "./src/date/index.ts",
+    "./number": "./src/number/index.ts",
+    "./object": "./src/object/index.ts",
+    "./string": "./src/string/index.ts",
+    "./type": "./src/type/index.ts",
+    "./validation": "./src/validation/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:integration": "echo 'no integration tests for @repo/helpers'"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9",
+    "zod": "^4.4.3"
+  }
+}
