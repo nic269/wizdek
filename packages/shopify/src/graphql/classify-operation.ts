@@ -10,7 +10,8 @@ export type GraphqlDocumentProblem =
   | "PARSE_ERROR"
   | "NO_OPERATION"
   | "AMBIGUOUS_OPERATION"
-  | "UNKNOWN_OPERATION";
+  | "UNKNOWN_OPERATION"
+  | "UNSUPPORTED_OPERATION";
 
 export class GraphqlDocumentError extends Error {
   readonly problem: GraphqlDocumentProblem;

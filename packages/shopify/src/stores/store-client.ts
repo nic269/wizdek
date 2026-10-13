@@ -12,9 +12,15 @@ import {
   type StoreScope,
 } from "./store-repository";
 
+/** `apiVersion` overrides the version stored on the store for one request. */
 export type StoreGraphqlRequest = Pick<
   AdminGraphqlRequest,
-  "costDebug" | "operationName" | "query" | "timeoutMs" | "variables"
+  | "apiVersion"
+  | "costDebug"
+  | "operationName"
+  | "query"
+  | "timeoutMs"
+  | "variables"
 >;
 
 export interface StoreClientOptions {
@@ -49,7 +55,7 @@ export const createStoreClient = async (
     const result = await executeAdminGraphql({
       ...graphqlRequest,
       accessToken,
-      apiVersion: store.apiVersion,
+      apiVersion: graphqlRequest.apiVersion ?? store.apiVersion,
       fetchImpl: options.fetchImpl,
       shopDomain: store.shopDomain,
     });

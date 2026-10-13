@@ -337,6 +337,7 @@ const listOrganizationAuditLogs = os.organizations.auditLogs.handler(
     );
     const page = await requireValidPage(
       listAuditLogs({
+        ...(input.actionPrefix ? { actionPrefix: input.actionPrefix } : {}),
         ...(input.cursor ? { cursor: input.cursor } : {}),
         limit: input.limit,
         organizationId: input.organizationId,

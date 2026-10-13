@@ -181,6 +181,16 @@ export const startFakeShopifyServer = async (
         pageInfo: { endCursor: nodes.at(-1)?.id ?? null, hasNextPage: false },
       };
     },
+    publicApiVersions: () => [
+      { displayName: "2026-04", handle: "2026-04", supported: true },
+      { displayName: "2026-07 (Latest)", handle: "2026-07", supported: true },
+      {
+        displayName: "2026-10 (Release candidate)",
+        handle: "2026-10",
+        supported: false,
+      },
+      { displayName: "unstable", handle: "unstable", supported: false },
+    ],
     shop: () => ({ id: "gid://shopify/Shop/1", ...shop }),
     tagsAdd: ({ id, tags }: { id: string; tags: string[] }) => {
       const order = orders.get(id);

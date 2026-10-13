@@ -13,6 +13,7 @@
     "test:integration": "echo 'no app integration tests yet'"
   },
   "dependencies": {
+    "@graphiql/plugin-explorer": "^5.1.5",
     "@repo/access-control": "workspace:*",
     "@repo/api": "workspace:*",
     "@repo/auth": "workspace:*",
@@ -22,6 +23,8 @@
     "@t3-oss/env-nextjs": "^0.13.11",
     "@tailwindcss/typography": "^0.5.20",
     "@tanstack/react-query": "^5.101.2",
+    "graphiql": "^5.4.0",
+    "graphql": "^16.14.2",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

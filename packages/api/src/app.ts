@@ -7,6 +7,7 @@ import { requestContext } from "./context";
 import { ApiError, type ApiErrorResponse } from "./errors";
 import { requireAuthEndpointEnabled } from "./feature-guards";
 import { getOpenApiDocument } from "./openapi";
+import { requireAppOrigin } from "./origin-check";
 import { router } from "./routers";
 import {
   handleShopifyOAuthCallback,
@@ -125,6 +126,7 @@ export const createApiApp = () => {
     requireAuthEndpointEnabled(context.req.path);
     return auth.handler(context.req.raw);
   });
+  app.use("/api/shopify/*", requireAppOrigin);
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
   app.use("*", async (context, next) => {
     const { matched, response } = await orpcHandler.handle(context.req.raw, {

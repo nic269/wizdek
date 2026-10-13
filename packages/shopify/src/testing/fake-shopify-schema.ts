@@ -35,7 +35,10 @@ export const fakeShopifySchema = buildSchema(`
   type UserError { field: [String!] message: String! }
   type TagsAddPayload { node: Node userErrors: [UserError!]! }
 
+  type ApiVersion { handle: String! displayName: String! supported: Boolean! }
+
   type Query {
+    publicApiVersions: [ApiVersion!]!
     shop: Shop!
     currentAppInstallation: AppInstallation!
     order(id: ID!): Order

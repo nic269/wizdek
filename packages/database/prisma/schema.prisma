@@ -120,15 +120,16 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships   Membership[]
-  roles         Role[]
-  invitations   Invitation[]
-  auditLogs     AuditLog[]
-  files         FileAsset[]
-  integrations  IntegrationConnection[]
-  jobs          JobRun[]
-  shopifyApps   ShopifyApp[]
-  shopifyStores ShopifyStore[]
+  memberships         Membership[]
+  roles               Role[]
+  invitations         Invitation[]
+  auditLogs           AuditLog[]
+  files               FileAsset[]
+  integrations        IntegrationConnection[]
+  jobs                JobRun[]
+  shopifyApps         ShopifyApp[]
+  shopifyStores       ShopifyStore[]
+  savedGraphqlQueries SavedGraphqlQuery[]
 
   @@map("organization")
 }
@@ -431,4 +432,20 @@ model ShopifyOAuthState {
 
   @@index([storeId])
   @@map("shopify_oauth_state")
+}
+
+model SavedGraphqlQuery {
+  id             String   @id @default(cuid())
+  organizationId String
+  createdById    String?
+  name           String
+  query          String   @db.Text
+  variables      String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@map("saved_graphql_query")
 }

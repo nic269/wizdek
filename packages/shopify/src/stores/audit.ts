@@ -7,7 +7,9 @@ export type ShopifyAuditAction =
   | "shopify.app.deleted"
   | "shopify.store.connected"
   | "shopify.store.oauth_started"
-  | "shopify.store.disconnected";
+  | "shopify.store.disconnected"
+  | "shopify.graphql.query"
+  | "shopify.graphql.mutation";
 
 /**
  * Records a connection event. Metadata must never include a token or secret;

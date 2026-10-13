@@ -93,7 +93,16 @@ export const organizationsContract = {
       path: "/api/organizations/{organizationId}/audit-logs",
       summary: "List organization audit logs",
     })
-    .input(organizationPageInput)
+    .input(
+      organizationPageInput.extend({
+        /** Keeps only actions starting with this text, such as `role.`. */
+        actionPrefix: z
+          .string()
+          .trim()
+          .regex(/^[a-z0-9_.]{1,64}$/)
+          .optional(),
+      })
+    )
     .output(paginatedDataEnvelope(auditLogSchema)),
   create: apiContract
     .route({

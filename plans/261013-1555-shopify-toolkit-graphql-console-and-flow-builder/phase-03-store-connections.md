@@ -116,17 +116,17 @@ UI (`apps/app`):
 
 ## Todo
 
-- [ ] Shared authorization helpers extracted; existing organization tests green
-- [ ] App registry contracts, routers and tests
-- [ ] Static-token, client-credentials and OAuth connect paths
-- [ ] OAuth callback redirect route
-- [ ] Organization-store enumeration spike recorded
-- [ ] Active-organization context and switcher
-- [ ] Stores, new-store, app-registry and callback pages
-- [ ] Navigation entry
-- [ ] Integration and Playwright tests green
+- [x] Shared authorization helpers extracted; existing organization tests green
+- [x] App registry contracts, routers and tests
+- [x] Static-token, client-credentials and OAuth connect paths
+- [x] OAuth callback redirect route
+- [x] Organization-store enumeration spike recorded
+- [x] Active-organization context and switcher
+- [x] Stores, new-store, app-registry and callback pages
+- [x] Navigation entry
+- [x] Integration and Playwright tests green
 - [ ] Manual acceptance on a dev store for all three strategies
-- [ ] Docs written and phase committed
+- [x] Docs written and phase committed
 
 ## Success Criteria
 

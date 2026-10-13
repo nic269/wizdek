@@ -1,6 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
-import { getCurrentSession } from "@repo/auth/session";
-import { prisma, syncSystemRoles } from "@repo/database";
+import { prisma } from "@repo/database";
 import {
   type FakeShopifyServer,
   startFakeShopifyServer,
@@ -14,7 +13,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { createApiApp } from "../src/app";
+import { type Actor, createApiHarness } from "./support";
 
 vi.mock("@repo/auth/session", () => ({ getCurrentSession: vi.fn() }));
 
@@ -31,79 +30,9 @@ const SECRET_MARKERS = [
   "shprt_fake_",
 ];
 
-const organizationIds: string[] = [];
-const userIds: string[] = [];
-const responseBodies: string[] = [];
-const app = createApiApp();
+const { call, cleanup, createActor, createOrganization, responseBodies } =
+  createApiHarness();
 let server: FakeShopifyServer;
-
-interface Actor {
-  organizationId: string;
-  userId: string;
-}
-
-const createUser = async (label: string) => {
-  const user = await prisma.user.create({
-    data: {
-      email: `${label}-${randomUUID()}@example.com`,
-      emailVerified: true,
-      name: label,
-      status: "ACTIVE",
-    },
-  });
-  userIds.push(user.id);
-  return user.id;
-};
-
-const createOrganization = async () => {
-  const suffix = randomUUID();
-  const organization = await prisma.organization.create({
-    data: { name: `Stores ${suffix}`, slug: `stores-${suffix}` },
-  });
-  organizationIds.push(organization.id);
-  const roles = await prisma.$transaction((transaction) =>
-    syncSystemRoles(transaction, organization.id)
-  );
-  return { organizationId: organization.id, roles };
-};
-
-const createActor = async (
-  role: "Owner" | "Member" | "Viewer",
-  existing?: Awaited<ReturnType<typeof createOrganization>>
-): Promise<Actor> => {
-  const { organizationId, roles } = existing ?? (await createOrganization());
-  const userId = await createUser(role.toLowerCase());
-  await prisma.membership.create({
-    data: { organizationId, roleId: roles[role].id, userId },
-  });
-  return { organizationId, userId };
-};
-
-const call = async (
-  actor: Pick<Actor, "userId"> | null,
-  method: string,
-  path: string,
-  body?: unknown
-) => {
-  vi.mocked(getCurrentSession).mockResolvedValue(
-    actor ? ({ user: { id: actor.userId } } as never) : null
-  );
-  const response = await app.request(path, {
-    method,
-    ...(body === undefined
-      ? {}
-      : {
-          body: JSON.stringify(body),
-          headers: { "content-type": "application/json" },
-        }),
-  });
-  const text = await response.text();
-  responseBodies.push(text);
-  return {
-    json: (text ? JSON.parse(text) : null) as any,
-    status: response.status,
-  };
-};
 
 const shop = () => `store-${randomUUID()}.myshopify.com`;
 
@@ -177,12 +106,7 @@ beforeAll(async () => {
   process.env.SHOPIFY_ADMIN_BASE_URL_OVERRIDE = server.url;
 });
 
-afterEach(async () => {
-  await prisma.organization.deleteMany({
-    where: { id: { in: organizationIds.splice(0) } },
-  });
-  await prisma.user.deleteMany({ where: { id: { in: userIds.splice(0) } } });
-});
+afterEach(cleanup);
 
 afterAll(async () => {
   Reflect.deleteProperty(process.env, "SHOPIFY_ADMIN_BASE_URL_OVERRIDE");

@@ -282,7 +282,12 @@ export const updateMemberRole = async (input: UpdateMemberRoleInput) => {
   }
 };
 
-export const listAuditLogs = async (input: PageInput) => {
+export const listAuditLogs = async (
+  input: PageInput & {
+    /** Keeps only actions that start with this text, such as `role.`. */
+    actionPrefix?: string;
+  }
+) => {
   const cursor = decodeCursor(input.cursor, "audit-logs");
   const cursorCreatedAt = cursor ? cursorDate(cursor.sort) : undefined;
   const rows = await prisma.auditLog.findMany({
@@ -299,6 +304,9 @@ export const listAuditLogs = async (input: PageInput) => {
     take: input.limit + 1,
     where: {
       organizationId: input.organizationId,
+      ...(input.actionPrefix
+        ? { action: { startsWith: input.actionPrefix } }
+        : {}),
       ...(cursor && cursorCreatedAt
         ? {
             OR: [
