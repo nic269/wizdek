@@ -8,6 +8,7 @@
     "./keys": "./src/keys.ts",
     "./admin": "./src/admin/index.ts",
     "./graphql": "./src/graphql/index.ts",
+    "./graphql/classify-operation": "./src/graphql/classify-operation.ts",
     "./oauth": "./src/oauth/index.ts",
     "./stores": "./src/stores/index.ts",
     "./crypto": "./src/crypto/index.ts",

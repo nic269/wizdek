@@ -8,9 +8,13 @@ import { AddTagsForm } from "./config-forms/add-tags-form";
 import { FindOrderForm } from "./config-forms/find-order-form";
 import type { ConfigFormProps } from "./config-forms/form-parts";
 import { GenericForm } from "./config-forms/generic-form";
-import { IfForm } from "./config-forms/if-form";
+import { FilterForm, IfForm } from "./config-forms/if-form";
 import { ParseCsvForm } from "./config-forms/parse-csv-form";
+import { ShopifyGraphqlForm } from "./config-forms/shopify-graphql-form";
+import { SwitchForm } from "./config-forms/switch-form";
 import { TriggerManualForm } from "./config-forms/trigger-manual-form";
+import { TriggerScheduleForm } from "./config-forms/trigger-schedule-form";
+import { TriggerWebhookForm } from "./config-forms/trigger-webhook-form";
 import type { CanvasNode } from "./flow-definition-mapping";
 import { TemplateHelp } from "./template-input";
 import type { NodeType } from "./use-flow-editor";
@@ -18,10 +22,15 @@ import type { NodeType } from "./use-flow-editor";
 /** Node types with a hand-made form; every other type gets the generic one. */
 const BESPOKE_FORMS: Record<string, ComponentType<ConfigFormProps>> = {
   "data.parseCsv": ParseCsvForm,
+  "logic.filter": FilterForm,
   "logic.if": IfForm,
+  "logic.switch": SwitchForm,
   "shopify.addTags": AddTagsForm,
   "shopify.findOrder": FindOrderForm,
+  "shopify.graphql": ShopifyGraphqlForm,
   "trigger.manual": TriggerManualForm,
+  "trigger.schedule": TriggerScheduleForm,
+  "trigger.webhook": TriggerWebhookForm,
 };
 
 /**

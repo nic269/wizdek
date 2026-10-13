@@ -48,9 +48,10 @@ const EMPTY_ROW: ConditionRow = {
 export function IfForm({
   config,
   disabled,
+  heading = "Send the item to “true” when",
   onChange,
   sampleFields,
-}: ConfigFormProps) {
+}: ConfigFormProps & { heading?: string }) {
   const conditions = asArray<ConditionRow>(config.conditions);
   const setConditions = (next: ConditionRow[]) =>
     onChange({ ...config, conditions: next });
@@ -64,7 +65,7 @@ export function IfForm({
 
   return (
     <div className="space-y-4">
-      <Field label="Send the item to “true” when">
+      <Field label={heading}>
         <select
           aria-label="Combinator"
           className={selectClassName}
@@ -158,4 +159,9 @@ export function IfForm({
       </div>
     </div>
   );
+}
+
+/** The filter step uses the same conditions; matching items are kept. */
+export function FilterForm(props: ConfigFormProps) {
+  return <IfForm {...props} heading="Keep the item when" />;
 }

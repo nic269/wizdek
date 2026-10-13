@@ -12,13 +12,22 @@ const STARTING_CONFIG: Record<string, Record<string, unknown>> = {
     skipEmptyRows: true,
     trimValues: true,
   },
+  "data.setFields": { remove: [], rename: [], set: [] },
+  "logic.filter": {
+    combinator: "all",
+    conditions: [{ left: "", operator: "eq", right: "", valueType: "string" }],
+  },
   "logic.if": {
     combinator: "all",
     conditions: [{ left: "", operator: "eq", right: "", valueType: "string" }],
   },
+  "logic.switch": { cases: [{ name: "", value: "" }], value: "" },
   "shopify.addTags": { resourceId: "", tags: [] },
   "shopify.findOrder": { by: "name", value: "" },
+  "shopify.graphql": { document: "", resultPath: "", variables: "{}" },
   "trigger.manual": { inputs: [] },
+  "trigger.schedule": { cron: "0 6 * * *", timezone: "UTC" },
+  "trigger.webhook": { topic: "ORDERS_CREATE" },
 };
 
 export const specsByType = new Map(
