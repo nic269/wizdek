@@ -126,9 +126,9 @@ Versions are immutable and numbered per flow. Saving takes the version the edito
 
 A node type is a spec (type, category, label, config schema, outputs, `mode`, `idempotent`, `concurrency`) plus an `execute` function, joined with `defineNode`. The spec lives in `src/definition/specs/` and is shared with the browser; the behaviour lives in `src/nodes/`. A node type is added by writing those two files and listing it in `src/nodes/index.ts`. The executor knows nothing about specific node types.
 
-`execute({ item, config, ctx })` returns `{ outputs: [{ handle, json }] }`. `ctx` offers the run and store, `shopify.request` (token resolved, throttle-aware), `storage.readAsset`, `resolve` for templates, persisted `stepState`, a logger and the abort signal. Outputs can also be a function of the config, and `mode` can be `batch`; the executor runs `item` mode today.
+`execute({ item, config, ctx })` returns `{ outputs: [{ handle, json }] }`. `ctx` offers the run and store, `shopify.request` (token resolved, throttle-aware), `storage.readAsset`, `resolve` for templates, persisted `stepState`, a logger and the abort signal. Outputs can also be a function of the config (`logic.switch`), and `mode` can be `batch` (`shopify.bulkMutation`).
 
-Built-in nodes: `trigger.manual`, `data.parseCsv`, `logic.if`, `shopify.findOrder`, `shopify.addTags`.
+Built-in nodes: triggers `trigger.manual`, `trigger.webhook`, `trigger.schedule`; data `data.parseCsv`, `data.setFields`; logic `logic.if`, `logic.filter`, `logic.switch`; actions `shopify.findOrder`, `shopify.addTags`, `shopify.graphql`, `shopify.bulkMutation`.
 
 ### The item model
 
@@ -198,13 +198,31 @@ The page shell reads the caller's `flows:manage` permission on the server and pa
 
 User-facing behaviour is in [Flows](./flows.md).
 
-## Planned product code
+### Triggers and activation
 
-These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
+A flow with a `trigger.webhook` or `trigger.schedule` node runs once it is activated for a store. `FlowActivation` (unique per flow and store) records the version it was activated with, its status and, for webhooks, the subscription id. `services/activations.ts` creates the webhook subscription or the schedule on activation and removes it on deactivation; both are safe to repeat. When Shopify or the scheduler refuses, the activation is kept as `FAILED` with the reason.
 
-| Location | Purpose |
-|----------|---------|
-| `packages/flows` | Webhook and schedule triggers, more node types |
+Webhooks arrive at `POST /api/webhooks/shopify/:activationId`, a plain Hono route with no session (`packages/api/src/shopify-webhook-route.ts`). The signature is the authentication:
+
+```text
+read the body as bytes (5 MB limit)
+load the activation and its store                    -> 404 if unknown or not active
+secret = app client secret | store webhook secret
+verify X-Shopify-Hmac-Sha256 over the raw bytes      -> 401 on mismatch
+shop domain and topic headers match the activation   -> 401 otherwise
+insert WebhookEvent(externalId = activation + delivery id) -> duplicate: 200, stop
+start a run with the parsed payload as the trigger item    -> 200
+```
+
+Refusals carry no body and write nothing. The activation id in the URL is not a secret and grants nothing without a valid signature. `SHOPIFY_WEBHOOK_BASE_URL` is the public origin Shopify delivers to; without it webhook activation is refused.
+
+Schedules use the job provider's `schedule` with the activation id as the key. The `flow-schedule` job starts a run for an activation that is still active.
+
+### Batch nodes and repeat-safety per configuration
+
+A node's `mode` can be `batch`: `executeBatch` receives every pending item in one call and returns an outcome per item, and the node keeps what it needs to resume in `stepState`. `shopify.bulkMutation` works this way. It writes `submitting` before starting the bulk operation and `submitted` with the operation id after, so a restart can tell the three cases apart: never started, started and resumable, or impossible to tell (items become `UNKNOWN`).
+
+`idempotent` can be a function of the config. `shopify.graphql` is repeatable for a query and not for a document that may mutate; the check is deliberately cautious and treats any use of the word `mutation` as a mutation.
 
 ## Local development
 

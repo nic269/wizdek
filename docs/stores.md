@@ -36,6 +36,15 @@ Open **Stores → Connect store** and pick a tab.
 
 To reconnect a store, connect the same domain again; the existing store is updated. A store that is already connected one way must be disconnected before it can be switched to OAuth.
 
+## Webhook signing secret
+
+Flows can start from Shopify webhooks. Shopify signs every webhook with the client secret of the app that created the subscription, and the toolkit rejects deliveries whose signature does not match.
+
+- A store connected through a registered app (OAuth install or app credentials) needs nothing more: the app's client secret is already stored.
+- A store connected by a pasted access token has no app registered here. On the Stores page choose **Add webhook secret** for it and enter the client secret (API secret key) of the custom app the token belongs to. It is stored encrypted and never shown again.
+
+Until a secret is saved, a webhook flow cannot be activated on such a store.
+
 ## Store status
 
 | Status | Meaning |

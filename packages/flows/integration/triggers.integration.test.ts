@@ -422,7 +422,18 @@ describe("webhook-triggered flows", () => {
     await expect(activate(invalid, ready)).resolves.toMatchObject({
       failure: "FLOW_INVALID",
     });
-    await expect(prisma.flowActivation.count()).resolves.toBe(0);
+    // Counted for these workspaces only; other suites share the database.
+    await expect(
+      prisma.flowActivation.count({
+        where: {
+          flow: {
+            organizationId: {
+              in: [withoutSecret.organizationId, ready.organizationId],
+            },
+          },
+        },
+      })
+    ).resolves.toBe(0);
   });
 
   it("keeps the reason when Shopify refuses the subscription", async () => {

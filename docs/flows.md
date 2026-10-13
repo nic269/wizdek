@@ -66,6 +66,31 @@ After a flow has run once, the settings panel offers the field names it saw at t
 | **If** | Sends each item to `true` or `false`. Conditions compare as text or as number; all must match, or any. Comparing as number accepts amounts like `$1,250.00`, treating commas as thousands separators, and fails the item when the value is not a number. | `true`, `false` |
 | **Find order** | Looks an order up by name (`#1001`) or id and adds it to the item as `order` with `id`, `name`, `tags`, `totalPrice` and `currencyCode`. Fails the item when no order matches. | `main` |
 | **Add tags** | Adds tags to an order, customer, product or draft order. Tags already present are left alone, so running it again changes nothing. Fails the item when Shopify reports a problem. | `main` |
+| **Shopify webhook** | Starts the flow when the store sends a webhook for the chosen topic, such as `ORDERS_CREATE`. The webhook's payload is the item. Needs activation; see below. | `main` |
+| **Schedule** | Starts the flow on a cron schedule in a chosen time zone. The item holds `scheduledAt`. Needs activation. | `main` |
+| **Filter** | Keeps items that match its conditions and drops the rest. Same conditions as If. | `main` |
+| **Switch** | Compares one value against named cases and sends the item to the first case it equals. Each case is an output; items matching none leave by `default`. | one per case, plus `default` |
+| **Set fields** | Renames fields, then adds or overwrites fields (as text, number, yes/no, or whatever the template gives), then removes fields. | `main` |
+| **GraphQL request** | Runs any Admin GraphQL query or mutation for each item. Variables are JSON whose text values may contain templates. The response, or the part named by the result path, is added to the item as `result`. `userErrors` fail the item. | `main` |
+| **Bulk mutation** | Runs one mutation for all items as a single Shopify bulk operation: uploads every item's variables, starts the operation, waits for it, and records each item's result. Suited to tens of thousands of items. | `main` |
+
+## Flows that start by themselves
+
+A flow whose trigger is **Shopify webhook** or **Schedule** has no Run button. It has **Activation** instead: choose a store and activate. From then on the flow starts by itself for that store, and each start appears in **Runs** like any other run, started by "Automatic".
+
+- An activation uses the version that was saved when you activated. After editing the flow, save and activate again.
+- One flow can be activated on several stores. Each is turned on and off separately.
+- If Shopify or the scheduler refuses, the activation is shown as Failed with the reason.
+- Disconnecting a store turns off the flows activated on it first.
+
+**Webhooks.** Activating creates a webhook subscription in the store, and deactivating removes it. Two things must be in place:
+
+- The server needs a public address Shopify can reach, set as `SHOPIFY_WEBHOOK_BASE_URL` (a deployed host, or a tunnel during development). Without it, webhook activation is refused; schedules and everything else still work.
+- Shopify signs each webhook with the app's client secret. Stores connected through a registered app already have it. For a store connected by a pasted token, save the secret first under **Stores → Add webhook secret**.
+
+Each delivery starts one run. Shopify may send the same delivery more than once; a repeat is recognised and starts nothing. A delivery with a missing or wrong signature is rejected and nothing is recorded.
+
+**Schedules.** A cron expression has five fields: minute, hour, day of month, month, day of week. `0 6 * * *` means every day at 06:00 in the chosen time zone. A schedule fires at most once a minute, within about a minute of the time. If the server is down at the scheduled time, that firing is skipped.
 
 ## Running a flow
 
@@ -107,7 +132,10 @@ One case needs explaining. A call to Shopify can succeed an instant before the s
 - A step that is safe to repeat, such as Find order or Add tags, simply processes the item again. Adding a tag that is already there changes nothing.
 - A step that is not safe to repeat marks the item as in progress before the call. On restart such an item becomes **Unknown** and is left alone, because repeating it could apply the change twice.
 
-All five built-in steps are safe to repeat, so Unknown does not occur with them. It matters for steps added later that create or charge something.
+Steps that only read, and Add tags, are safe to repeat. Two steps are not:
+
+- **GraphQL request** with a mutation. A query is repeated freely; a mutation is sent once per item, and an item interrupted mid-request becomes Unknown.
+- **Bulk mutation**. The whole batch is submitted once. After a restart the step goes back to waiting for the operation it already started; it does not submit again. If the server stopped at the very moment of submitting, so that it cannot tell whether Shopify received the batch, every item becomes Unknown. If the operation itself ends as failed or canceled, the items are Unknown too, because part of it may have been applied.
 
 After a crash a run resumes within about a minute and a half. After a clean restart it resumes within seconds.
 
@@ -122,12 +150,22 @@ When Shopify throttles requests, the run waits and continues. Throttling does no
 | Size of one item | 1 MB |
 | Uploaded file | 10 MB, CSV only |
 | Items per page in the run view | 50 |
+| Webhook payload | 5 MB |
+| Bulk mutation upload | 100 MB (Shopify's limit) |
 
 Measured once with a 10,000-row CSV against the test store stand-in (no network delay): the run of 20,002 items finished in 48 seconds, the run page's data loaded in 16 ms, and item pages loaded in 5 to 16 ms, including the hundredth page.
 
+A webhook payload larger than 1 MB is accepted, but fails as an item at the trigger, because items are limited to 1 MB.
+
+Shopify runs up to five bulk mutations at a time per store on API versions from 2026-01, and one at a time on earlier versions. A bulk operation has 24 hours to finish.
+
+## Authoring mutations
+
+The GraphQL request and Bulk mutation steps let a flow's author write any mutation the store's token allows. People with `flows:run`, and triggers, then execute it. Treat `flows:manage` as the permission to decide what flows may do to a store.
+
 ## Data kept by runs
 
-Run items hold the rows of uploaded files and the data read from the store, which can include customer data. They are visible to everyone with `flows:read` in the organization and are kept indefinitely for now. Uploaded files are read only by the run; there is no download link for them.
+Run items hold the rows of uploaded files, webhook payloads and the data read from the store, which can include customer data. They are visible to everyone with `flows:read` in the organization and are kept indefinitely for now. Uploaded files are read only by the run; there is no download link for them.
 
 ## Related
 

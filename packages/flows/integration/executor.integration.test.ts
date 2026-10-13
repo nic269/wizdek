@@ -718,7 +718,16 @@ describe("starting runs", () => {
     const jobs = createLocalJobProvider();
     const { fileId, scope } = await prepareFlow(workspace, csvTaggingFlow());
     const foreign = await prepareFlow(other, csvTaggingFlow());
-    const runsBefore = await prisma.flowRun.count();
+    // Counted for these two workspaces only; other suites share the database.
+    const countRuns = () =>
+      prisma.flowRun.count({
+        where: {
+          organizationId: {
+            in: [workspace.organizationId, other.organizationId],
+          },
+        },
+      });
+    const runsBefore = await countRuns();
     const start = (
       inputs: Record<string, unknown>,
       storeId: string,
@@ -760,7 +769,7 @@ describe("starting runs", () => {
     ).toContain("orphan");
 
     // Nothing was queued: the only new run is the invalid flow's own fixture.
-    await expect(prisma.flowRun.count()).resolves.toBe(runsBefore + 1);
+    await expect(countRuns()).resolves.toBe(runsBefore + 1);
   });
 
   it("refuses to overwrite a version someone else saved", async () => {
