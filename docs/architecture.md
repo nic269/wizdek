@@ -63,6 +63,21 @@ A store moves to `RECONNECT_REQUIRED` when Shopify answers a request with HTTP 4
 
 The catalog in `packages/access-control` adds `stores:read`, `stores:manage`, `graphql:query` and `graphql:mutate`. Members get the first, third and fourth; managing connections stays with Admin, Owner and custom roles. System roles are synced when an organization is created, so after changing the catalog or a preset run `pnpm db:sync-roles` to update existing organizations.
 
+## Store connections
+
+Routes live in `packages/api` (`contracts/shopify-apps.ts`, `contracts/shopify-stores.ts` and the matching routers). Organization-scoped routes sit under `/api/organizations/{organizationId}/shopify/...`; store-scoped routes sit under `/api/shopify/stores/{storeId}` and derive the organization from the store row, never from input. `requireStorePermission` in `routers/authz.ts` answers 404 for a store outside the caller's organizations and 403 for a member without the permission.
+
+The connect services in `@repo/shopify/stores` verify credentials against Shopify first, then write the store, its token and an audit entry in one transaction. No API response carries a token or secret; apps report `hasClientSecret: true`.
+
+OAuth completes in two steps so a callback URL alone can never attach a token to an organization:
+
+1. `GET /api/shopify/oauth/callback` is a plain Hono route. It validates the `shop` parameter and redirects to `/stores/oauth/callback` on the configured app URL with the query unchanged. It changes no state.
+2. The app page posts the query to `shopifyStores.completeOAuth`, which needs a session and `stores:manage`. It resolves the store from the single-use state (hashed at rest, valid 10 minutes, bound to the user who started the install), verifies the callback HMAC, exchanges the code and marks the store connected.
+
+In the app, `app/lib/active-organization.tsx` provides the active organization to every toolkit page and renders the switcher in the top bar. User-facing steps are in [Connecting Shopify stores](./stores.md).
+
+Browser tests run against the in-process fake Shopify server: `playwright.config.ts` starts it and passes its URL to the API as `SHOPIFY_ADMIN_BASE_URL_OVERRIDE`.
+
 ## Planned product code
 
 These locations are reserved by the implementation plan and are added phase by phase. This section is updated as each one lands.
@@ -70,10 +85,10 @@ These locations are reserved by the implementation plan and are added phase by p
 | Location | Purpose |
 |----------|---------|
 | `packages/database` | Flow and run models |
-| `packages/api` | Contracts and routers for stores, the GraphQL proxy, flows and runs |
+| `packages/api` | Contracts and routers for the GraphQL proxy, flows and runs |
 | `packages/jobs` | `pg-boss` provider behind `JobQueueProvider`; the worker runs inside `apps/api` |
 | Flow engine package | Graph validation, typed node registry and the item-based executor |
-| `apps/app` | Store connections UI, GraphiQL console with Explorer, flow builder canvas, run trace |
+| `apps/app` | GraphiQL console with Explorer, flow builder canvas, run trace |
 
 ## Local development
 

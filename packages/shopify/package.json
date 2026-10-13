@@ -16,6 +16,7 @@
   "scripts": {
     "build": "echo '@repo/shopify is source-only'",
     "check-types": "tsc --noEmit",
+    "fake-server": "tsx src/testing/run-fake-shopify-server.ts",
     "test": "vitest run --exclude 'integration/**' --passWithNoTests",
     "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
     "test:integration": "vitest run integration/token-resolver.integration.test.ts"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^26.1.0",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   }

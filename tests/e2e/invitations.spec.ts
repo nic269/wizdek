@@ -54,7 +54,9 @@ test("owner can invite a member who signs up and accepts access", async ({
     await memberPage.getByRole("button", { name: "Accept invitation" }).click();
     await expect(memberPage).toHaveURL(DASHBOARD_URL_PATTERN);
     await expect(
-      memberPage.getByText(organizationName, { exact: true })
+      memberPage
+        .getByRole("listitem")
+        .getByText(organizationName, { exact: true })
     ).toBeVisible();
   } finally {
     await memberContext.close();

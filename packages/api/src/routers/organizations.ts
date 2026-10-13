@@ -20,12 +20,11 @@ import {
   listOrganizationsForUser,
   normalizeOrganizationSlug,
 } from "@repo/auth/organizations";
-import { hasPermission } from "@repo/auth/permissions";
-import { getCurrentSession } from "@repo/auth/session";
 import { sendInvitationMail } from "@repo/mail";
 import type { ApiContext } from "../context";
 import { ApiError } from "../errors";
 import { requireOrganizationInvitationsEnabled } from "../feature-guards";
+import { requireOrganizationPermission, requireUser } from "./authz";
 import { os } from "./implementer";
 
 const invitationErrorStatus = {
@@ -45,26 +44,6 @@ const getDomainErrorCode = (error: unknown) => {
     return error.code;
   }
   return error instanceof Error ? error.message : undefined;
-};
-
-const requireUser = async (headers: Headers) => {
-  const session = await getCurrentSession(headers);
-  if (!session) {
-    throw new ApiError("UNAUTHORIZED", "Authentication required.", 401);
-  }
-  return session.user;
-};
-
-const requireOrganizationPermission = async (
-  userId: string,
-  organizationId: string,
-  module: string,
-  action: string,
-  message = "You do not have permission for this organization action."
-) => {
-  if (!(await hasPermission({ action, module, organizationId, userId }))) {
-    throw new ApiError("FORBIDDEN", message, 403);
-  }
 };
 
 const requireValidPage = async <T>(query: Promise<T>) => {

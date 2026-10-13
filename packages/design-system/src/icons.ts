@@ -16,6 +16,7 @@ export {
   Menu,
   Settings,
   Shield,
+  Store,
   Users,
   X,
 } from "lucide-react";

@@ -31,4 +31,20 @@ describe("createAuthGuard", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("guards additional prefixes without matching lookalike paths", () => {
+    const extended = createAuthGuard({
+      dashboard: "/dashboard",
+      protectedPrefixes: ["/stores", "/flows"],
+      signIn: "/sign-in",
+    });
+    const visit = (path: string) =>
+      extended(new Request(`http://localhost:3000${path}`)).status;
+
+    expect(visit("/stores")).toBe(307);
+    expect(visit("/stores/new")).toBe(307);
+    expect(visit("/flows/abc")).toBe(307);
+    expect(visit("/storefront")).toBe(200);
+    expect(visit("/sign-in")).toBe(200);
+  });
 });

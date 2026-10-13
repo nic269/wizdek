@@ -15,4 +15,8 @@ describe("dashboard navigation", () => {
       label: "Members",
     });
   });
+
+  it("links the store connections surface", () => {
+    expect(dashboardNav).toContainEqual({ href: "/stores", label: "Stores" });
+  });
 });

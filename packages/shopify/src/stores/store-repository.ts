@@ -38,6 +38,13 @@ export const findStore = (
     where: { id: storeId, organizationId },
   });
 
+/** Unscoped lookup, for deciding which organization a store id belongs to. */
+export const findStoreById = (
+  storeId: string,
+  db: DbClient = prisma
+): Promise<ShopifyStoreRecord | null> =>
+  db.shopifyStore.findUnique({ where: { id: storeId } });
+
 export const getStore = async (
   scope: StoreScope,
   db: DbClient = prisma

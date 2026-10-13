@@ -170,16 +170,16 @@ A 401 from Shopify on any request marks the store `RECONNECT_REQUIRED` with the 
 
 ## Todo
 
-- [ ] Package scaffolded with env contract registered in `.env.example` and `turbo.json`
-- [ ] Domain validation, encryption and OAuth validation ported with tests
-- [ ] Admin client and operation classifier implemented with tests
-- [ ] Refresh and client-credentials grants implemented
-- [ ] Prisma models migrated
-- [ ] Token resolver, store client and health check implemented
-- [ ] Fake Shopify server available from `@repo/shopify/testing`
-- [ ] Permission catalog extended and `db:sync-roles` added
-- [ ] Boundary rules updated; `pnpm boundaries` green
-- [ ] Docs updated and phase committed
+- [x] Package scaffolded with env contract registered in `.env.example` and `turbo.json`
+- [x] Domain validation, encryption and OAuth validation ported with tests
+- [x] Admin client and operation classifier implemented with tests
+- [x] Refresh and client-credentials grants implemented
+- [x] Prisma models migrated
+- [x] Token resolver, store client and health check implemented
+- [x] Fake Shopify server available from `@repo/shopify/testing`
+- [x] Permission catalog extended and `db:sync-roles` added
+- [x] Boundary rules updated; `pnpm boundaries` green
+- [x] Docs updated and phase committed
 
 ## Success Criteria
 

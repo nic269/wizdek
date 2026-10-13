@@ -111,5 +111,7 @@ export const createOrganization = async ({
 }) => {
   await page.getByPlaceholder("Organization name").fill(name);
   await page.getByRole("button", { exact: true, name: "Create" }).click();
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("listitem").getByText(name, { exact: true })
+  ).toBeVisible();
 };

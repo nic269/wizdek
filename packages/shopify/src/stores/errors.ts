@@ -19,3 +19,32 @@ export class StoreReconnectRequiredError extends Error {
     this.storeId = storeId;
   }
 }
+
+export type StoreConnectionFailure =
+  | "APP_NOT_FOUND"
+  | "APP_IN_USE"
+  | "CREDENTIALS_REJECTED"
+  | "SHOP_UNREACHABLE"
+  | "STRATEGY_CONFLICT"
+  | "OAUTH_STATE_INVALID"
+  | "OAUTH_SIGNATURE_INVALID"
+  | "OAUTH_CALLBACK_INVALID"
+  | "OAUTH_STORE_NOT_FOUND"
+  | "OAUTH_STORE_AMBIGUOUS";
+
+/** A connect, reconnect or registry action that could not be completed. */
+export class StoreConnectionError extends Error {
+  readonly details: unknown;
+  readonly failure: StoreConnectionFailure;
+
+  constructor(
+    failure: StoreConnectionFailure,
+    message: string,
+    details?: unknown
+  ) {
+    super(message);
+    this.name = "StoreConnectionError";
+    this.details = details;
+    this.failure = failure;
+  }
+}

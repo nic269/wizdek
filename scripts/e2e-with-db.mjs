@@ -4,6 +4,9 @@ import net from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Browser tests reach a fake Shopify server that Playwright starts on this port.
+const FAKE_SHOPIFY_PORT = 3999;
+
 const DEFAULTS = {
   API_INTERNAL_URL: "http://localhost:3002",
   BETTER_AUTH_SECRET: "local-e2e-better-auth-secret-at-least-32",
@@ -167,6 +170,7 @@ try {
     API_INTERNAL_URL: DEFAULTS.API_INTERNAL_URL,
     BETTER_AUTH_URL: DEFAULTS.BETTER_AUTH_URL,
     DATABASE_URL: databaseUrl,
+    FAKE_SHOPIFY_PORT: String(FAKE_SHOPIFY_PORT),
     MAIL_OUTBOX_DIR: mailOutboxDirectory,
     MAIL_PROVIDER: "console",
     NEXT_PUBLIC_API_URL: DEFAULTS.NEXT_PUBLIC_API_URL,
@@ -180,14 +184,17 @@ try {
   console.log(`Using PostgreSQL on localhost:${postgresPort}`);
   const occupiedServicePorts = (
     await Promise.all(
-      [3000, 3002].map(async (port) => [port, await isPortInUse(port)])
+      [3000, 3002, FAKE_SHOPIFY_PORT].map(async (port) => [
+        port,
+        await isPortInUse(port),
+      ])
     )
   )
     .filter(([, occupied]) => occupied)
     .map(([port]) => port);
   if (occupiedServicePorts.length > 0) {
     throw new Error(
-      `E2E requires free app/API ports; already in use: ${occupiedServicePorts.join(", ")}`
+      `E2E requires free app, API and fake Shopify ports; already in use: ${occupiedServicePorts.join(", ")}`
     );
   }
   throwIfInterrupted();

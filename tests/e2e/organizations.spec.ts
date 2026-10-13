@@ -38,7 +38,7 @@ test("organization lists stay scoped to each authenticated member", async ({
 
     await page.reload();
     await expect(
-      page.getByText(firstOrganization, { exact: true })
+      page.getByRole("listitem").getByText(firstOrganization, { exact: true })
     ).toBeVisible();
     await expect(
       page.getByText(secondOrganization, { exact: true })

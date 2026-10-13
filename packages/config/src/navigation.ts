@@ -3,6 +3,7 @@ import { authFeatureConfig } from "./features";
 export const createDashboardNav = (organizationInvitations: boolean) =>
   [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/stores", label: "Stores" },
     { href: "/settings", label: "Settings" },
     ...(organizationInvitations
       ? [{ href: "/settings/members", label: "Members" }]

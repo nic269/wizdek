@@ -17,8 +17,8 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests",
-    "test:unit": "vitest run --passWithNoTests",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
     "test:integration": "vitest run --passWithNoTests"
   },
   "dependencies": {
@@ -36,6 +36,7 @@
     "@repo/jobs": "workspace:*",
     "@repo/logger": "workspace:*",
     "@repo/mail": "workspace:*",
+    "@repo/shopify": "workspace:*",
     "@repo/storage": "workspace:*",
     "hono": "^4.12.27",
     "zod": "^4.4.3"

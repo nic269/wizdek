@@ -25,10 +25,21 @@ const hasSessionCookie = (request: AuthGuardRequest) =>
   });
 
 export const createAuthGuard =
-  (paths: { signIn: string; dashboard: string }) =>
+  (paths: {
+    signIn: string;
+    dashboard: string;
+    /** Further path prefixes that need a session, besides the dashboard. */
+    protectedPrefixes?: readonly string[];
+  }) =>
   (request: AuthGuardRequest) => {
     const url = request.nextUrl ?? new URL(request.url);
-    const isProtected = url.pathname.startsWith(paths.dashboard);
+    const isProtected = [
+      paths.dashboard,
+      ...(paths.protectedPrefixes ?? []),
+    ].some(
+      (prefix) =>
+        url.pathname === prefix || url.pathname.startsWith(`${prefix}/`)
+    );
 
     if (isProtected && !hasSessionCookie(request)) {
       return NextResponse.redirect(new URL(paths.signIn, request.url));

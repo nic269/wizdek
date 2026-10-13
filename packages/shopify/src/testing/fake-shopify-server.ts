@@ -62,6 +62,8 @@ export interface FakeShopifyServer {
 
 const ADMIN_PATH = /^\/admin\/api\/([^/]+)\/graphql\.json$/;
 const TOKEN_PATH = "/admin/oauth/access_token";
+/** Readiness probe for test runners that wait on a URL. */
+export const HEALTH_PATH = "/health";
 const NAME_QUERY = /name:\s*"?([^"\s]+)"?/;
 
 const COST = {
@@ -329,6 +331,10 @@ export const startFakeShopifyServer = async (
     const path = new URL(request.url ?? "/", "http://fake").pathname;
     const apiVersion = path.match(ADMIN_PATH)?.[1];
     let handled: Promise<void> | undefined;
+    if (request.method === "GET" && path === HEALTH_PATH) {
+      sendJson(response, 200, { status: "ok" });
+      return;
+    }
     if (request.method === "POST" && path === TOKEN_PATH) {
       handled = handleToken(request, response);
     } else if (request.method === "POST" && apiVersion) {

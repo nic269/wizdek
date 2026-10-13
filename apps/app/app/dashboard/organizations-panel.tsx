@@ -11,6 +11,7 @@ import {
   Input,
 } from "@repo/design-system";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useActiveOrganization } from "../lib/active-organization";
 
 type Organization = Awaited<
   ReturnType<typeof apiClient.organizations.list>
@@ -22,6 +23,7 @@ export function OrganizationsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { refresh: refreshActiveOrganization } = useActiveOrganization();
 
   const loadOrganizations = useCallback(async () => {
     const payload = await apiClient.organizations.list({});
@@ -48,7 +50,7 @@ export function OrganizationsPanel() {
     try {
       await apiClient.organizations.create({ name });
       setName("");
-      await loadOrganizations();
+      await Promise.all([loadOrganizations(), refreshActiveOrganization()]);
     } catch (cause) {
       setError(getApiErrorMessage(cause, "Could not create organization."));
     } finally {

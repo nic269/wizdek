@@ -6,14 +6,20 @@ import {
   LayoutDashboard,
   Settings,
   Shield,
+  Store,
   Users,
 } from "@repo/design-system";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { SignOutButton } from "./dashboard/sign-out-button";
+import { OrganizationSwitcher } from "./lib/active-organization";
 
 const getDashboardNavIcon = (href: string) => {
+  if (href.startsWith("/stores")) {
+    return <Store className="h-4 w-4" />;
+  }
+
   if (href.includes("access")) {
     return <Shield className="h-4 w-4" />;
   }
@@ -52,14 +58,17 @@ export async function AppShellLayout({ children }: AppShellLayoutProps) {
         icon: getDashboardNavIcon(item.href),
       }))}
       topbar={
-        <div className="flex items-center gap-3">
-          <div className="text-right text-sm">
-            <div className="font-medium text-foreground">
-              {session.user.name}
+        <div className="flex w-full items-center justify-between gap-3">
+          <OrganizationSwitcher />
+          <div className="ml-auto flex items-center gap-3">
+            <div className="text-right text-sm">
+              <div className="font-medium text-foreground">
+                {session.user.name}
+              </div>
+              <div className="text-muted-foreground">{session.user.email}</div>
             </div>
-            <div className="text-muted-foreground">{session.user.email}</div>
+            <SignOutButton />
           </div>
-          <SignOutButton />
         </div>
       }
     >

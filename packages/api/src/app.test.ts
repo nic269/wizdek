@@ -806,4 +806,34 @@ describe("api app", () => {
       error: { code: "VALIDATION_ERROR" },
     });
   });
+
+  it("hands a Shopify OAuth callback to the app without changing state", async () => {
+    const query =
+      "code=abc&shop=example-store.myshopify.com&state=xyz&return_to=https%3A%2F%2Fevil.com";
+    const response = await createApiApp().request(
+      `/api/shopify/oauth/callback?${query}`
+    );
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(
+      `http://localhost:3000/stores/oauth/callback?${query}`
+    );
+    expect(getCurrentSession).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "evil.com",
+    "a.myshopify.com.evil.com",
+    "",
+  ])("rejects a Shopify OAuth callback for shop %j", async (shop) => {
+    const response = await createApiApp().request(
+      `/api/shopify/oauth/callback?code=abc&shop=${encodeURIComponent(shop)}`
+    );
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get("location")).toBeNull();
+    expect(await response.json()).toMatchObject({
+      error: { code: "VALIDATION_ERROR" },
+    });
+  });
 });
