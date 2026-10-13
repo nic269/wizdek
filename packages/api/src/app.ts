@@ -1,7 +1,9 @@
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError, ValidationError } from "@orpc/server";
 import { auth } from "@repo/auth/server";
+import { MAX_WEBHOOK_BYTES } from "@repo/flows";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { requestContext } from "./context";
 import { ApiError, type ApiErrorResponse } from "./errors";
@@ -17,6 +19,9 @@ import {
   handleShopifyWebhook,
   SHOPIFY_WEBHOOK_ROUTE,
 } from "./shopify-webhook-route";
+
+/** Room for a 10 MB file upload plus its multipart framing. */
+const MAX_API_BODY_BYTES = 12_000_000;
 
 const orpcHandler = new OpenAPIHandler(router, {
   clientInterceptors: [
@@ -120,6 +125,19 @@ export const createApiApp = () => {
   const app = new Hono();
 
   app.use("*", requestContext);
+  app.use(
+    "/api/*",
+    bodyLimit({
+      maxSize: MAX_API_BODY_BYTES,
+      onError: () => {
+        throw new ApiError(
+          "VALIDATION_ERROR",
+          "The request is too large.",
+          413
+        );
+      },
+    })
+  );
   app.get("/openapi.json", async (context) =>
     context.json(await getOpenApiDocument())
   );
@@ -142,7 +160,16 @@ export const createApiApp = () => {
     app.use(path, requireAppOrigin);
   }
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
-  app.post(SHOPIFY_WEBHOOK_ROUTE, handleShopifyWebhook);
+  // Enforced while the body streams in, so an oversized or endless request
+  // is cut off instead of being buffered. The webhook route has no session.
+  app.post(
+    SHOPIFY_WEBHOOK_ROUTE,
+    bodyLimit({
+      maxSize: MAX_WEBHOOK_BYTES,
+      onError: (context) => context.body(null, 413),
+    }),
+    handleShopifyWebhook
+  );
   app.use("*", async (context, next) => {
     const { matched, response } = await orpcHandler.handle(context.req.raw, {
       context: {
