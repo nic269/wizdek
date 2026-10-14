@@ -13,8 +13,6 @@ export interface ConfigFormProps {
   config: Record<string, unknown>;
   disabled: boolean;
   onChange: (config: Record<string, unknown>) => void;
-  /** Field names seen at this node in the latest run, if any. */
-  sampleFields: readonly string[];
 }
 
 export function Field({
@@ -28,7 +26,7 @@ export function Field({
 }) {
   return (
     <ShadcnField className="gap-1.5">
-      <FieldTitle>{label}</FieldTitle>
+      <FieldTitle className="font-medium text-[12.5px]">{label}</FieldTitle>
       {children}
       {hint ? (
         <FieldDescription className="text-xs">{hint}</FieldDescription>

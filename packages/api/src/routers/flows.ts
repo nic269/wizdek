@@ -110,14 +110,30 @@ const runsRouter = {
       input.runId,
       "read"
     );
-    const [detail, version] = await Promise.all([
+    const [detail, version, related] = await Promise.all([
       withFlowErrors(() => getFlowRun(runScopeOf(run))),
       prisma.flowVersion.findUniqueOrThrow({
         where: { id: run.flowVersionId },
       }),
+      prisma.flowRun.findUniqueOrThrow({
+        select: {
+          flow: { select: { name: true } },
+          store: {
+            select: { environment: true, name: true, shopDomain: true },
+          },
+        },
+        where: { id: run.id },
+      }),
     ]);
+    const starter = run.startedById
+      ? await prisma.user.findUnique({
+          select: { name: true },
+          where: { id: run.startedById },
+        })
+      : null;
     return {
       data: {
+        flowName: related.flow.name,
         nodes: Object.fromEntries(
           Object.entries(detail.nodes).map(
             ([nodeId, { counts, emitted, step }]) => [
@@ -136,6 +152,8 @@ const runsRouter = {
           )
         ),
         run: toPublicRun(detail.run),
+        startedByName: starter?.name ?? null,
+        store: related.store,
         version: toPublicVersion(version),
       },
     };

@@ -11,12 +11,7 @@ const DELIMITER_OPTIONS = [
   { label: "Pipe", value: "|" },
 ];
 
-export function ParseCsvForm({
-  config,
-  disabled,
-  onChange,
-  sampleFields,
-}: ConfigFormProps) {
+export function ParseCsvForm({ config, disabled, onChange }: ConfigFormProps) {
   const set = (patch: Record<string, unknown>) =>
     onChange({ ...config, ...patch });
 
@@ -31,7 +26,6 @@ export function ParseCsvForm({
           label="File"
           onChange={(file) => set({ file })}
           placeholder="{{ $json.csvFile }}"
-          sampleFields={sampleFields}
           value={asString(config.file)}
         />
       </Field>

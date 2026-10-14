@@ -8,7 +8,7 @@ import {
 } from "./support/user-flows";
 
 const BUILDER_URL_PATTERN = /\/flows\/[a-z0-9]+$/;
-const ISSUE_BADGE_PATTERN = /issue/;
+const ISSUE_FOOTER_PATTERN = /required|Choose|Add at least/;
 const PALETTE_ENTRIES = [
   "Manual trigger",
   "Parse CSV",
@@ -110,14 +110,14 @@ test("an author builds, saves and reopens the CSV tagging flow", async ({
   await panel
     .getByLabel("Resource", { exact: true })
     .fill("{{ $json.order.id }}");
-  await panel.getByRole("button", { name: "Add tag" }).click();
-  await panel.getByLabel("Tag 1", { exact: true }).fill("high-value");
+  await panel.getByLabel("Add a tag").fill("high-value");
+  await panel.getByLabel("Add a tag").press("Enter");
   await panel.getByLabel("Step name").fill("Tag as high value");
 
   await page.getByRole("button", { name: "Validate" }).click();
-  await expect(page.getByText("No problems found")).toBeVisible();
+  await expect(page.getByText("No issues — ready to run")).toBeVisible();
   await save(page);
-  await expect(page.getByText("Version 2")).toBeVisible();
+  await expect(page.getByText("Saved · v2")).toBeVisible();
 
   // Reopening shows the same graph and the same configuration.
   await page.reload();
@@ -126,9 +126,9 @@ test("an author builds, saves and reopens the CSV tagging flow", async ({
   await expect(page.getByText("Unsaved changes")).toHaveCount(0);
   await page.getByTestId("flow-node-addTags-1").click();
   await expect(panel.getByLabel("Step name")).toHaveValue("Tag as high value");
-  await expect(panel.getByLabel("Tag 1", { exact: true })).toHaveValue(
-    "high-value"
-  );
+  await expect(
+    panel.getByRole("button", { name: "Remove tag high-value" })
+  ).toBeVisible();
   await expect(panel.getByLabel("Resource", { exact: true })).toHaveValue(
     "{{ $json.order.id }}"
   );
@@ -144,17 +144,22 @@ test("an author builds, saves and reopens the CSV tagging flow", async ({
 
   // Clearing a required setting is flagged on the step it belongs to.
   await page.getByTestId("flow-node-addTags-1").click();
-  await panel.getByRole("button", { name: "Remove tag 1" }).click();
+  await panel.getByRole("button", { name: "Remove tag high-value" }).click();
+  await expect(panel).toContainText("At least one tag is required.");
   await page.getByRole("button", { name: "Validate" }).click();
   await expect(page.getByLabel("Validation issues")).toContainText(
-    "Tag as high value: tags: Add at least one tag."
+    "Tag as high value"
   );
-  await expect(
-    page.getByTestId("flow-node-addTags-1").getByTitle("1 issue")
-  ).toBeVisible();
-  await expect(
-    page.getByTestId("flow-node-if-1").getByTitle(ISSUE_BADGE_PATTERN)
-  ).toHaveCount(0);
+  await expect(page.getByLabel("Validation issues")).toContainText(
+    "Add at least one tag."
+  );
+  // The step's card says what is missing; the others stay clean.
+  await expect(page.getByTestId("flow-node-addTags-1")).toContainText(
+    "Add at least one tag."
+  );
+  await expect(page.getByTestId("flow-node-if-1")).not.toContainText(
+    ISSUE_FOOTER_PATTERN
+  );
 
   expect(errors).toEqual([]);
 });

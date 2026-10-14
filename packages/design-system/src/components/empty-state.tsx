@@ -4,6 +4,7 @@ import { cn } from "../lib/cn";
 /** A dashed card with an icon tile, a title, one sentence and one action. */
 export const EmptyState = ({
   icon,
+  iconTile = true,
   title,
   description,
   action,
@@ -11,6 +12,8 @@ export const EmptyState = ({
   className,
 }: {
   icon?: ReactNode | undefined;
+  /** Draws the icon on a 44px tile; off for a group of chips. */
+  iconTile?: boolean | undefined;
   title: string;
   description?: ReactNode | undefined;
   action?: ReactNode | undefined;
@@ -24,7 +27,8 @@ export const EmptyState = ({
       className
     )}
   >
-    {icon ? (
+    {icon && !iconTile ? <div className="mb-1">{icon}</div> : null}
+    {icon && iconTile ? (
       <div className="grid size-11 place-items-center rounded-[11px] border border-border bg-sunken text-muted-foreground [&_svg]:size-5">
         {icon}
       </div>

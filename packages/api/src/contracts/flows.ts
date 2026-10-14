@@ -289,8 +289,15 @@ export const flowsContract = {
       .output(
         dataEnvelope(
           z.object({
+            flowName: z.string(),
             nodes: z.record(z.string(), flowRunNodeSchema),
             run: flowRunSchema,
+            startedByName: z.string().nullable(),
+            store: z.object({
+              environment: targetEnvironmentSchema,
+              name: z.string(),
+              shopDomain: z.string(),
+            }),
             version: flowVersionSchema,
           })
         )

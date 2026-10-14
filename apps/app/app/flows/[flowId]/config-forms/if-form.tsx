@@ -65,7 +65,6 @@ export function IfForm({
   disabled,
   heading = "Send the item to “true” when",
   onChange,
-  sampleFields,
 }: ConfigFormProps & { heading?: string }) {
   const conditions = asArray<ConditionRow>(config.conditions);
   const setConditions = (next: ConditionRow[]) =>
@@ -101,7 +100,6 @@ export function IfForm({
               label={`Condition ${index + 1} value`}
               onChange={(left) => update(index, { left })}
               placeholder="{{ $json.Total }}"
-              sampleFields={sampleFields}
               value={condition.left}
             />
             <div className="flex gap-2">

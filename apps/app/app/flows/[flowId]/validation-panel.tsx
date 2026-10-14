@@ -1,63 +1,111 @@
 "use client";
 
-import { Button } from "@repo/design-system";
+import {
+  ArrowRight,
+  Button,
+  CircleCheck,
+  TriangleAlert,
+  X,
+} from "@repo/design-system";
 import type { FlowIssue } from "@repo/flows/definition";
+import { asCategory, CategoryChip } from "../node-visuals";
+import { specsByType } from "./node-defaults";
 
-export function ValidationPanel({
+/** An issue's message without the config path the server prefixes it with. */
+export const issueText = (issue: FlowIssue) =>
+  issue.path && issue.message.startsWith(`${issue.path}: `)
+    ? issue.message.slice(issue.path.length + 2)
+    : issue.message;
+
+/**
+ * The validation popover over the bottom-left of the canvas. Choosing an
+ * issue selects its step.
+ */
+export function ValidationPopover({
   issues,
-  nodeNames,
+  nodes,
+  onClose,
   onSelectNode,
 }: {
   issues: FlowIssue[];
-  nodeNames: ReadonlyMap<string, string>;
+  /** Name and type of each step, by node id. */
+  nodes: ReadonlyMap<string, { name: string; nodeType: string }>;
+  onClose: () => void;
   onSelectNode: (nodeId: string) => void;
 }) {
-  if (issues.length === 0) {
-    return (
-      <p
-        className="text-emerald-700 text-sm dark:text-emerald-400"
-        role="status"
-      >
-        No problems found. The flow can run.
-      </p>
-    );
-  }
+  const count = issues.length;
   return (
-    <div className="space-y-2">
-      <p className="font-medium text-sm" role="status">
-        {issues.length} problem{issues.length === 1 ? "" : "s"} to fix before
-        the flow can run
-      </p>
-      <ul
-        aria-label="Validation issues"
-        className="max-h-40 divide-y overflow-y-auto rounded-md border text-sm"
-      >
-        {issues.map((issue) => (
-          <li
-            className="flex items-start justify-between gap-3 px-3 py-1.5"
-            key={`${issue.code}-${issue.nodeId ?? ""}-${issue.edgeId ?? ""}-${issue.path ?? ""}-${issue.message}`}
-          >
-            <span>
-              {issue.nodeId ? (
-                <span className="font-medium">
-                  {nodeNames.get(issue.nodeId) ?? issue.nodeId}:{" "}
-                </span>
-              ) : null}
-              {issue.message}
-            </span>
-            {issue.nodeId ? (
-              <Button
-                className="h-auto shrink-0 p-0 text-muted-foreground text-xs"
-                onClick={() => onSelectNode(issue.nodeId as string)}
-                type="button"
-                variant="link"
+    <section
+      aria-label="Validation"
+      className="fade-in-0 slide-in-from-bottom-2 absolute bottom-3.5 left-4 z-10 w-[330px] animate-in overflow-hidden rounded-card border border-border bg-card shadow-popover duration-150"
+    >
+      <div className="flex items-center gap-2 border-border border-b px-3.5 py-[11px]">
+        {count > 0 ? (
+          <TriangleAlert className="size-[15px] text-(--status-warning-dot)" />
+        ) : (
+          <CircleCheck className="size-[15px] text-(--status-success-dot)" />
+        )}
+        <h2
+          className="flex-1 font-semibold text-[13px] leading-none"
+          role="status"
+        >
+          {count > 0
+            ? `${count} issue${count === 1 ? "" : "s"} to fix before running`
+            : "No issues — ready to run"}
+        </h2>
+        <Button
+          aria-label="Close validation"
+          className="size-6 text-muted-foreground"
+          onClick={onClose}
+          size="icon-xs"
+          variant="ghost"
+        >
+          <X className="size-3.5" />
+        </Button>
+      </div>
+      {count > 0 ? (
+        <ul aria-label="Validation issues" className="max-h-64 overflow-y-auto">
+          {issues.map((issue) => {
+            const node = issue.nodeId ? nodes.get(issue.nodeId) : undefined;
+            const category = asCategory(
+              node ? specsByType.get(node.nodeType)?.category : undefined
+            );
+            return (
+              <li
+                key={`${issue.code}-${issue.nodeId ?? ""}-${issue.edgeId ?? ""}-${issue.path ?? ""}-${issue.message}`}
               >
-                Show
-              </Button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </div>
+                <Button
+                  className="h-auto w-full items-start justify-start gap-2.5 rounded-none px-3.5 py-[11px] text-left font-normal"
+                  disabled={!issue.nodeId}
+                  onClick={() => issue.nodeId && onSelectNode(issue.nodeId)}
+                  variant="ghost"
+                >
+                  {node ? (
+                    <CategoryChip
+                      category={category}
+                      nodeType={node.nodeType}
+                      size={22}
+                    />
+                  ) : (
+                    <span className="size-[22px]" />
+                  )}
+                  <span className="min-w-0 flex-1 whitespace-normal">
+                    <span className="block font-semibold text-[12.5px] leading-[1.3]">
+                      {node?.name ?? "Flow"}
+                    </span>
+                    <span className="block text-[12.5px] text-muted-foreground leading-[1.4]">
+                      {issueText(issue)}
+                    </span>
+                  </span>
+                  {issue.nodeId ? (
+                    <ArrowRight className="mt-1 size-[13px] text-muted-foreground" />
+                  ) : null}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </section>
   );
 }

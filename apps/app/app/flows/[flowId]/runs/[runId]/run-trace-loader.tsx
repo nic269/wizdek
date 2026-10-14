@@ -1,11 +1,19 @@
 "use client";
 
-import { LoadingState } from "@repo/design-system";
+import { Shimmer } from "@repo/design-system";
 import dynamic from "next/dynamic";
 
 const RunTrace = dynamic(
   () => import("./run-trace").then((module) => module.RunTrace),
-  { loading: () => <LoadingState label="Loading run" />, ssr: false }
+  {
+    loading: () => (
+      <div className="flex flex-1 flex-col gap-3 p-5" role="status">
+        <span className="sr-only">Loading run</span>
+        <Shimmer className="w-48" />
+      </div>
+    ),
+    ssr: false,
+  }
 );
 
 export interface RunTraceProps {

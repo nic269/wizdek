@@ -16,12 +16,7 @@ interface SwitchCase {
   value: string;
 }
 
-export function SwitchForm({
-  config,
-  disabled,
-  onChange,
-  sampleFields,
-}: ConfigFormProps) {
+export function SwitchForm({ config, disabled, onChange }: ConfigFormProps) {
   const cases = asArray<SwitchCase>(config.cases);
   const setCases = (next: SwitchCase[]) => onChange({ ...config, cases: next });
 
@@ -33,7 +28,6 @@ export function SwitchForm({
           label="Switch value"
           onChange={(value) => onChange({ ...config, value })}
           placeholder="{{ $json.country }}"
-          sampleFields={sampleFields}
           value={asString(config.value)}
         />
       </Field>

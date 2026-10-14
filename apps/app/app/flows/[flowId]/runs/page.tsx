@@ -1,7 +1,11 @@
-import { buttonVariants, PageHeader } from "@repo/design-system";
+import { PageHeader } from "@repo/design-system";
+import type { Metadata } from "next";
 import { AppShellLayout } from "../../../app-shell-layout";
+import { BackLink } from "../../../lib/back-link";
 import { requireFlowAccess } from "../flow-access";
 import { RunsPanel } from "./runs-panel";
+
+export const metadata: Metadata = { title: "Runs" };
 
 export default async function FlowRunsPage({
   params,
@@ -13,21 +17,12 @@ export default async function FlowRunsPage({
 
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          actions={
-            <a
-              className={buttonVariants({ variant: "outline" })}
-              href={`/flows/${flowId}`}
-            >
-              Open flow
-            </a>
-          }
-          description="Every run of this flow, newest first."
-          title={`Runs of ${flowName}`}
-        />
-        <RunsPanel flowId={flowId} />
-      </div>
+      <PageHeader
+        back={<BackLink href={`/flows/${flowId}`}>{flowName}</BackLink>}
+        description="Every run of this flow, newest first."
+        title="Runs"
+      />
+      <RunsPanel flowId={flowId} />
     </AppShellLayout>
   );
 }

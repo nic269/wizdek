@@ -7,6 +7,7 @@ import {
   type TestInfo,
 } from "@playwright/test";
 
+const SWITCHER_NAME = /^Switch organization/;
 export const DASHBOARD_URL_PATTERN = /\/dashboard$/;
 export const E2E_PASSWORD = "Password123!";
 const VERIFICATION_SUBJECT_PREFIX = "Verify your ";
@@ -107,6 +108,10 @@ export const signUp = async ({
   await completeEmailVerification({ email, page });
 };
 
+/**
+ * Creates an organization and makes it the active one: from the empty state
+ * for someone without one, otherwise from the switcher's menu.
+ */
 export const createOrganization = async ({
   name,
   page,
@@ -114,10 +119,21 @@ export const createOrganization = async ({
   name: string;
   page: Page;
 }) => {
-  await page.getByPlaceholder("Organization name").fill(name);
-  await page.getByRole("button", { exact: true, name: "Create" }).click();
+  const firstName = page.getByLabel("Organization name", { exact: true });
+  const switcher = page.getByRole("button", { name: SWITCHER_NAME });
+  await expect(firstName.or(switcher)).toBeVisible();
+  if (await firstName.isVisible()) {
+    await firstName.fill(name);
+    await page.getByRole("button", { exact: true, name: "Create" }).click();
+  } else {
+    await switcher.click();
+    await page.getByRole("menuitem", { name: "Create organization" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Name", { exact: true }).fill(name);
+    await dialog.getByRole("button", { exact: true, name: "Create" }).click();
+  }
   await expect(
-    page.getByRole("listitem").getByText(name, { exact: true })
+    page.getByRole("button", { name: `Switch organization, current: ${name}` })
   ).toBeVisible();
 };
 

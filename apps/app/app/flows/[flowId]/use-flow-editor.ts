@@ -69,6 +69,7 @@ export const useFlowEditor = (flowId: string, canManage: boolean) => {
   const [flow, setFlow] = useState<Flow | null>(null);
   const [nodeTypes, setNodeTypes] = useState<NodeType[]>([]);
   const [version, setVersion] = useState(0);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [saved, setSaved] = useState(JSON.stringify(EMPTY));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,7 @@ export const useFlowEditor = (flowId: string, canManage: boolean) => {
     const canvas = definitionToCanvas(definition);
     setFlow(data.flow);
     setVersion(data.version?.version ?? 0);
+    setSavedAt(data.version ? new Date(data.version.createdAt) : null);
     setNodes(canvas.nodes);
     setEdges(canvas.edges);
     setSaved(JSON.stringify(definition));
@@ -224,6 +226,7 @@ export const useFlowEditor = (flowId: string, canManage: boolean) => {
       });
       setFlow(data.flow);
       setVersion(data.version.version);
+      setSavedAt(new Date(data.version.createdAt));
       setSaved(JSON.stringify(definition));
       return true;
     } catch (cause) {
@@ -260,6 +263,7 @@ export const useFlowEditor = (flowId: string, canManage: boolean) => {
     reload: load,
     removeNode,
     save,
+    savedAt,
     selectedNode: nodes.find((node) => node.id === selectedNodeId) ?? null,
     selectNode,
     setSelectedNodeId,

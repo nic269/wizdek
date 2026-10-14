@@ -11,6 +11,7 @@ import {
 } from "@repo/design-system";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -57,7 +58,7 @@ const CreateOrganizationDialog = ({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-[420px]">
         <form
-          className="flex flex-col gap-4"
+          className="flex min-h-0 flex-col"
           onSubmit={async (event) => {
             event.preventDefault();
             if (await create(name)) {
@@ -73,18 +74,20 @@ const CreateOrganizationDialog = ({
               to an organization. You become its Owner.
             </DialogDescription>
           </DialogHeader>
-          <Field data-invalid={error ? true : undefined}>
-            <FieldLabel htmlFor="new-organization-name">Name</FieldLabel>
-            <Input
-              aria-invalid={error ? true : undefined}
-              autoFocus
-              id="new-organization-name"
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Organization name, e.g. wizloft"
-              value={name}
-            />
-            {error ? <FieldError>{error}</FieldError> : null}
-          </Field>
+          <DialogBody>
+            <Field data-invalid={error ? true : undefined}>
+              <FieldLabel htmlFor="new-organization-name">Name</FieldLabel>
+              <Input
+                aria-invalid={error ? true : undefined}
+                autoFocus
+                id="new-organization-name"
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Organization name, e.g. wizloft"
+                value={name}
+              />
+              {error ? <FieldError>{error}</FieldError> : null}
+            </Field>
+          </DialogBody>
           <DialogFooter>
             <Button
               onClick={() => onOpenChange(false)}

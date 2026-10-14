@@ -1,17 +1,114 @@
 /*
- * The canvas fills its grid cell, so the builder needs a definite height.
- * Scoped to the builder so nothing here reaches the app shell.
+ * React Flow, restyled to the wizdek canvas. Scoped to `.flow-canvas` so
+ * nothing here reaches the rest of the app.
  */
-.flow-builder {
-  height: calc(100vh - 13rem);
-  min-height: 30rem;
+.flow-canvas .react-flow {
+  --xy-background-color: var(--sunken);
+  --xy-edge-stroke: #b9b8b1;
+  --xy-edge-stroke-selected: var(--accent);
+  --xy-edge-stroke-width: 1.5;
+  --xy-connectionline-stroke: var(--accent);
+  --xy-node-boxshadow-selected: none;
+  --xy-selection-background-color: color-mix(
+    in oklab,
+    var(--accent) 8%,
+    transparent
+  );
+  --xy-selection-border: 1px solid var(--accent);
+  --xy-edge-label-background-color: #fff;
+  --xy-edge-label-color: var(--foreground-2);
+  font-family: var(--font-sans);
 }
 
-.flow-builder > div {
-  min-height: 0;
+.flow-canvas .react-flow__node {
+  border-radius: var(--radius-card);
+}
+
+.flow-canvas .react-flow__node:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Handles: inputs are hollow, outputs filled with the step's category colour. */
+.flow-canvas .flow-handle {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.flow-canvas .flow-handle-in {
+  background: #fff;
+  border: 2px solid var(--cat);
+}
+
+.flow-canvas .flow-handle-out {
+  background: var(--cat);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--cat);
+}
+
+.flow-canvas .react-flow__handle.connectingfrom,
+.flow-canvas .react-flow__handle:focus-visible {
+  box-shadow:
+    0 0 0 3px var(--accent-soft),
+    0 0 0 1px var(--accent);
+}
+
+/* The false branch of an If is dashed. */
+.flow-canvas .react-flow__edge.edge-false .react-flow__edge-path {
+  stroke-dasharray: 4 4;
+}
+
+.flow-canvas .react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 2;
+}
+
+/* Edge counts in a run trace: mono pills. */
+.flow-canvas .react-flow__edge-textbg {
+  rx: 9;
+  ry: 9;
+  stroke: var(--trace-edge-border, var(--input));
+  stroke-width: 1;
+}
+
+.flow-canvas .react-flow__edge-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--trace-edge-ink, var(--foreground-2));
+}
+
+/* Zoom controls, bottom left: a white stack with hairlines. */
+.flow-canvas .react-flow__controls {
   overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-menu);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.flow-builder aside {
-  height: 100%;
+.flow-canvas .react-flow__controls-button {
+  width: 32px;
+  height: 30px;
+  color: var(--foreground-2);
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-canvas .react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.flow-canvas .react-flow__controls-button:hover {
+  background: var(--hover);
+}
+
+.flow-canvas .react-flow__controls-button svg {
+  max-width: 12px;
+  max-height: 12px;
+  fill: currentColor;
+}
+
+.flow-canvas .react-flow__attribution {
+  color: var(--faint);
+  background: transparent;
 }
