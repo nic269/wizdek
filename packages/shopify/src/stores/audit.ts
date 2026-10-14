@@ -8,6 +8,7 @@ export type ShopifyAuditAction =
   | "shopify.store.connected"
   | "shopify.store.oauth_started"
   | "shopify.store.disconnected"
+  | "shopify.store.environment_changed"
   | "shopify.graphql.query"
   | "shopify.graphql.mutation";
 

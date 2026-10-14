@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "#components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "#components/ui/input-group";
 import { cn } from "#lib/utils";
 
 function Command({
@@ -51,7 +50,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-panel! p-0",
+          "top-[14vh] w-[min(560px,calc(100vw-32px))] max-w-none! translate-y-0 overflow-hidden rounded-panel! border border-border p-0 sm:max-w-none",
           className
         )}
         showCloseButton={showCloseButton}
@@ -64,23 +63,26 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  endAdornment,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  endAdornment?: React.ReactNode;
+}) {
   return (
-    <div className="p-1 pb-0" data-slot="command-input-wrapper">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
-        <CommandPrimitive.Input
-          className={cn(
-            "w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
-            className
-          )}
-          data-slot="command-input"
-          {...props}
-        />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
-      </InputGroup>
+    <div
+      className="flex items-center gap-2.5 border-border border-b px-3.5"
+      data-slot="command-input-wrapper"
+    >
+      <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+      <CommandPrimitive.Input
+        className={cn(
+          "h-[50px] w-full flex-1 bg-transparent text-[15px] text-foreground outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        data-slot="command-input"
+        {...props}
+      />
+      {endAdornment}
     </div>
   );
 }
@@ -92,7 +94,7 @@ function CommandList({
   return (
     <CommandPrimitive.List
       className={cn(
-        "no-scrollbar max-h-72 scroll-py-1 overflow-y-auto overflow-x-hidden outline-none",
+        "no-scrollbar max-h-[360px] scroll-py-1.5 overflow-y-auto overflow-x-hidden p-1.5 outline-none",
         className
       )}
       data-slot="command-list"
@@ -107,7 +109,10 @@ function CommandEmpty({
 }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
   return (
     <CommandPrimitive.Empty
-      className={cn("py-6 text-center text-sm", className)}
+      className={cn(
+        "p-7 text-center text-[13.5px] text-muted-foreground",
+        className
+      )}
       data-slot="command-empty"
       {...props}
     />
@@ -121,7 +126,7 @@ function CommandGroup({
   return (
     <CommandPrimitive.Group
       className={cn(
-        "overflow-hidden p-1 text-foreground **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground **:[[cmdk-group-heading]]:text-xs",
+        "overflow-hidden text-foreground **:[[cmdk-group-heading]]:px-2.5 **:[[cmdk-group-heading]]:pt-2.5 **:[[cmdk-group-heading]]:pb-1.5 **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:text-muted-foreground",
         className
       )}
       data-slot="command-group"
@@ -151,7 +156,7 @@ function CommandItem({
   return (
     <CommandPrimitive.Item
       className={cn(
-        "group/command-item relative flex cursor-default select-none items-center gap-2 in-data-[slot=dialog-content]:rounded-lg! rounded-sm px-2 py-1.5 text-sm outline-hidden data-[disabled=true]:pointer-events-none data-selected:bg-muted data-selected:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 data-selected:*:[svg]:text-foreground",
+        "group/command-item relative flex cursor-default select-none items-center gap-2.5 rounded-[7px] px-2.5 py-[9px] font-medium text-[13.5px] leading-[1.2] outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-hover data-[selected=true]:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
         className
       )}
       data-slot="command-item"
@@ -170,7 +175,7 @@ function CommandShortcut({
   return (
     <span
       className={cn(
-        "ml-auto text-muted-foreground text-xs tracking-widest group-data-selected/command-item:text-foreground",
+        "ml-auto text-muted-foreground text-xs tracking-widest group-data-[selected=true]/command-item:text-foreground",
         className
       )}
       data-slot="command-shortcut"

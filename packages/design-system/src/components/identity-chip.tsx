@@ -27,14 +27,18 @@ export const IdentityChip = ({
   id,
   name,
   size = 30,
+  variant = "store",
   className,
 }: {
   id: string;
   name: string;
   size?: number | undefined;
+  /** Stores and databases use a light tint; organizations a deeper one. */
+  variant?: "store" | "organization" | undefined;
   className?: string | undefined;
 }) => {
   const hue = hueFromId(id);
+  const organization = variant === "organization";
   return (
     <span
       aria-hidden="true"
@@ -43,10 +47,16 @@ export const IdentityChip = ({
         className
       )}
       style={{
-        background: `oklch(0.95 0.035 ${hue})`,
-        borderRadius: size >= 28 ? 8 : 6,
-        color: `oklch(0.5 0.13 ${hue})`,
-        fontSize: Math.round(size * 0.37),
+        background: organization
+          ? `oklch(0.9 0.05 ${hue})`
+          : `oklch(0.95 0.035 ${hue})`,
+        borderRadius: size >= 28 ? 8 : Math.round(size / 4),
+        color: organization
+          ? `oklch(0.38 0.08 ${hue})`
+          : `oklch(0.5 0.13 ${hue})`,
+        fontSize: organization
+          ? Math.round(size * 0.46)
+          : Math.round(size * 0.37),
         height: size,
         width: size,
       }}

@@ -20,6 +20,7 @@ import {
   listOrganizationsForUser,
   normalizeOrganizationSlug,
 } from "@repo/auth/organizations";
+import { listPermissions } from "@repo/auth/permissions";
 import { sendInvitationMail } from "@repo/mail";
 import type { ApiContext } from "../context";
 import { ApiError } from "../errors";
@@ -359,9 +360,11 @@ export const organizationsRouter = {
     const user = await requireUser(context.headers);
     const organizations = await listOrganizationsForUser(user.id);
     return {
-      data: organizations.map(({ memberships, ...organization }) => ({
+      data: organizations.map(({ _count, memberships, ...organization }) => ({
         ...organization,
+        memberCount: _count.memberships,
         role: memberships[0]?.role?.name ?? null,
+        storeCount: _count.shopifyStores,
       })),
     };
   }),
@@ -369,6 +372,19 @@ export const organizationsRouter = {
     list: listOrganizationMembers,
     updateRole: updateOrganizationMemberRole,
   },
+  permissions: os.organizations.permissions.handler(
+    async ({ context, input }) => {
+      const user = await requireUser(context.headers);
+      return {
+        data: {
+          permissions: await listPermissions({
+            organizationId: input.organizationId,
+            userId: user.id,
+          }),
+        },
+      };
+    }
+  ),
   roles: {
     create: createOrganizationRole,
     list: listOrganizationRoles,

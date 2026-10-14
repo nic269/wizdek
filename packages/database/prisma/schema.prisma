@@ -351,6 +351,14 @@ enum ShopifyStoreStatus {
   DISCONNECTED
 }
 
+/// Which kind of environment a store or database is, shown as a risk signal
+/// next to its name. Writes against PROD ask for confirmation.
+enum TargetEnvironment {
+  PROD
+  STAGING
+  DEV
+}
+
 enum ShopifyTokenMode {
   NON_EXPIRING
   EXPIRING
@@ -384,6 +392,7 @@ model ShopifyStore {
   name                   String
   strategy               ShopifyCredentialStrategy
   status                 ShopifyStoreStatus        @default(PENDING)
+  environment            TargetEnvironment         @default(DEV)
   scopes                 String[]
   apiVersion             String
   currencyCode           String?
@@ -531,6 +540,8 @@ model FlowRun {
   flowId            String
   flowVersionId     String
   storeId           String
+  /// Counts the flow's runs from 1, for display as "Run #12".
+  number            Int
   status            FlowRunStatus @default(QUEUED)
   triggerType       String
   triggerPayload    Json?
@@ -549,6 +560,7 @@ model FlowRun {
   steps        FlowRunStep[]
   items        FlowRunItem[]
 
+  @@unique([flowId, number])
   @@index([flowId, createdAt])
   @@index([organizationId, createdAt])
   @@map("flow_run")
@@ -640,11 +652,14 @@ model DatabaseConnection {
   organizationId String
   name           String
   engine         DatabaseEngine
+  environment    TargetEnvironment @default(DEV)
   urlEncrypted   String         @db.Text
   host           String
   port           Int
   databaseName   String
   username       String
+  /// The URL's sslmode parameter, kept for display; null when it has none.
+  sslMode        String?
   serverVersion  String?
   lastCheckedAt  DateTime?
   lastCheckError String?        @db.Text

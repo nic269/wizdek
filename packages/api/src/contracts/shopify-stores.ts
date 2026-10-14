@@ -4,6 +4,7 @@ import {
   organizationIdInput,
   shopDomainSchema,
   storeIdInput,
+  targetEnvironmentSchema,
 } from "./shopify-shared";
 
 export const MAX_STORES_PER_CONNECT_REQUEST = 10;
@@ -28,6 +29,7 @@ export const shopifyStoreSchema = z.object({
   connectedAt: z.date().nullable(),
   createdAt: z.date(),
   currencyCode: z.string().nullable(),
+  environment: targetEnvironmentSchema,
   /** Whether a webhook signing secret is saved; the secret is never returned. */
   hasWebhookSecret: z.boolean(),
   id: z.string(),
@@ -43,6 +45,8 @@ export const shopifyStoreSchema = z.object({
 });
 
 const appId = z.string().min(1);
+/** Set on connect; when omitted a new store is DEV and a reconnect keeps its value. */
+const environmentInput = { environment: targetEnvironmentSchema.optional() };
 
 export const shopifyStoresContract = {
   beginOAuth: apiContract
@@ -53,7 +57,13 @@ export const shopifyStoresContract = {
       successStatus: 201,
       summary: "Start an OAuth install for a store",
     })
-    .input(organizationIdInput.extend({ appId, shopDomain: shopDomainSchema }))
+    .input(
+      organizationIdInput.extend({
+        appId,
+        shopDomain: shopDomainSchema,
+        ...environmentInput,
+      })
+    )
     .output(
       dataEnvelope(
         z.object({
@@ -105,6 +115,7 @@ export const shopifyStoresContract = {
     .input(
       organizationIdInput.extend({
         appId,
+        ...environmentInput,
         shopDomains: z
           .array(shopDomainSchema)
           .min(1)
@@ -134,6 +145,7 @@ export const shopifyStoresContract = {
     .input(
       organizationIdInput.extend({
         accessToken: z.string().trim().min(8).max(512),
+        ...environmentInput,
         shopDomain: shopDomainSchema,
       })
     )
@@ -174,4 +186,30 @@ export const shopifyStoresContract = {
     })
     .input(storeIdInput.extend({ secret: z.string().trim().min(8).max(512) }))
     .output(dataEnvelope(shopifyStoreSchema)),
+  update: apiContract
+    .route({
+      method: "PATCH",
+      operationId: "shopifyStores.update",
+      path: "/api/shopify/stores/{storeId}",
+      summary: "Change a store's environment",
+    })
+    .input(storeIdInput.extend({ environment: targetEnvironmentSchema }))
+    .output(dataEnvelope(shopifyStoreSchema)),
+  usage: apiContract
+    .route({
+      method: "GET",
+      operationId: "shopifyStores.usage",
+      path: "/api/shopify/stores/{storeId}/usage",
+      summary: "Count the flows, runs and activations that use a store",
+    })
+    .input(storeIdInput)
+    .output(
+      dataEnvelope(
+        z.object({
+          activationCount: z.number().int(),
+          flowCount: z.number().int(),
+          runCount: z.number().int(),
+        })
+      )
+    ),
 };

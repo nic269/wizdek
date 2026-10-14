@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiContract, dataEnvelope } from "./base";
-import { organizationIdInput } from "./shopify-shared";
+import { organizationIdInput, targetEnvironmentSchema } from "./shopify-shared";
 
 export const databaseEngineSchema = z.enum(["POSTGRESQL"]);
 
@@ -16,6 +16,7 @@ export const databaseConnectionSchema = z.object({
   createdAt: z.date(),
   databaseName: z.string(),
   engine: databaseEngineSchema,
+  environment: targetEnvironmentSchema,
   host: z.string(),
   id: z.string(),
   lastCheckError: z.string().nullable(),
@@ -24,6 +25,8 @@ export const databaseConnectionSchema = z.object({
   organizationId: z.string(),
   port: z.number().int(),
   serverVersion: z.string().nullable(),
+  /** The URL's sslmode parameter, or null when it has none. */
+  sslMode: z.string().nullable(),
   updatedAt: z.date(),
   username: z.string(),
 });
@@ -40,6 +43,7 @@ export const databaseBackupSchema = z.object({
   fileName: z.string().nullable(),
   id: z.string(),
   organizationId: z.string(),
+  requestedByName: z.string().nullable(),
   serverVersion: z.string().nullable(),
   /** Bytes, as a decimal string: archives can exceed what a JSON number holds exactly. */
   sizeBytes: z.string().nullable(),
@@ -72,7 +76,11 @@ export const databaseConnectionsContract = {
       summary: "Save a database connection after checking it",
     })
     .input(
-      organizationIdInput.extend({ name: connectionName, url: connectionUrl })
+      organizationIdInput.extend({
+        environment: targetEnvironmentSchema.optional(),
+        name: connectionName,
+        url: connectionUrl,
+      })
     )
     .output(dataEnvelope(databaseConnectionSchema)),
   delete: apiContract
@@ -111,6 +119,7 @@ export const databaseConnectionsContract = {
     })
     .input(
       connectionIdInput.extend({
+        environment: targetEnvironmentSchema.optional(),
         name: connectionName.optional(),
         url: connectionUrl.optional(),
       })

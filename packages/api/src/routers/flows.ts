@@ -15,6 +15,7 @@ import {
   listFlowRunItems,
   listFlowRuns,
   listFlows,
+  listFlowVersions,
   readDefinition,
   saveFlowVersion,
   startFlowRun,
@@ -58,12 +59,26 @@ const toPublicRun = (run: FlowRunRecord) => ({
   flowVersionId: run.flowVersionId,
   id: run.id,
   itemCount: run.itemCount,
+  number: run.number,
   organizationId: run.organizationId,
   startedAt: run.startedAt,
   startedById: run.startedById,
   status: run.status,
   storeId: run.storeId,
   triggerType: run.triggerType,
+});
+
+const toPublicRunPage = (page: Awaited<ReturnType<typeof listFlowRuns>>) => ({
+  data: page.items.map((run) => ({
+    ...toPublicRun(run),
+    flowName: run.flowName,
+    itemCounts: run.itemCounts,
+    startedByName: run.startedByName,
+    storeDomain: run.storeDomain,
+    storeEnvironment: run.storeEnvironment as "PROD" | "STAGING" | "DEV",
+    storeName: run.storeName,
+  })),
+  pageInfo: { nextCursor: page.nextCursor },
 });
 
 const scopeOf = (flow: FlowRecord) => ({
@@ -168,16 +183,23 @@ const runsRouter = {
       cursor: input.cursor,
       limit: input.limit,
     });
-    return {
-      data: page.items.map((run) => ({
-        ...toPublicRun(run),
-        itemCounts: run.itemCounts,
-        startedByName: run.startedByName,
-        storeName: run.storeName,
-      })),
-      pageInfo: { nextCursor: page.nextCursor },
-    };
+    return toPublicRunPage(page);
   }),
+  listForOrganization: os.flows.runs.listForOrganization.handler(
+    async ({ context, input }) => {
+      await requireOrganizationAccess(
+        context.headers,
+        input.organizationId,
+        "flows",
+        "read"
+      );
+      const page = await listFlowRuns(
+        { organizationId: input.organizationId },
+        { cursor: input.cursor, limit: input.limit }
+      );
+      return toPublicRunPage(page);
+    }
+  ),
   start: os.flows.runs.start.handler(async ({ context, input }) => {
     const { flow, user } = await requireFlowPermission(
       context.headers,
@@ -339,6 +361,9 @@ export const flowsRouter = {
           ...flow.lastRun,
           status: flow.lastRun.status as FlowRunRecord["status"],
         },
+        stepCount: flow.stepCount,
+        triggerType: flow.triggerType,
+        version: flow.version,
       })),
     };
   }),
@@ -399,5 +424,13 @@ export const flowsRouter = {
       "manage"
     );
     return { data: validateDefinition(parseDefinition(input.definition)) };
+  }),
+  versions: os.flows.versions.handler(async ({ context, input }) => {
+    const { flow } = await requireFlowPermission(
+      context.headers,
+      input.flowId,
+      "read"
+    );
+    return { data: await listFlowVersions(scopeOf(flow)) };
   }),
 };

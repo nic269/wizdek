@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createDashboardNav, dashboardNav } from "./navigation";
+import {
+  createDashboardNav,
+  dashboardNav,
+  dashboardNavGroups,
+} from "./navigation";
 
 describe("dashboard navigation", () => {
   it("includes the invitation-only members surface while enabled", () => {
@@ -24,5 +28,21 @@ describe("dashboard navigation", () => {
       href: "/database",
       label: "Database",
     });
+  });
+});
+
+describe("dashboard navigation groups", () => {
+  it("puts the work under Workspace and administration under Organization", () => {
+    expect(dashboardNavGroups.map(({ label }) => label)).toEqual([
+      "Workspace",
+      "Organization",
+    ]);
+    expect(dashboardNavGroups[0]?.items.map(({ label }) => label)).toEqual([
+      "Dashboard",
+      "Stores",
+      "GraphQL",
+      "Flows",
+      "Database",
+    ]);
   });
 });

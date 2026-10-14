@@ -42,6 +42,24 @@ const invalidInput = (message: string) =>
   new FlowServiceError("INPUT_INVALID", message);
 
 /** Unscoped lookup, for deciding which organization a run id belongs to. */
+/**
+ * Creates a run with the next number of its flow. An advisory lock on the
+ * flow makes concurrent starts take numbers one at a time.
+ */
+export const createNumberedRun = (
+  data: Omit<Prisma.FlowRunUncheckedCreateInput, "number">
+): Promise<FlowRunRecord> =>
+  prisma.$transaction(async (transaction) => {
+    await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${data.flowId}, 0))::text AS locked`;
+    const last = await transaction.flowRun.aggregate({
+      _max: { number: true },
+      where: { flowId: data.flowId },
+    });
+    return transaction.flowRun.create({
+      data: { ...data, number: (last._max.number ?? 0) + 1 },
+    });
+  });
+
 export const findRunById = (runId: string): Promise<FlowRunRecord | null> =>
   prisma.flowRun.findUnique({ where: { id: runId } });
 
@@ -162,16 +180,14 @@ export const startFlowRun = async (
     scope.organizationId
   );
 
-  const run = await prisma.flowRun.create({
-    data: {
-      flowId: flow.id,
-      flowVersionId: version.id,
-      organizationId: scope.organizationId,
-      startedById: input.actorId,
-      storeId: store.id,
-      triggerPayload,
-      triggerType: "manual",
-    },
+  const run = await createNumberedRun({
+    flowId: flow.id,
+    flowVersionId: version.id,
+    organizationId: scope.organizationId,
+    startedById: input.actorId,
+    storeId: store.id,
+    triggerPayload,
+    triggerType: "manual",
   });
   await enqueueFlowRun(dependencies.jobs, run);
   return run;
@@ -191,15 +207,13 @@ export const startTriggeredRun = async (
   trigger: { payload: Record<string, unknown>; type: "webhook" | "schedule" },
   jobs: JobQueueProvider
 ): Promise<FlowRunRecord> => {
-  const run = await prisma.flowRun.create({
-    data: {
-      flowId: activation.flowId,
-      flowVersionId: activation.flowVersionId,
-      organizationId: activation.organizationId,
-      storeId: activation.storeId,
-      triggerPayload: trigger.payload as Prisma.InputJsonObject,
-      triggerType: trigger.type,
-    },
+  const run = await createNumberedRun({
+    flowId: activation.flowId,
+    flowVersionId: activation.flowVersionId,
+    organizationId: activation.organizationId,
+    storeId: activation.storeId,
+    triggerPayload: trigger.payload as Prisma.InputJsonObject,
+    triggerType: trigger.type,
   });
   await enqueueFlowRun(jobs, run);
   return run;
@@ -231,21 +245,34 @@ export const cancelFlowRun = async (
 };
 
 export interface FlowRunListItem extends FlowRunRecord {
+  flowName: string;
   /** Items of the run in each status, across all nodes. */
   itemCounts: Record<string, number>;
   startedByName: string | null;
+  storeDomain: string;
+  storeEnvironment: string;
   storeName: string;
 }
 
+/**
+ * Runs newest first, of one flow or, without a flow id, of the whole
+ * organization.
+ */
 export const listFlowRuns = async (
-  scope: FlowScope,
+  scope: { flowId?: string | undefined; organizationId: string },
   page: { cursor?: string | undefined; limit: number }
 ): Promise<{ items: FlowRunListItem[]; nextCursor: string | null }> => {
   const rows = await prisma.flowRun.findMany({
-    include: { store: { select: { name: true } } },
+    include: {
+      flow: { select: { name: true } },
+      store: { select: { environment: true, name: true, shopDomain: true } },
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: page.limit + 1,
-    where: { flowId: scope.flowId, organizationId: scope.organizationId },
+    where: {
+      organizationId: scope.organizationId,
+      ...(scope.flowId ? { flowId: scope.flowId } : {}),
+    },
     ...(page.cursor ? { cursor: { id: page.cursor }, skip: 1 } : {}),
   });
   const runs = rows.slice(0, page.limit);
@@ -272,12 +299,15 @@ export const listFlowRuns = async (
     counts.set(group.runId, entry);
   }
   return {
-    items: runs.map(({ store, ...run }) => ({
+    items: runs.map(({ flow, store, ...run }) => ({
       ...run,
+      flowName: flow.name,
       itemCounts: counts.get(run.id) ?? {},
       startedByName: run.startedById
         ? (names.get(run.startedById) ?? null)
         : null,
+      storeDomain: store.shopDomain,
+      storeEnvironment: store.environment,
       storeName: store.name,
     })),
     nextCursor: rows.length > page.limit ? (runs.at(-1)?.id ?? null) : null,

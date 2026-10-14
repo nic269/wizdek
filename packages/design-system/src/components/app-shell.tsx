@@ -1,177 +1,68 @@
 "use client";
 
-import { MenuIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { Menu, PanelLeft, Search, X } from "../icons";
 import { cn } from "../lib/cn";
-import { Button } from "./button";
-import { Input } from "./input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { Kbd } from "./ui/kbd";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet";
+import { Button } from "./ui/button";
+import { Sheet, SheetContent, SheetTitle } from "./ui/sheet";
+
+export interface AppShellLinkProps {
+  "aria-current"?: "page" | undefined;
+  children: ReactNode;
+  className?: string | undefined;
+  href: string;
+  onClick?: (() => void) | undefined;
+  title?: string | undefined;
+}
+
+export interface AppShellIndicator {
+  /** Text after the dot, such as "1" or "1 running". */
+  label: string;
+  /** Pulses the dot, for work in progress. */
+  pulse?: boolean | undefined;
+  tone: "warning" | "info";
+}
 
 export interface AppShellNavItem {
   href: string;
   icon: ReactNode;
+  indicator?: AppShellIndicator | null | undefined;
   label: string;
 }
-export interface AppShellLinkProps {
-  "aria-current"?: "page" | undefined;
-  "aria-label"?: string | undefined;
-  children: ReactNode;
-  className?: string;
-  href: string;
-  onClick?: () => void;
-  title?: string | undefined;
-}
 
-export type AppShellLinkComponent = ComponentType<AppShellLinkProps>;
+export interface AppShellNavGroup {
+  items: readonly AppShellNavItem[];
+  label: string;
+}
 
 export interface AppShellProps {
-  brand?: string;
-  brandMark?: ReactNode;
+  /** The signed-in account button at the foot of the sidebar. */
+  account: ReactNode;
+  brand: { meta: string; name: string };
   children: ReactNode;
-  className?: string;
-  collapsed?: boolean;
-  currentPath?: string;
-  linkComponent?: AppShellLinkComponent;
-  navItems?: readonly AppShellNavItem[];
-  onCollapsedChange?: (collapsed: boolean) => void;
-  searchLabel?: string;
-  sidebar?: ReactNode;
-  surfaceClassName?: string;
-  topbar?: ReactNode;
-}
-
-interface ShellNavigationProps {
-  brand: string;
-  brandMark?: ReactNode;
   collapsed: boolean;
   currentPath: string;
-  linkComponent: AppShellLinkComponent | undefined;
-  mobile?: boolean;
-  navItems: readonly AppShellNavItem[];
-  onCollapseToggle: (() => void) | undefined;
-  onNavigate: () => void;
-  onSearchOpen: () => void;
-  searchLabel: string;
-  sidebar?: ReactNode;
-  topbar?: ReactNode;
+  linkComponent: ComponentType<AppShellLinkProps>;
+  navGroups: readonly AppShellNavGroup[];
+  onCollapsedChange: (collapsed: boolean) => void;
+  onSearch: () => void;
+  /** The organization switcher under the brand. */
+  organization: ReactNode;
 }
 
-const BrandMark = ({
-  brand,
-  brandMark,
-  title,
-}: {
-  brand: string;
-  brandMark?: ReactNode;
-  title?: string | undefined;
-}) => (
-  <div
-    className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-[7px] bg-[var(--foreground)] font-semibold text-[var(--background)] text-sm"
-    title={title}
-  >
-    {brandMark ?? <span aria-hidden="true">{brand.slice(0, 1)}</span>}
-    {brandMark ? null : <span className="sr-only">{brand}</span>}
-  </div>
-);
+const DOT_TONES = {
+  info: "bg-(--status-info-dot)",
+  warning: "bg-(--status-warning-dot)",
+} as const;
 
-const railIconButtonClassName =
-  "bg-transparent text-muted-foreground hover:bg-[var(--shell-hover,var(--muted))] hover:text-foreground aria-expanded:bg-transparent";
-
-const ShellIdentity = ({
-  brand,
-  brandMark,
-  collapsed,
-  mobile,
-  onCollapseToggle,
-}: Pick<
-  ShellNavigationProps,
-  "brand" | "brandMark" | "collapsed" | "mobile" | "onCollapseToggle"
->) => {
-  if (!mobile && collapsed) {
-    return (
-      <div className="flex shrink-0 flex-col items-center gap-2">
-        <BrandMark brand={brand} brandMark={brandMark} title={brand} />
-        <Button
-          aria-expanded="false"
-          aria-label="Expand navigation"
-          className={cn("size-9", railIconButtonClassName)}
-          onClick={onCollapseToggle}
-          size="icon-sm"
-          title="Expand navigation"
-          type="button"
-          variant="ghost"
-        >
-          <PanelLeftIcon aria-hidden="true" />
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "flex h-9 shrink-0 items-center gap-2.5 pl-0.5",
-        mobile ? "px-3 pt-3" : null
-      )}
-    >
-      <BrandMark brand={brand} brandMark={brandMark} />
-      <span className="flex-1 truncate font-semibold text-base text-foreground">
-        {brand}
-      </span>
-      {mobile ? null : (
-        <Button
-          aria-expanded={!collapsed}
-          aria-label="Collapse navigation"
-          className={cn("size-8", railIconButtonClassName)}
-          onClick={onCollapseToggle}
-          size="icon-sm"
-          title="Collapse navigation"
-          type="button"
-          variant="ghost"
-        >
-          <PanelLeftIcon aria-hidden="true" />
-        </Button>
-      )}
-    </div>
-  );
-};
-
-const ShellDestinations = ({
-  collapsed,
-  currentPath,
-  mobile,
-  linkComponent,
-  navItems,
-  onNavigate,
-  sidebar,
-}: Pick<
-  ShellNavigationProps,
-  | "collapsed"
-  | "currentPath"
-  | "mobile"
-  | "linkComponent"
-  | "navItems"
-  | "onNavigate"
-  | "sidebar"
->) => {
-  const showLabels = mobile || !collapsed;
-  const NavigationLink = linkComponent ?? "a";
-  // Nested destinations (a settings page and its sub-pages) both match the
-  // path, so only the most specific one is marked current.
-  const activeHref = navItems
+/** The nav item whose href is the longest prefix of the path is current. */
+const activeHrefOf = (groups: readonly AppShellNavGroup[], path: string) =>
+  groups
+    .flatMap(({ items }) => items)
     .filter(
       ({ href }) =>
-        currentPath === href ||
-        (href !== "/" && currentPath.startsWith(`${href}/`))
+        path === href || (href !== "/" && path.startsWith(`${href}/`))
     )
     .reduce<string | undefined>(
       (longest, { href }) =>
@@ -179,344 +70,272 @@ const ShellDestinations = ({
       undefined
     );
 
-  return (
-    <nav
-      aria-label="Primary"
-      className={cn(
-        "flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain",
-        mobile ? "px-3" : null
-      )}
-    >
-      {navItems.map((item) => {
-        const active = item.href === activeHref;
-        return (
-          <NavigationLink
-            aria-current={active ? "page" : undefined}
-            aria-label={showLabels ? undefined : item.label}
-            className={cn(
-              "flex h-9 shrink-0 items-center gap-3 rounded-[6px] px-2.5 font-medium text-[var(--shell-nav-foreground,var(--foreground))] text-sm outline-none transition-[background-color,color] duration-150 hover:bg-[var(--shell-hover,var(--muted))] motion-reduce:transition-none",
-              active
-                ? "bg-[var(--foreground)] text-[var(--primary-foreground)] hover:bg-[var(--foreground)]"
-                : null,
-              showLabels ? "justify-between" : "justify-center"
-            )}
-            href={item.href}
-            key={item.href}
-            onClick={onNavigate}
-            title={showLabels ? undefined : item.label}
-          >
-            {showLabels ? <span className="truncate">{item.label}</span> : null}
-            <span aria-hidden="true" className="shrink-0">
-              {item.icon}
-            </span>
-          </NavigationLink>
-        );
-      })}
-      {showLabels ? <div>{sidebar}</div> : null}
-    </nav>
-  );
-};
+const BrandMark = ({ size = 28 }: { size?: number }) => (
+  <span
+    aria-hidden="true"
+    className="grid shrink-0 place-items-center bg-(--brand-mark) font-bold text-white leading-none tracking-[-0.04em]"
+    style={{ borderRadius: 7, fontSize: size / 2, height: size, width: size }}
+  >
+    w
+  </span>
+);
 
-const ShellSearch = ({
-  collapsed,
-  mobile,
-  onSearchOpen,
-  searchLabel,
-}: Pick<
-  ShellNavigationProps,
-  "collapsed" | "mobile" | "onSearchOpen" | "searchLabel"
->) => {
-  if (!mobile && collapsed) {
-    return (
-      <div className="flex shrink-0 justify-center">
-        <Button
-          aria-keyshortcuts="Meta+K Control+K"
-          aria-label={searchLabel}
-          className={cn("size-9", railIconButtonClassName)}
-          onClick={onSearchOpen}
-          size="icon-sm"
-          title={searchLabel}
-          type="button"
-          variant="ghost"
+const NavList = ({
+  activeHref,
+  groups,
+  linkComponent: Link,
+  mobile = false,
+  onNavigate,
+}: {
+  activeHref: string | undefined;
+  groups: readonly AppShellNavGroup[];
+  linkComponent: ComponentType<AppShellLinkProps>;
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) => (
+  <nav
+    aria-label="Primary"
+    className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto overflow-x-hidden [scrollbar-width:none]"
+  >
+    {groups.map((group) => (
+      <div className="flex flex-col gap-px" key={group.label}>
+        <div
+          className={cn(
+            "font-(family-name:--label-font) text-(length:--label-size) px-2 pt-1 pb-[7px] font-medium text-sidebar-muted leading-none tracking-(--label-tracking) [text-transform:var(--label-transform)]",
+            !mobile && "in-data-[collapsed=true]:hidden"
+          )}
         >
-          <SearchIcon aria-hidden="true" />
-        </Button>
+          {group.label}
+        </div>
+        {group.items.map((item) => {
+          const active = item.href === activeHref;
+          return (
+            <Link
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2.5 rounded-[7px] px-2 font-medium text-sidebar-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                mobile ? "h-11 rounded-lg px-2.5 text-sm" : "h-8 text-[13.5px]",
+                active
+                  ? "bg-sidebar-active shadow-(--sidebar-active-shadow)"
+                  : "hover:bg-sidebar-hover"
+              )}
+              href={item.href}
+              key={item.href}
+              onClick={onNavigate}
+              title={item.label}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid w-4 shrink-0 place-items-center [&_svg]:size-4",
+                  mobile && "w-[17px] [&_svg]:size-[17px]",
+                  active ? "text-sidebar-foreground" : "text-sidebar-muted"
+                )}
+              >
+                {item.icon}
+              </span>
+              <span
+                className={cn(
+                  "flex-1 truncate",
+                  !mobile && "in-data-[collapsed=true]:hidden"
+                )}
+              >
+                {item.label}
+              </span>
+              {item.indicator ? (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-[5px] font-medium text-[11px] text-sidebar-muted leading-none",
+                    !mobile && "in-data-[collapsed=true]:hidden"
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      DOT_TONES[item.indicator.tone],
+                      item.indicator.pulse &&
+                        "animate-[wz-pulse_1.6s_ease_infinite]"
+                    )}
+                  />
+                  {item.indicator.label}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
       </div>
-    );
-  }
-  return (
-    <Button
-      aria-keyshortcuts="Meta+K Control+K"
-      aria-label={searchLabel}
-      className={cn(
-        "h-9 shrink-0 justify-start gap-2.5 rounded-[6px] border-[var(--shell-hairline,var(--border))] bg-card pr-2 pl-2.5 font-normal text-[var(--shell-subtle-foreground,var(--muted-foreground))] hover:border-[var(--shell-hairline-strong,var(--ring))] hover:bg-card",
-        mobile ? "mx-3" : null
-      )}
-      onClick={onSearchOpen}
-      type="button"
-      variant="outline"
-    >
-      <SearchIcon aria-hidden="true" />
-      <span className="flex-1 text-left">Search</span>
-      <Kbd className="h-auto rounded-[4px] border border-[var(--shell-hairline,var(--border))] bg-transparent px-[5px] py-1 text-[11px] leading-none">
-        ⌘K
-      </Kbd>
-    </Button>
-  );
-};
+    ))}
+  </nav>
+);
 
-const ShellNavigation = ({
+/**
+ * The product shell: a 244px sidebar on the canvas (a 60px rail when
+ * collapsed) beside one white panel that scrolls on its own. Under 820px the
+ * sidebar becomes a top bar with a left sheet.
+ */
+export const AppShell = ({
+  account,
   brand,
-  brandMark,
+  children,
   collapsed,
   currentPath,
   linkComponent,
-  mobile = false,
-  navItems,
-  onCollapseToggle,
-  onNavigate,
-  onSearchOpen,
-  searchLabel,
-  sidebar,
-  topbar,
-}: ShellNavigationProps) => (
-  <>
-    <ShellIdentity
-      brand={brand}
-      brandMark={brandMark}
-      collapsed={collapsed}
-      mobile={mobile}
-      onCollapseToggle={onCollapseToggle}
-    />
-    <ShellDestinations
-      collapsed={collapsed}
-      currentPath={currentPath}
-      linkComponent={linkComponent}
-      mobile={mobile}
-      navItems={navItems}
-      onNavigate={onNavigate}
-      sidebar={sidebar}
-    />
-    <ShellSearch
-      collapsed={collapsed}
-      mobile={mobile}
-      onSearchOpen={onSearchOpen}
-      searchLabel={searchLabel}
-    />
-    {topbar ? (
-      <div
-        className={cn("shrink-0", mobile ? "px-3 pb-3" : null)}
-        data-collapsed={collapsed && !mobile}
-        data-shell-footer=""
-      >
-        {topbar}
-      </div>
-    ) : null}
-  </>
-);
-
-export const AppShell = ({
-  children,
-  navItems = [],
-  brand = "App",
-  brandMark,
-  collapsed: controlledCollapsed,
-  linkComponent,
-  sidebar,
-  topbar,
-  className,
-  surfaceClassName,
-  currentPath = "",
+  navGroups,
   onCollapsedChange,
-  searchLabel = "Search",
+  onSearch,
+  organization,
 }: AppShellProps) => {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const contentRef = useRef<HTMLDivElement>(null);
-  const collapsed = controlledCollapsed ?? internalCollapsed;
-  const NavigationLink = linkComponent ?? "a";
-  const handleCollapseToggle = () => {
-    const nextCollapsed = !collapsed;
-    if (controlledCollapsed === undefined) {
-      setInternalCollapsed(nextCollapsed);
-    }
-    onCollapsedChange?.(nextCollapsed);
-  };
-
-  useEffect(() => {
-    const openGlobalSearch = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        setMobileNavOpen(false);
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener("keydown", openGlobalSearch);
-    return () => window.removeEventListener("keydown", openGlobalSearch);
-  }, []);
-
-  useEffect(() => {
-    if (currentPath) {
-      contentRef.current?.focus();
-      setMobileNavOpen(false);
-    }
-  }, [currentPath]);
-
-  const searchResults = navItems.filter(({ label }) =>
-    label.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const activeHref = activeHrefOf(navGroups, currentPath);
+  const pageTitle =
+    navGroups
+      .flatMap(({ items }) => items)
+      .find(({ href }) => href === activeHref)?.label ?? brand.name;
 
   return (
-    <div
-      className={cn(
-        "min-h-screen bg-[var(--shell-canvas,var(--muted))] text-foreground lg:h-dvh lg:overflow-hidden",
-        surfaceClassName,
-        className
-      )}
-    >
+    <div className="flex h-dvh flex-col overflow-hidden bg-sidebar text-sidebar-foreground min-[820px]:flex-row">
       <a
-        className="sr-only z-50 rounded-lg bg-card px-4 py-3 font-medium focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:ring-2 focus:ring-ring"
+        className="sr-only z-50 rounded-lg bg-card px-3 py-2 text-foreground focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
         href="#main-content"
       >
         Skip to content
       </a>
 
-      <div
+      <aside
         className={cn(
-          "grid min-h-screen transition-[grid-template-columns] duration-200 motion-reduce:transition-none lg:h-dvh",
-          collapsed
-            ? "lg:grid-cols-[5.25rem_1fr]"
-            : "lg:grid-cols-[16.75rem_1fr]"
+          "hidden flex-none flex-col gap-3.5 overflow-hidden px-2.5 pt-3.5 pb-3 transition-[width] duration-200 ease-out min-[820px]:flex",
+          collapsed ? "w-[60px]" : "w-[244px]"
         )}
+        data-collapsed={collapsed}
       >
-        <aside className="hidden py-4 pl-5 lg:block" data-collapsed={collapsed}>
-          <div className="flex h-full flex-col gap-3.5 overflow-hidden py-2.5">
-            <ShellNavigation
-              brand={brand}
-              brandMark={brandMark}
-              collapsed={collapsed}
-              currentPath={currentPath}
-              linkComponent={linkComponent}
-              navItems={navItems}
-              onCollapseToggle={handleCollapseToggle}
-              onNavigate={() => setMobileNavOpen(false)}
-              onSearchOpen={() => setSearchOpen(true)}
-              searchLabel={searchLabel}
-              sidebar={sidebar}
-              topbar={topbar}
-            />
-          </div>
-        </aside>
-
-        <main className="min-w-0 lg:flex lg:h-dvh lg:min-h-0 lg:flex-col lg:py-4 lg:pr-4 lg:pl-5">
-          <header className="flex min-h-16 items-center justify-between gap-3 border-border border-b bg-card px-4 lg:hidden">
-            <div className="flex items-center gap-3">
-              <BrandMark brand={brand} brandMark={brandMark} />
-              <span className="font-semibold text-sm">{brand}</span>
+        <div className="flex min-h-8 items-center gap-2 px-1">
+          <BrandMark />
+          <div className="flex in-data-[collapsed=true]:hidden min-w-0 flex-1 flex-col gap-0.5">
+            <div className="whitespace-nowrap font-semibold text-sm leading-[1.1] tracking-[-0.01em]">
+              {brand.name}
             </div>
+            <div className="font-medium font-mono text-[10.5px] text-sidebar-muted leading-none tracking-[0.02em]">
+              {brand.meta}
+            </div>
+          </div>
+          <Button
+            aria-label="Collapse sidebar"
+            className="grid in-data-[collapsed=true]:hidden size-7 place-items-center rounded-md text-sidebar-muted outline-none hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            onClick={() => onCollapsedChange(true)}
+            title="Collapse sidebar"
+            type="button"
+            variant="ghost"
+          >
+            <PanelLeft className="size-4" />
+          </Button>
+        </div>
+
+        {organization}
+
+        <Button
+          aria-keyshortcuts="Meta+K"
+          className="flex h-8 items-center in-data-[collapsed=true]:justify-center gap-2 rounded-[7px] border border-sidebar-border bg-sidebar-field in-data-[collapsed=true]:px-0 px-2 text-[13px] text-sidebar-muted outline-none hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+          onClick={onSearch}
+          title="Search or jump to…"
+          type="button"
+          variant="ghost"
+        >
+          <Search className="size-[15px] shrink-0" />
+          <span className="in-data-[collapsed=true]:hidden flex-1 text-left">
+            Search or jump to…
+          </span>
+          <kbd className="in-data-[collapsed=true]:hidden rounded border border-sidebar-border px-[5px] py-[3px] font-medium font-mono text-[10.5px] leading-none">
+            ⌘K
+          </kbd>
+        </Button>
+
+        <NavList
+          activeHref={activeHref}
+          groups={navGroups}
+          linkComponent={linkComponent}
+        />
+
+        {collapsed ? (
+          <Button
+            aria-label="Expand sidebar"
+            className="grid h-8 place-items-center rounded-[7px] text-sidebar-muted outline-none hover:bg-sidebar-hover focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            onClick={() => onCollapsedChange(false)}
+            title="Expand sidebar"
+            type="button"
+            variant="ghost"
+          >
+            <PanelLeft className="size-4" />
+          </Button>
+        ) : null}
+
+        {account}
+      </aside>
+
+      <header className="flex h-[52px] flex-none items-center gap-2.5 px-3 min-[820px]:hidden">
+        <Button
+          aria-label="Open navigation"
+          className="grid size-9 place-items-center rounded-lg border border-sidebar-border bg-sidebar-field text-sidebar-foreground"
+          onClick={() => setSheetOpen(true)}
+          type="button"
+          variant="ghost"
+        >
+          <Menu className="size-[18px]" />
+        </Button>
+        <BrandMark size={26} />
+        <div className="flex-1 truncate font-semibold text-sm">{pageTitle}</div>
+        <Button
+          aria-label="Search or jump to…"
+          className="grid size-9 place-items-center rounded-lg border border-sidebar-border bg-sidebar-field text-sidebar-foreground"
+          onClick={onSearch}
+          type="button"
+          variant="ghost"
+        >
+          <Search className="size-[17px]" />
+        </Button>
+      </header>
+
+      <Sheet onOpenChange={setSheetOpen} open={sheetOpen}>
+        <SheetContent
+          className="w-[280px] gap-3.5 bg-sidebar px-3 py-4 text-sidebar-foreground"
+          showCloseButton={false}
+          side="left"
+        >
+          <div className="flex items-center gap-2">
+            <BrandMark />
+            <SheetTitle className="flex-1 font-semibold text-sm">
+              {brand.name}
+            </SheetTitle>
             <Button
-              aria-label="Open navigation"
-              className="min-h-11 min-w-11 bg-transparent aria-expanded:bg-transparent"
-              onClick={() => setMobileNavOpen(true)}
-              size="icon-sm"
+              aria-label="Close navigation"
+              className="grid size-8 place-items-center text-sidebar-muted"
+              onClick={() => setSheetOpen(false)}
               type="button"
               variant="ghost"
             >
-              <MenuIcon aria-hidden="true" />
+              <X className="size-[18px]" />
             </Button>
-          </header>
-
-          <div
-            className="flex flex-col p-4 outline-none lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:p-0"
-            id="main-content"
-            ref={contentRef}
-            tabIndex={-1}
-          >
-            {children}
           </div>
-        </main>
-      </div>
-
-      <Sheet onOpenChange={setMobileNavOpen} open={mobileNavOpen}>
-        <SheetContent
-          className={cn(
-            "flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-3.5 bg-[var(--shell-canvas,var(--muted))] p-0 motion-reduce:transform-none motion-reduce:transition-none",
-            surfaceClassName
-          )}
-          side="left"
-        >
-          <SheetHeader className="sr-only">
-            <SheetTitle>Navigation</SheetTitle>
-          </SheetHeader>
-          <ShellNavigation
-            brand={brand}
-            brandMark={brandMark}
-            collapsed={false}
-            currentPath={currentPath}
+          {organization}
+          <NavList
+            activeHref={activeHref}
+            groups={navGroups}
             linkComponent={linkComponent}
             mobile
-            navItems={navItems}
-            onCollapseToggle={undefined}
-            onNavigate={() => setMobileNavOpen(false)}
-            onSearchOpen={() => {
-              setMobileNavOpen(false);
-              setSearchOpen(true);
-            }}
-            searchLabel={searchLabel}
-            sidebar={sidebar}
-            topbar={topbar}
+            onNavigate={() => setSheetOpen(false)}
           />
+          {account}
         </SheetContent>
       </Sheet>
 
-      <Dialog
-        onOpenChange={(open) => {
-          setSearchOpen(open);
-          if (!open) {
-            setSearchQuery("");
-          }
-        }}
-        open={searchOpen}
+      <main
+        className="flex min-h-0 min-w-0 flex-1 px-2 pb-2 min-[820px]:pt-2 min-[820px]:pl-0"
+        id="main-content"
       >
-        <DialogContent
-          className={cn("motion-reduce:animate-none", surfaceClassName)}
-        >
-          <DialogHeader>
-            <DialogTitle>{searchLabel}</DialogTitle>
-            <DialogDescription>
-              Search the destinations available to your account.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            aria-label="Search destinations"
-            autoFocus
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Type a destination"
-            value={searchQuery}
-          />
-          <nav aria-label="Search results" className="space-y-1">
-            {searchResults.length ? (
-              searchResults.map((item) => (
-                <NavigationLink
-                  className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 outline-none hover:bg-muted"
-                  href={item.href}
-                  key={item.href}
-                  onClick={() => setSearchOpen(false)}
-                >
-                  <span aria-hidden="true">{item.icon}</span>
-                  <span>{item.label}</span>
-                </NavigationLink>
-              ))
-            ) : (
-              <p className="px-3 py-4 text-muted-foreground text-sm">
-                No available destinations match.
-              </p>
-            )}
-          </nav>
-        </DialogContent>
-      </Dialog>
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-auto rounded-panel border border-sidebar-border bg-card text-foreground">
+          {children}
+        </div>
+      </main>
     </div>
   );
 };

@@ -13,6 +13,9 @@ export const shopDomainSchema = z
   .toLowerCase()
   .regex(SHOP_DOMAIN_PATTERN, "Enter a domain like your-store.myshopify.com.");
 
+/** Which kind of environment a store or database is: the risk signal. */
+export const targetEnvironmentSchema = z.enum(["PROD", "STAGING", "DEV"]);
+
 export const organizationIdInput = z.object({
   organizationId: z.string().min(1),
 });

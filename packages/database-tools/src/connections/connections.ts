@@ -52,15 +52,19 @@ const inspectUrl = async (url: string) => {
       lastCheckedAt: new Date(),
       port: target.port,
       serverVersion: server.text,
+      sslMode: target.sslMode ?? null,
       urlEncrypted: encryptSecret(url.trim()),
       username: target.username,
     },
   };
 };
 
+export type ConnectionEnvironment = "PROD" | "STAGING" | "DEV";
+
 const auditMetadata = (connection: DatabaseConnectionRecord) => ({
   databaseName: connection.databaseName,
   engine: connection.engine,
+  environment: connection.environment,
   host: connection.host,
   name: connection.name,
 });
@@ -109,6 +113,7 @@ export const openConnection = (
 /** Saves a connection after proving it can be reached. */
 export const createConnection = async (input: {
   actorId: string;
+  environment?: ConnectionEnvironment | undefined;
   name: string;
   organizationId: string;
   url: string;
@@ -121,6 +126,7 @@ export const createConnection = async (input: {
         data: {
           ...columns,
           createdById: input.actorId,
+          ...(input.environment ? { environment: input.environment } : {}),
           name,
           organizationId: input.organizationId,
         },
@@ -149,6 +155,7 @@ export const createConnection = async (input: {
 /** Renames a connection, replaces its URL, or both. A new URL is checked first. */
 export const updateConnection = async (input: {
   actorId: string;
+  environment?: ConnectionEnvironment | undefined;
   name?: string;
   scope: ConnectionScope;
   url?: string;
@@ -160,7 +167,11 @@ export const updateConnection = async (input: {
   try {
     return await prisma.$transaction(async (db) => {
       const connection = await db.databaseConnection.update({
-        data: { ...columns, name },
+        data: {
+          ...columns,
+          ...(input.environment ? { environment: input.environment } : {}),
+          name,
+        },
         where: { id: existing.id },
       });
       await recordDatabaseAudit(db, {
@@ -168,6 +179,7 @@ export const updateConnection = async (input: {
         actorId: input.actorId,
         metadata: {
           ...auditMetadata(connection),
+          environmentChanged: connection.environment !== existing.environment,
           renamed: name !== existing.name,
           urlReplaced: Boolean(input.url),
         },

@@ -5,7 +5,7 @@ import {
   dataEnvelope,
   paginatedDataEnvelope,
 } from "./base";
-import { organizationIdInput } from "./shopify-shared";
+import { organizationIdInput, targetEnvironmentSchema } from "./shopify-shared";
 
 export const flowStatusSchema = z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]);
 export const flowRunStatusSchema = z.enum([
@@ -88,12 +88,31 @@ export const flowRunSchema = z.object({
   flowVersionId: z.string(),
   id: z.string(),
   itemCount: z.number().int(),
+  /** Counts the flow's runs from 1. */
+  number: z.number().int(),
   organizationId: z.string(),
   startedAt: z.date().nullable(),
   startedById: z.string().nullable(),
   status: flowRunStatusSchema,
   storeId: z.string(),
   triggerType: z.string(),
+});
+
+export const flowRunListItemSchema = flowRunSchema.extend({
+  flowName: z.string(),
+  /** Items of the run in each status, across all nodes. */
+  itemCounts: z.record(z.string(), z.number().int()),
+  startedByName: z.string().nullable(),
+  storeDomain: z.string(),
+  storeEnvironment: targetEnvironmentSchema,
+  storeName: z.string(),
+});
+
+export const flowVersionListItemSchema = z.object({
+  createdAt: z.date(),
+  createdByName: z.string().nullable(),
+  id: z.string(),
+  version: z.number().int(),
 });
 
 export const flowRunNodeSchema = z.object({
@@ -227,9 +246,15 @@ export const flowsContract = {
               .object({
                 createdAt: z.date(),
                 id: z.string(),
+                number: z.number().int(),
                 status: flowRunStatusSchema,
+                storeName: z.string(),
               })
               .nullable(),
+            /** Steps in the current version, the trigger included. */
+            stepCount: z.number().int(),
+            triggerType: z.string().nullable(),
+            version: z.number().int().nullable(),
           })
         )
       )
@@ -295,15 +320,16 @@ export const flowsContract = {
         summary: "List a flow's runs, newest first",
       })
       .input(flowIdInput.extend(cursorPaginationInputSchema.shape))
-      .output(
-        paginatedDataEnvelope(
-          flowRunSchema.extend({
-            itemCounts: z.record(z.string(), z.number().int()),
-            startedByName: z.string().nullable(),
-            storeName: z.string(),
-          })
-        )
-      ),
+      .output(paginatedDataEnvelope(flowRunListItemSchema)),
+    listForOrganization: apiContract
+      .route({
+        method: "GET",
+        operationId: "flows.runs.listForOrganization",
+        path: "/api/organizations/{organizationId}/flow-runs",
+        summary: "List the organization's runs across flows, newest first",
+      })
+      .input(organizationIdInput.extend(cursorPaginationInputSchema.shape))
+      .output(paginatedDataEnvelope(flowRunListItemSchema)),
     start: apiContract
       .route({
         method: "POST",
@@ -368,4 +394,13 @@ export const flowsContract = {
     })
     .input(organizationIdInput.extend({ definition: definitionInput }))
     .output(dataEnvelope(flowValidationSchema)),
+  versions: apiContract
+    .route({
+      method: "GET",
+      operationId: "flows.versions",
+      path: "/api/flows/{flowId}/versions",
+      summary: "List a flow's saved versions, newest first",
+    })
+    .input(flowIdInput)
+    .output(dataEnvelope(z.array(flowVersionListItemSchema))),
 };

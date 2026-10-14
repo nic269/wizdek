@@ -13,6 +13,12 @@ export const listOrganizationsForUser = (userId: string) =>
   prisma.organization.findMany({
     orderBy: { createdAt: "asc" },
     select: {
+      _count: {
+        select: {
+          memberships: { where: { status: "ACTIVE" } },
+          shopifyStores: true,
+        },
+      },
       id: true,
       memberships: {
         select: { role: { select: { name: true } } },

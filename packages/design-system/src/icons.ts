@@ -11,6 +11,7 @@ export {
   Box,
   Boxes,
   Braces,
+  Building2,
   CalendarClock,
   Check,
   ChevronDown,

@@ -158,7 +158,16 @@ export const organizationsContract = {
       summary: "List organizations for the current user",
     })
     .input(emptyInputSchema)
-    .output(dataEnvelope(z.array(organizationSchema))),
+    .output(
+      dataEnvelope(
+        z.array(
+          organizationSchema.extend({
+            memberCount: z.number().int(),
+            storeCount: z.number().int(),
+          })
+        )
+      )
+    ),
   members: {
     list: apiContract
       .route({
@@ -185,6 +194,15 @@ export const organizationsContract = {
       )
       .output(z.void()),
   },
+  permissions: apiContract
+    .route({
+      method: "GET",
+      operationId: "organizations.permissions",
+      path: "/api/organizations/{organizationId}/permissions",
+      summary: "List the permissions the current user holds in an organization",
+    })
+    .input(organizationIdInput)
+    .output(dataEnvelope(z.object({ permissions: z.array(z.string()) }))),
   roles: {
     create: apiContract
       .route({

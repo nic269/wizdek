@@ -1,18 +1,18 @@
+import { appConfig } from "@repo/config";
 import { DesignSystemProvider } from "@repo/design-system";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ActiveOrganizationProvider } from "./lib/active-organization";
 import { Providers } from "./providers";
 import "./styles.css";
-import "./product-shell.css";
 
 export const metadata: Metadata = {
-  description: "Authenticated product app surface.",
+  description: appConfig.description,
   robots: {
     follow: false,
     index: false,
   },
-  title: "Shopify Toolkit App",
+  title: { default: appConfig.name, template: `%s · ${appConfig.shortName}` },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

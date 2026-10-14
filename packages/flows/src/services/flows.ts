@@ -38,32 +38,120 @@ export const findFlowById = (flowId: string): Promise<FlowRecord | null> =>
   prisma.flow.findUnique({ where: { id: flowId } });
 
 export interface FlowListItem extends FlowRecord {
-  lastRun: { createdAt: Date; id: string; status: string } | null;
+  lastRun: {
+    createdAt: Date;
+    id: string;
+    number: number;
+    status: string;
+    storeName: string;
+  } | null;
+  /** How many steps the current version has, its trigger included. */
+  stepCount: number;
+  /** The current version's trigger node type, or null without one. */
+  triggerType: string | null;
+  /** The current version number, or null before the first save. */
+  version: number | null;
 }
 
+const triggerOf = (
+  definition: FlowDefinition,
+  registry: NodeRegistry
+): string | null =>
+  definition.nodes.find(
+    (node) => registry.get(node.type)?.category === "trigger"
+  )?.type ?? null;
+
 export const listFlows = async (
-  organizationId: string
+  organizationId: string,
+  registry: NodeRegistry = builtInRegistry
 ): Promise<FlowListItem[]> => {
   const flows = await prisma.flow.findMany({
     orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     where: { organizationId },
   });
-  const lastRuns = await prisma.flowRun.findMany({
-    distinct: ["flowId"],
-    orderBy: [{ flowId: "asc" }, { createdAt: "desc" }],
-    select: { createdAt: true, flowId: true, id: true, status: true },
-    where: { organizationId },
-  });
-  const byFlow = new Map(lastRuns.map((run) => [run.flowId, run]));
+  const versionIds = flows
+    .map(({ currentVersionId }) => currentVersionId)
+    .filter((id): id is string => Boolean(id));
+  const [lastRuns, versions] = await Promise.all([
+    prisma.flowRun.findMany({
+      distinct: ["flowId"],
+      orderBy: [{ flowId: "asc" }, { createdAt: "desc" }],
+      select: {
+        createdAt: true,
+        flowId: true,
+        id: true,
+        number: true,
+        status: true,
+        store: { select: { name: true } },
+      },
+      where: { organizationId },
+    }),
+    prisma.flowVersion.findMany({
+      select: { definition: true, id: true, version: true },
+      where: { id: { in: versionIds } },
+    }),
+  ]);
+  const runByFlow = new Map(lastRuns.map((run) => [run.flowId, run]));
+  const versionById = new Map(versions.map((version) => [version.id, version]));
   return flows.map((flow) => {
-    const run = byFlow.get(flow.id);
+    const run = runByFlow.get(flow.id);
+    const version = flow.currentVersionId
+      ? versionById.get(flow.currentVersionId)
+      : undefined;
+    const definition = version
+      ? flowDefinitionSchema.safeParse(version.definition)
+      : undefined;
+    const nodes = definition?.success ? definition.data : undefined;
     return {
       ...flow,
       lastRun: run
-        ? { createdAt: run.createdAt, id: run.id, status: run.status }
+        ? {
+            createdAt: run.createdAt,
+            id: run.id,
+            number: run.number,
+            status: run.status,
+            storeName: run.store.name,
+          }
         : null,
+      stepCount: nodes?.nodes.length ?? 0,
+      triggerType: nodes ? triggerOf(nodes, registry) : null,
+      version: version?.version ?? null,
     };
   });
+};
+
+export interface FlowVersionListItem {
+  createdAt: Date;
+  createdByName: string | null;
+  id: string;
+  version: number;
+}
+
+/** A flow's saved versions, newest first. */
+export const listFlowVersions = async (
+  scope: FlowScope,
+  limit = 20
+): Promise<FlowVersionListItem[]> => {
+  const versions = await prisma.flowVersion.findMany({
+    orderBy: { version: "desc" },
+    select: { createdAt: true, createdById: true, id: true, version: true },
+    take: limit,
+    where: {
+      flow: { id: scope.flowId, organizationId: scope.organizationId },
+    },
+  });
+  const authorIds = [
+    ...new Set(versions.map(({ createdById }) => createdById).filter(Boolean)),
+  ] as string[];
+  const authors = await prisma.user.findMany({
+    select: { id: true, name: true },
+    where: { id: { in: authorIds } },
+  });
+  const names = new Map(authors.map(({ id, name }) => [id, name]));
+  return versions.map(({ createdById, ...version }) => ({
+    ...version,
+    createdByName: createdById ? (names.get(createdById) ?? null) : null,
+  }));
 };
 
 export const getFlow = async (scope: FlowScope): Promise<FlowWithVersion> => {

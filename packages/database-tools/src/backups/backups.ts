@@ -205,3 +205,20 @@ export const failStaleBackups = async (
   });
   return count;
 };
+
+/** Names of the people who started the given backups, by user id. */
+export const requesterNamesOf = async (
+  backups: Pick<DatabaseBackupRecord, "requestedById">[]
+): Promise<Map<string, string>> => {
+  const ids = [
+    ...new Set(backups.map(({ requestedById }) => requestedById)),
+  ].filter((id): id is string => Boolean(id));
+  if (ids.length === 0) {
+    return new Map();
+  }
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true },
+    where: { id: { in: ids } },
+  });
+  return new Map(users.map(({ id, name }) => [id, name]));
+};

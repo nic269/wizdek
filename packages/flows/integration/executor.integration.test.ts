@@ -252,6 +252,7 @@ const createRun = async (
     data: {
       flowId: flow.id,
       flowVersionId: version.id,
+      number: 1,
       organizationId: workspace.organizationId,
       startedById: workspace.userId,
       storeId: workspace.storeId,

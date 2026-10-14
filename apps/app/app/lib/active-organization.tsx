@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { OptionSelect } from "./option-select";
 
 export type Organization = Awaited<
   ReturnType<typeof apiClient.organizations.list>
@@ -140,26 +139,3 @@ export const useActiveOrganization = (): ActiveOrganizationValue => {
   useEffect(ensureLoaded, [ensureLoaded]);
   return rest;
 };
-
-export function OrganizationSwitcher() {
-  const { isLoading, organization, organizations, setOrganizationId } =
-    useActiveOrganization();
-
-  if (isLoading || organizations.length === 0) {
-    return null;
-  }
-
-  return (
-    <OptionSelect
-      aria-label="Active organization"
-      className="bg-card"
-      onValueChange={setOrganizationId}
-      options={organizations.map(({ id, name }) => ({
-        label: name,
-        value: id,
-      }))}
-      placeholder="Choose organization"
-      value={organization?.id ?? null}
-    />
-  );
-}

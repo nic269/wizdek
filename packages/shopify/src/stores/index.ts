@@ -2,6 +2,7 @@ export * from "./access-token-resolver";
 export * from "./app-registry";
 export * from "./audit";
 export * from "./connect-store";
+export * from "./environment";
 export * from "./errors";
 export * from "./health-check";
 export * from "./oauth-connection";

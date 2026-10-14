@@ -360,3 +360,40 @@ export const receiveWebhookDelivery = async (
   );
   return { duplicate: false, runId: run.id, status: 200 };
 };
+
+/**
+ * How much of the organization's flow work depends on a store, so removing
+ * it can state its impact: flows that ran on it or are activated on it.
+ */
+export const countStoreUsage = async (scope: {
+  organizationId: string;
+  storeId: string;
+}) => {
+  const where = {
+    organizationId: scope.organizationId,
+    storeId: scope.storeId,
+  };
+  const activeWhere = {
+    flow: { organizationId: scope.organizationId },
+    status: "ACTIVE" as const,
+    storeId: scope.storeId,
+  };
+  const [runCount, activationCount, runFlows, activeFlows] = await Promise.all([
+    prisma.flowRun.count({ where }),
+    prisma.flowActivation.count({ where: activeWhere }),
+    prisma.flowRun.findMany({
+      distinct: ["flowId"],
+      select: { flowId: true },
+      where,
+    }),
+    prisma.flowActivation.findMany({
+      distinct: ["flowId"],
+      select: { flowId: true },
+      where: activeWhere,
+    }),
+  ]);
+  const flowIds = new Set(
+    [...runFlows, ...activeFlows].map(({ flowId }) => flowId)
+  );
+  return { activationCount, flowCount: flowIds.size, runCount };
+};

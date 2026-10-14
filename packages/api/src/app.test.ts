@@ -381,6 +381,7 @@ describe("api app", () => {
     } as never);
     vi.mocked(listOrganizationsForUser).mockResolvedValue([
       {
+        _count: { memberships: 3, shopifyStores: 2 },
         id: "org-1",
         memberships: [{ role: { name: "Owner" } }],
         name: "Acme",
@@ -392,7 +393,16 @@ describe("api app", () => {
     expect(response.status).toBe(200);
     expect(listOrganizationsForUser).toHaveBeenCalledWith("user-1");
     expect(await response.json()).toEqual({
-      data: [{ id: "org-1", name: "Acme", role: "Owner", slug: "acme" }],
+      data: [
+        {
+          id: "org-1",
+          memberCount: 3,
+          name: "Acme",
+          role: "Owner",
+          slug: "acme",
+          storeCount: 2,
+        },
+      ],
     });
   });
 

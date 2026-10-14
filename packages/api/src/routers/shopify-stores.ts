@@ -1,6 +1,6 @@
 import { keys } from "@repo/auth/keys";
 import { hasPermission } from "@repo/auth/permissions";
-import { deactivateStoreActivations } from "@repo/flows";
+import { countStoreUsage, deactivateStoreActivations } from "@repo/flows";
 import { encryptSecret } from "@repo/shopify/crypto";
 import {
   beginOAuthConnection,
@@ -12,6 +12,8 @@ import {
   listStores,
   runStoreHealthCheck,
   type ShopifyStoreRecord,
+  type StoreEnvironment,
+  setStoreEnvironment,
   updateStore,
 } from "@repo/shopify/stores";
 import { getJobProvider } from "../jobs";
@@ -30,6 +32,7 @@ export const toPublicStore = (store: ShopifyStoreRecord) => ({
   connectedAt: store.connectedAt,
   createdAt: store.createdAt,
   currencyCode: store.currencyCode,
+  environment: store.environment,
   hasWebhookSecret: Boolean(store.webhookSecretEncrypted),
   id: store.id,
   lastHealthCheckAt: store.lastHealthCheckAt,
@@ -51,9 +54,23 @@ const scopeOf = (store: ShopifyStoreRecord) => ({
 const requireManager = (headers: Headers, organizationId: string) =>
   requireOrganizationAccess(headers, organizationId, "stores", "manage");
 
+/** Applies the environment chosen on connect, when it differs. */
+const applyEnvironment = async (
+  store: ShopifyStoreRecord,
+  environment: StoreEnvironment | undefined,
+  actorId: string
+) => {
+  if (!environment || store.environment === environment) {
+    return store;
+  }
+  await setStoreEnvironment(scopeOf(store), environment, actorId);
+  return getStore(scopeOf(store));
+};
+
 export const shopifyStoresRouter = {
   beginOAuth: os.shopifyStores.beginOAuth.handler(
     async ({ context, input }) => {
+      const { environment, ...connection } = input;
       const user = await requireManager(context.headers, input.organizationId);
       const redirectUrl = new URL(
         SHOPIFY_OAUTH_CALLBACK_PATH,
@@ -61,7 +78,7 @@ export const shopifyStoresRouter = {
       ).toString();
       const result = await withShopifyErrors(() =>
         beginOAuthConnection({
-          ...input,
+          ...connection,
           actorId: user.id,
           redirectUri: redirectUrl,
         })
@@ -71,7 +88,9 @@ export const shopifyStoresRouter = {
           authorizeUrl: result.authorizeUrl,
           installLink: result.installLink,
           redirectUrl,
-          store: toPublicStore(result.store),
+          store: toPublicStore(
+            await applyEnvironment(result.store, environment, user.id)
+          ),
         },
       };
     }
@@ -117,27 +136,39 @@ export const shopifyStoresRouter = {
   ),
   connectClientCredentials: os.shopifyStores.connectClientCredentials.handler(
     async ({ context, input }) => {
+      const { environment, ...connection } = input;
       const user = await requireManager(context.headers, input.organizationId);
       const results = await withShopifyErrors(() =>
-        connectClientCredentialsStores({ ...input, actorId: user.id })
+        connectClientCredentialsStores({ ...connection, actorId: user.id })
       );
       return {
-        data: results.map((result) => ({
-          error: result.ok ? null : result.error,
-          ok: result.ok,
-          shopDomain: result.shopDomain,
-          store: result.ok ? toPublicStore(result.store) : null,
-        })),
+        data: await Promise.all(
+          results.map(async (result) => ({
+            error: result.ok ? null : result.error,
+            ok: result.ok,
+            shopDomain: result.shopDomain,
+            store: result.ok
+              ? toPublicStore(
+                  await applyEnvironment(result.store, environment, user.id)
+                )
+              : null,
+          }))
+        ),
       };
     }
   ),
   connectStaticToken: os.shopifyStores.connectStaticToken.handler(
     async ({ context, input }) => {
+      const { environment, ...connection } = input;
       const user = await requireManager(context.headers, input.organizationId);
       const store = await withShopifyErrors(() =>
-        connectStaticTokenStore({ ...input, actorId: user.id })
+        connectStaticTokenStore({ ...connection, actorId: user.id })
       );
-      return { data: toPublicStore(store) };
+      return {
+        data: toPublicStore(
+          await applyEnvironment(store, environment, user.id)
+        ),
+      };
     }
   ),
   disconnect: os.shopifyStores.disconnect.handler(
@@ -191,4 +222,26 @@ export const shopifyStoresRouter = {
       return { data: toPublicStore(await getStore(scope)) };
     }
   ),
+  update: os.shopifyStores.update.handler(async ({ context, input }) => {
+    const { store, user } = await requireStorePermission(
+      context.headers,
+      input.storeId,
+      "stores",
+      "manage"
+    );
+    return {
+      data: toPublicStore(
+        await applyEnvironment(store, input.environment, user.id)
+      ),
+    };
+  }),
+  usage: os.shopifyStores.usage.handler(async ({ context, input }) => {
+    const { store } = await requireStorePermission(
+      context.headers,
+      input.storeId,
+      "stores",
+      "read"
+    );
+    return { data: await countStoreUsage(scopeOf(store)) };
+  }),
 };

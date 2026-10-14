@@ -7,6 +7,7 @@ import {
   deleteConnection,
   listBackups,
   listConnections,
+  requesterNamesOf,
   startBackup,
   updateConnection,
 } from "@repo/database-tools";
@@ -25,6 +26,7 @@ export const toPublicConnection = (connection: DatabaseConnectionRecord) => ({
   createdAt: connection.createdAt,
   databaseName: connection.databaseName,
   engine: connection.engine,
+  environment: connection.environment,
   host: connection.host,
   id: connection.id,
   lastCheckError: connection.lastCheckError,
@@ -33,11 +35,15 @@ export const toPublicConnection = (connection: DatabaseConnectionRecord) => ({
   organizationId: connection.organizationId,
   port: connection.port,
   serverVersion: connection.serverVersion,
+  sslMode: connection.sslMode,
   updatedAt: connection.updatedAt,
   username: connection.username,
 });
 
-export const toPublicBackup = (backup: DatabaseBackupRecord) => ({
+export const toPublicBackup = (
+  backup: DatabaseBackupRecord,
+  requesterNames: Map<string, string> = new Map()
+) => ({
   checksumSha256: backup.checksumSha256,
   completedAt: backup.completedAt,
   connectionId: backup.connectionId,
@@ -49,6 +55,9 @@ export const toPublicBackup = (backup: DatabaseBackupRecord) => ({
   fileName: backup.fileName,
   id: backup.id,
   organizationId: backup.organizationId,
+  requestedByName: backup.requestedById
+    ? (requesterNames.get(backup.requestedById) ?? null)
+    : null,
   serverVersion: backup.serverVersion,
   sizeBytes: backup.sizeBytes === null ? null : backup.sizeBytes.toString(),
   startedAt: backup.startedAt,
@@ -83,6 +92,7 @@ export const databaseConnectionsRouter = {
     const connection = await withDatabaseErrors(() =>
       createConnection({
         actorId: user.id,
+        environment: input.environment,
         name: input.name,
         organizationId: input.organizationId,
         url: input.url,
@@ -128,6 +138,7 @@ export const databaseConnectionsRouter = {
     const updated = await withDatabaseErrors(() =>
       updateConnection({
         actorId: user.id,
+        environment: input.environment,
         scope: scopeOf(connection),
         ...(input.name === undefined ? {} : { name: input.name }),
         ...(input.url ? { url: input.url } : {}),
@@ -164,7 +175,9 @@ export const databaseBackupsRouter = {
       input.backupId,
       "read"
     );
-    return { data: toPublicBackup(backup) };
+    return {
+      data: toPublicBackup(backup, await requesterNamesOf([backup])),
+    };
   }),
   list: os.databaseBackups.list.handler(async ({ context, input }) => {
     const { connection } = await requireConnectionPermission(
@@ -176,7 +189,8 @@ export const databaseBackupsRouter = {
       connectionId: connection.id,
       organizationId: connection.organizationId,
     });
-    return { data: backups.map(toPublicBackup) };
+    const names = await requesterNamesOf(backups);
+    return { data: backups.map((backup) => toPublicBackup(backup, names)) };
   }),
   listForOrganization: os.databaseBackups.listForOrganization.handler(
     async ({ context, input }) => {
@@ -189,7 +203,8 @@ export const databaseBackupsRouter = {
       const backups = await listBackups({
         organizationId: input.organizationId,
       });
-      return { data: backups.map(toPublicBackup) };
+      const names = await requesterNamesOf(backups);
+      return { data: backups.map((backup) => toPublicBackup(backup, names)) };
     }
   ),
   start: os.databaseBackups.start.handler(async ({ context, input }) => {
@@ -204,6 +219,8 @@ export const databaseBackupsRouter = {
         getJobProvider()
       )
     );
-    return { data: toPublicBackup(backup) };
+    return {
+      data: toPublicBackup(backup, await requesterNamesOf([backup])),
+    };
   }),
 };

@@ -116,6 +116,7 @@ const createRun = async (definition: FlowDefinition, csv: string) => {
     data: {
       flowId: flow.id,
       flowVersionId: version.id,
+      number: 1,
       organizationId: organization.id,
       storeId: store.id,
       triggerPayload: { csvFile: file.id },
