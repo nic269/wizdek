@@ -109,3 +109,19 @@ export const useOrganizationBackups = (
       ).data,
     queryKey: queryKeys.backups(organizationId),
   });
+
+export type ShopifyApp = Awaited<
+  ReturnType<typeof apiClient.shopifyApps.list>
+>["data"][number];
+
+export const useShopifyApps = (organizationId: string | null, enabled = true) =>
+  useQuery({
+    enabled: Boolean(organizationId) && enabled,
+    queryFn: async () =>
+      (
+        await apiClient.shopifyApps.list({
+          organizationId: organizationId ?? "",
+        })
+      ).data,
+    queryKey: ["shopify-apps", organizationId],
+  });
