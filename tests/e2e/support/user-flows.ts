@@ -1,6 +1,11 @@
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from "@playwright/test";
 
 export const DASHBOARD_URL_PATTERN = /\/dashboard$/;
 export const E2E_PASSWORD = "Password123!";
@@ -132,4 +137,17 @@ export const connectStoreWithToken = async ({
   await expect(page.getByTestId(`store-${shopDomain}`)).toContainText(
     "Connected"
   );
+};
+
+/**
+ * Picks an option of a shadcn Select. Its options open in a popup outside the
+ * trigger's container, so they are looked up on the page.
+ */
+export const chooseOption = async (
+  page: Page,
+  trigger: Locator,
+  option: string
+) => {
+  await trigger.click();
+  await page.getByRole("option", { exact: true, name: option }).click();
 };

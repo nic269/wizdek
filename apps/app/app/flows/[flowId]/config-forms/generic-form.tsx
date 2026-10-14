@@ -3,6 +3,7 @@
 import { Button, Input } from "@repo/design-system";
 import { Textarea } from "@repo/design-system/components/ui/textarea";
 import { useState } from "react";
+import { OptionSelect } from "../../../lib/option-select";
 import {
   asArray,
   asString,
@@ -11,7 +12,6 @@ import {
   Field,
   removeAt,
   replaceAt,
-  selectClassName,
 } from "./form-parts";
 
 interface SchemaProperty {
@@ -96,19 +96,13 @@ function PropertyControl({
   const choices = stringChoices(property);
   if (choices) {
     return (
-      <select
+      <OptionSelect
         aria-label={label}
-        className={selectClassName}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        value={asString(value, asString(property.default))}
-      >
-        {choices.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+        onValueChange={onChange}
+        options={choices.map((choice) => ({ label: choice, value: choice }))}
+        value={asString(value, asString(property.default)) || null}
+      />
     );
   }
   if (property.type === "boolean") {

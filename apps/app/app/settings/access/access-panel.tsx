@@ -16,6 +16,8 @@ import {
   CardTitle,
   Input,
 } from "@repo/design-system";
+import { Checkbox } from "@repo/design-system/components/ui/checkbox";
+import { Label } from "@repo/design-system/components/ui/label";
 import {
   type FormEvent,
   useCallback,
@@ -24,6 +26,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { OptionSelect } from "../../lib/option-select";
 
 type Organization = Awaited<
   ReturnType<typeof apiClient.organizations.list>
@@ -37,6 +40,9 @@ type Member = Awaited<
 type AuditLog = Awaited<
   ReturnType<typeof apiClient.organizations.auditLogs>
 >["data"][number];
+
+/** Stands in for the empty prefix, which matches every action. */
+const ALL_EVENTS = "all";
 
 const AUDIT_FILTERS = [
   { actionPrefix: "", label: "All events" },
@@ -225,21 +231,18 @@ export function AccessPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <select
+          <OptionSelect
             aria-label="Organization"
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            onChange={(event) => {
-              setOrganizationId(event.target.value);
-              loadAccess(event.target.value);
+            onValueChange={(value) => {
+              setOrganizationId(value);
+              loadAccess(value);
             }}
-            value={organizationId}
-          >
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
+            options={organizations.map(({ id, name }) => ({
+              label: name,
+              value: id,
+            }))}
+            value={organizationId || null}
+          />
           {error ? <p className="text-destructive text-sm">{error}</p> : null}
         </CardContent>
       </Card>
@@ -267,20 +270,19 @@ export function AccessPanel() {
                       {member.user.email}
                     </p>
                   </div>
-                  <select
+                  <OptionSelect
                     aria-label={`Role for ${member.user.email}`}
-                    className="h-9 rounded-md border bg-background px-2 text-sm"
-                    onChange={(event) => {
-                      updateMemberRole(member.id, event.target.value);
+                    className="sm:w-44"
+                    onValueChange={(value) => {
+                      updateMemberRole(member.id, value);
                     }}
-                    value={member.role?.id ?? ""}
-                  >
-                    {roles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={roles.map(({ id, name }) => ({
+                      label: name,
+                      value: id,
+                    }))}
+                    placeholder="No role"
+                    value={member.role?.id ?? null}
+                  />
                 </li>
               ))}
             </ul>
@@ -324,17 +326,16 @@ export function AccessPanel() {
                 {PERMISSION_CATALOG.map((permission) => {
                   const key = permissionKey(permission);
                   return (
-                    <label
-                      className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                    <Label
+                      className="rounded-md border px-3 py-2 font-normal"
                       key={key}
                     >
-                      <input
+                      <Checkbox
                         checked={selectedPermissions.includes(key)}
-                        onChange={() => togglePermission(key)}
-                        type="checkbox"
+                        onCheckedChange={() => togglePermission(key)}
                       />
-                      <span>{permission.label}</span>
-                    </label>
+                      {permission.label}
+                    </Label>
                   );
                 })}
               </div>
@@ -354,18 +355,18 @@ export function AccessPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <select
+          <OptionSelect
             aria-label="Audit log filter"
-            className="mb-3 h-10 w-full rounded-md border bg-background px-3 text-sm sm:w-72"
-            onChange={(event) => changeAuditFilter(event.target.value)}
-            value={auditFilter}
-          >
-            {AUDIT_FILTERS.map((filter) => (
-              <option key={filter.label} value={filter.actionPrefix}>
-                {filter.label}
-              </option>
-            ))}
-          </select>
+            className="mb-3 sm:w-72"
+            onValueChange={(value) =>
+              changeAuditFilter(value === ALL_EVENTS ? "" : value)
+            }
+            options={AUDIT_FILTERS.map((filter) => ({
+              label: filter.label,
+              value: filter.actionPrefix || ALL_EVENTS,
+            }))}
+            value={auditFilter || ALL_EVENTS}
+          />
           {auditLogs.length === 0 ? (
             <p className="mb-3 text-muted-foreground text-sm">
               No events match this filter.

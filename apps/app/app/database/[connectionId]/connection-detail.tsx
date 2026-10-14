@@ -13,6 +13,7 @@ import {
   LoadingState,
   PageHeader,
 } from "@repo/design-system";
+import { Label } from "@repo/design-system/components/ui/label";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
@@ -72,9 +73,7 @@ function EditConnectionForm({
   return (
     <form className="space-y-4 border-t pt-4" onSubmit={submit}>
       <div className="space-y-2">
-        <label className="font-medium text-sm" htmlFor={nameId}>
-          Name
-        </label>
+        <Label htmlFor={nameId}>Name</Label>
         <Input
           id={nameId}
           maxLength={100}

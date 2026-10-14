@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@repo/design-system";
 import type { FlowIssue } from "@repo/flows/definition";
 
 export function ValidationPanel({
@@ -45,13 +46,14 @@ export function ValidationPanel({
               {issue.message}
             </span>
             {issue.nodeId ? (
-              <button
-                className="shrink-0 text-muted-foreground text-xs underline hover:text-foreground"
+              <Button
+                className="h-auto shrink-0 p-0 text-muted-foreground text-xs"
                 onClick={() => onSelectNode(issue.nodeId as string)}
                 type="button"
+                variant="link"
               >
                 Show
-              </button>
+              </Button>
             ) : null}
           </li>
         ))}

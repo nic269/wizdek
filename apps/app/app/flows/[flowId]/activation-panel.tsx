@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@repo/design-system/components/ui/dialog";
 import { useCallback, useEffect, useState } from "react";
+import { OptionSelect } from "../../lib/option-select";
 import type { Store } from "../../stores/store-labels";
 
 type Activation = Awaited<
@@ -31,9 +32,6 @@ const STATUS_VARIANTS: Record<
   FAILED: "destructive",
   INACTIVE: "outline",
 };
-
-const selectClassName =
-  "h-10 w-full rounded-md border bg-background px-3 text-sm";
 
 /**
  * Turns a webhook or scheduled flow on and off per store. An activation uses
@@ -181,18 +179,16 @@ export function ActivationPanel({
           )}
           {canManage ? (
             <div className="flex gap-2">
-              <select
+              <OptionSelect
                 aria-label="Store to activate on"
-                className={selectClassName}
-                onChange={(event) => setStoreId(event.target.value)}
-                value={storeId}
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} ({store.shopDomain})
-                  </option>
-                ))}
-              </select>
+                onValueChange={setStoreId}
+                options={stores.map((store) => ({
+                  label: `${store.name} (${store.shopDomain})`,
+                  value: store.id,
+                }))}
+                placeholder="Choose a store"
+                value={storeId || null}
+              />
               <Button
                 disabled={isBusy || hasUnsavedChanges || !storeId}
                 onClick={() => activate(storeId)}

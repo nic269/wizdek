@@ -1,6 +1,13 @@
 "use client";
 
-import { Input } from "@repo/design-system";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@repo/design-system/components/ui/combobox";
 import { asString, type ConfigFormProps, Field } from "./form-parts";
 
 /** Topics people reach for first; any other topic name can be typed. */
@@ -29,24 +36,30 @@ export function TriggerWebhookForm({
       hint="The webhook's payload becomes the item, so its fields are read as {{ $json.field }}. The flow starts running for a store once it is activated there."
       label="Topic"
     >
-      <Input
-        aria-label="Webhook topic"
+      <Combobox
         disabled={disabled}
-        list="webhook-topics"
-        onChange={(event) =>
-          onChange({
-            ...config,
-            topic: event.target.value.trim().toUpperCase(),
-          })
+        inputValue={asString(config.topic)}
+        items={COMMON_TOPICS}
+        onInputValueChange={(topic) =>
+          onChange({ ...config, topic: topic.trim().toUpperCase() })
         }
-        placeholder="ORDERS_CREATE"
-        value={asString(config.topic)}
-      />
-      <datalist id="webhook-topics">
-        {COMMON_TOPICS.map((topic) => (
-          <option key={topic} value={topic} />
-        ))}
-      </datalist>
+      >
+        <ComboboxInput
+          aria-label="Webhook topic"
+          className="w-full"
+          placeholder="ORDERS_CREATE"
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>No common topic matches.</ComboboxEmpty>
+          <ComboboxList>
+            {(topic: string) => (
+              <ComboboxItem key={topic} value={topic}>
+                {topic}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
     </Field>
   );
 }

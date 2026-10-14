@@ -12,6 +12,7 @@ import {
 } from "@repo/design-system/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
+import { OptionSelect } from "../../lib/option-select";
 import type { Store } from "../../stores/store-labels";
 
 export interface RunInput {
@@ -19,9 +20,6 @@ export interface RunInput {
   label: string;
   type: "file" | "text" | "number";
 }
-
-const selectClassName =
-  "h-10 w-full rounded-md border bg-background px-3 text-sm";
 
 /**
  * Starts a run: pick the store it runs against and fill the trigger's
@@ -120,29 +118,25 @@ export function RunDialog({
                 first.
               </p>
             ) : (
-              <select
+              <OptionSelect
                 aria-label="Store to run against"
-                className={selectClassName}
-                onChange={(event) => setStoreId(event.target.value)}
-                required
-                value={storeId}
-              >
-                {(stores ?? []).map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name} ({store.shopDomain})
-                  </option>
-                ))}
-              </select>
+                onValueChange={setStoreId}
+                options={(stores ?? []).map((store) => ({
+                  label: `${store.name} (${store.shopDomain})`,
+                  value: store.id,
+                }))}
+                placeholder="Choose a store"
+                value={storeId || null}
+              />
             )}
           </div>
           {inputs.map((input) => (
             <div className="space-y-1" key={input.key}>
               <p className="font-medium text-sm">{input.label}</p>
               {input.type === "file" ? (
-                <input
+                <Input
                   accept=".csv,text/csv"
                   aria-label={input.label}
-                  className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (file) {

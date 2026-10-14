@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@repo/design-system";
+import { Button, Input } from "@repo/design-system";
 
 const SIMPLE_NAME = /^[A-Za-z_$][\w$]*$/;
 
@@ -41,15 +41,17 @@ export function TemplateInput({
       {disabled || sampleFields.length === 0 ? null : (
         <div className="flex flex-wrap gap-1">
           {sampleFields.map((field) => (
-            <button
-              className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] hover:bg-accent"
+            <Button
+              className="h-auto px-1.5 py-0.5 font-mono font-normal text-[10px]"
               key={field}
               onClick={() => onChange(`${value}${fieldTemplate(field)}`)}
+              size="xs"
               title={`Insert ${fieldTemplate(field)}`}
               type="button"
+              variant="secondary"
             >
               {field}
-            </button>
+            </Button>
           ))}
         </div>
       )}

@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { OptionSelect } from "./option-select";
 
 export type Organization = Awaited<
   ReturnType<typeof apiClient.organizations.list>
@@ -149,17 +150,16 @@ export function OrganizationSwitcher() {
   }
 
   return (
-    <select
+    <OptionSelect
       aria-label="Active organization"
-      className="h-9 max-w-56 rounded-md border bg-background px-3 text-sm"
-      onChange={(event) => setOrganizationId(event.target.value)}
-      value={organization?.id ?? ""}
-    >
-      {organizations.map(({ id, name }) => (
-        <option key={id} value={id}>
-          {name}
-        </option>
-      ))}
-    </select>
+      className="bg-card"
+      onValueChange={setOrganizationId}
+      options={organizations.map(({ id, name }) => ({
+        label: name,
+        value: id,
+      }))}
+      placeholder="Choose organization"
+      value={organization?.id ?? null}
+    />
   );
 }

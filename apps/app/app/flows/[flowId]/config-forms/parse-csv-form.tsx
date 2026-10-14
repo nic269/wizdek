@@ -1,13 +1,15 @@
 "use client";
 
+import { OptionSelect } from "../../../lib/option-select";
 import { TemplateInput } from "../template-input";
-import {
-  asString,
-  Checkbox,
-  type ConfigFormProps,
-  Field,
-  selectClassName,
-} from "./form-parts";
+import { asString, Checkbox, type ConfigFormProps, Field } from "./form-parts";
+
+const DELIMITER_OPTIONS = [
+  { label: "Comma", value: "," },
+  { label: "Semicolon", value: ";" },
+  { label: "Tab", value: "\t" },
+  { label: "Pipe", value: "|" },
+];
 
 export function ParseCsvForm({
   config,
@@ -34,18 +36,13 @@ export function ParseCsvForm({
         />
       </Field>
       <Field label="Delimiter">
-        <select
+        <OptionSelect
           aria-label="Delimiter"
-          className={selectClassName}
           disabled={disabled}
-          onChange={(event) => set({ delimiter: event.target.value })}
+          onValueChange={(delimiter) => set({ delimiter })}
+          options={DELIMITER_OPTIONS}
           value={asString(config.delimiter, ",")}
-        >
-          <option value=",">Comma</option>
-          <option value=";">Semicolon</option>
-          <option value={"\t"}>Tab</option>
-          <option value="|">Pipe</option>
-        </select>
+        />
       </Field>
       <div className="space-y-2">
         <Checkbox

@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { E2E_SHOPIFY_ACCESS_TOKEN } from "./support/fake-shopify";
 import {
+  chooseOption,
   connectStoreWithToken,
   createOrganization,
   createTestSuffix,
@@ -171,13 +172,13 @@ test("a member runs the CSV flow and reads the failed row in the trace", async (
   // The failed row explains itself, and shows the row it came from.
   await page.getByTestId("flow-node-find").click();
   const items = page.getByTestId("run-items-panel");
-  await items.getByLabel("Item status filter").selectOption("FAILED");
+  await chooseOption(page, items.getByLabel("Item status filter"), "Failed");
   await expect(items.getByRole("listitem")).toHaveCount(1);
   await expect(items).toContainText('No order found for "#E2E-MISSING".');
   await items.getByText("Input", { exact: true }).click();
   await expect(items).toContainText('"$row": 5');
 
-  await items.getByLabel("Item status filter").selectOption("SUCCEEDED");
+  await chooseOption(page, items.getByLabel("Item status filter"), "Succeeded");
   await expect(items.getByRole("listitem")).toHaveCount(5);
 
   // The run is listed for the flow with its outcome.

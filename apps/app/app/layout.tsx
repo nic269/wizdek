@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ActiveOrganizationProvider } from "./lib/active-organization";
 import { Providers } from "./providers";
 import "./styles.css";
+import "./product-shell.css";
 
 export const metadata: Metadata = {
   description: "Authenticated product app surface.",
@@ -17,8 +18,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
-        <DesignSystemProvider>
+      {/* Extensions such as Grammarly add body attributes before hydration. */}
+      <body className="product-app" suppressHydrationWarning>
+        <DesignSystemProvider
+          defaultTheme="light"
+          enableSystem={false}
+          storageKey="shopify-toolkit-theme"
+        >
           <Providers>
             <ActiveOrganizationProvider>{children}</ActiveOrganizationProvider>
           </Providers>

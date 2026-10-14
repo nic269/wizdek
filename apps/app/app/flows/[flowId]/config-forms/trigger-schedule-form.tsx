@@ -1,18 +1,22 @@
 "use client";
 
 import { Input } from "@repo/design-system";
-import {
-  asString,
-  type ConfigFormProps,
-  Field,
-  selectClassName,
-} from "./form-parts";
+import { OptionSelect } from "../../../lib/option-select";
+import { asString, type ConfigFormProps, Field } from "./form-parts";
 
 const PRESETS = [
   { cron: "0 * * * *", label: "Every hour" },
   { cron: "0 6 * * *", label: "Every day at 06:00" },
   { cron: "0 9 * * 1", label: "Every Monday at 09:00" },
   { cron: "0 0 1 * *", label: "On the first day of each month" },
+];
+
+/** Picking this option keeps the typed cron expression as it is. */
+const CUSTOM = "custom";
+
+const PRESET_OPTIONS = [
+  { label: "Custom schedule", value: CUSTOM },
+  ...PRESETS.map((preset) => ({ label: preset.label, value: preset.cron })),
 ];
 
 export function TriggerScheduleForm({
@@ -26,24 +30,17 @@ export function TriggerScheduleForm({
   return (
     <div className="space-y-4">
       <Field label="Run">
-        <select
+        <OptionSelect
           aria-label="Schedule preset"
-          className={selectClassName}
           disabled={disabled}
-          onChange={(event) => {
-            if (event.target.value) {
-              onChange({ ...config, cron: event.target.value });
+          onValueChange={(value) => {
+            if (value !== CUSTOM) {
+              onChange({ ...config, cron: value });
             }
           }}
-          value={isPreset ? cron : ""}
-        >
-          <option value="">Custom schedule</option>
-          {PRESETS.map((preset) => (
-            <option key={preset.cron} value={preset.cron}>
-              {preset.label}
-            </option>
-          ))}
-        </select>
+          options={PRESET_OPTIONS}
+          value={isPreset ? cron : CUSTOM}
+        />
       </Field>
       <Field
         hint="Five fields: minute, hour, day of month, month, day of week. A schedule fires at most once a minute."

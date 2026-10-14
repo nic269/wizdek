@@ -1,7 +1,6 @@
 import { getCurrentSession } from "@repo/auth/session";
 import { appConfig, dashboardNav } from "@repo/config";
 import {
-  AppShell,
   Braces,
   Database,
   Home,
@@ -15,43 +14,44 @@ import {
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { SignOutButton } from "./dashboard/sign-out-button";
+import { AccountMenu } from "./account-menu";
 import { OrganizationSwitcher } from "./lib/active-organization";
+import { NormalAppShell } from "./normal-app-shell";
 
 const getDashboardNavIcon = (href: string) => {
   if (href.startsWith("/flows")) {
-    return <Workflow className="h-4 w-4" />;
+    return <Workflow className="size-[17px]" />;
   }
 
   if (href.startsWith("/database")) {
-    return <Database className="h-4 w-4" />;
+    return <Database className="size-[17px]" />;
   }
 
   if (href.startsWith("/graphql")) {
-    return <Braces className="h-4 w-4" />;
+    return <Braces className="size-[17px]" />;
   }
 
   if (href.startsWith("/stores")) {
-    return <Store className="h-4 w-4" />;
+    return <Store className="size-[17px]" />;
   }
 
   if (href.includes("access")) {
-    return <Shield className="h-4 w-4" />;
+    return <Shield className="size-[17px]" />;
   }
 
   if (href.includes("members")) {
-    return <Users className="h-4 w-4" />;
+    return <Users className="size-[17px]" />;
   }
 
   if (href.includes("settings")) {
-    return <Settings className="h-4 w-4" />;
+    return <Settings className="size-[17px]" />;
   }
 
   if (href.includes("dashboard")) {
-    return <LayoutDashboard className="h-4 w-4" />;
+    return <LayoutDashboard className="size-[17px]" />;
   }
 
-  return <Home className="h-4 w-4" />;
+  return <Home className="size-[17px]" />;
 };
 
 interface AppShellLayoutProps {
@@ -66,28 +66,26 @@ export async function AppShellLayout({ children }: AppShellLayoutProps) {
   }
 
   return (
-    <AppShell
+    <NormalAppShell
       brand={appConfig.name}
       navItems={dashboardNav.map((item) => ({
         ...item,
         icon: getDashboardNavIcon(item.href),
       }))}
+      searchLabel={`Search ${appConfig.name}`}
       topbar={
-        <div className="flex w-full items-center justify-between gap-3">
-          <OrganizationSwitcher />
-          <div className="ml-auto flex items-center gap-3">
-            <div className="text-right text-sm">
-              <div className="font-medium text-foreground">
-                {session.user.name}
-              </div>
-              <div className="text-muted-foreground">{session.user.email}</div>
-            </div>
-            <SignOutButton />
+        <div className="flex flex-col gap-2">
+          <div className="in-data-[collapsed=true]:hidden">
+            <OrganizationSwitcher />
           </div>
+          <AccountMenu email={session.user.email} name={session.user.name} />
         </div>
       }
     >
-      {children}
-    </AppShell>
+      {/* One white panel on the canvas; on desktop only this panel scrolls. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 rounded-[12px] border border-[var(--shell-hairline,var(--border))] bg-card px-4 pt-5 pb-7 lg:overflow-auto lg:px-8 lg:pt-7 lg:pb-10 [&>*]:shrink-0">
+        {children}
+      </div>
+    </NormalAppShell>
   );
 }

@@ -23,6 +23,7 @@ import { Textarea } from "@repo/design-system/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { useActiveOrganization } from "../../lib/active-organization";
+import { OptionSelect } from "../../lib/option-select";
 import type { ShopifyApp } from "../store-labels";
 
 type OAuthStart = Awaited<
@@ -39,9 +40,6 @@ interface ConnectResult {
 const DOMAINS_PER_REQUEST = 10;
 const DOMAIN_SEPARATOR = /[\s,]+/;
 const DOMAIN_PLACEHOLDER = "your-store.myshopify.com";
-
-const selectClassName =
-  "h-10 w-full rounded-md border bg-background px-3 text-sm";
 
 function AppSelect({
   appId,
@@ -67,18 +65,13 @@ function AppSelect({
     );
   }
   return (
-    <select
+    <OptionSelect
       aria-label="Shopify app"
-      className={selectClassName}
-      onChange={(event) => onChange(event.target.value)}
-      value={appId}
-    >
-      {apps.map((app) => (
-        <option key={app.id} value={app.id}>
-          {app.name}
-        </option>
-      ))}
-    </select>
+      onValueChange={onChange}
+      options={apps.map((app) => ({ label: app.name, value: app.id }))}
+      placeholder="Choose an app"
+      value={appId || null}
+    />
   );
 }
 

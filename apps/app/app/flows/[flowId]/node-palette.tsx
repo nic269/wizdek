@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@repo/design-system";
 import type { NodeType } from "./use-flow-editor";
 
 /** Carries the node type while a palette entry is dragged onto the canvas. */
@@ -35,9 +36,9 @@ export function NodePalette({
               {category.label}
             </h2>
             {entries.map((nodeType) => (
-              <button
+              <Button
                 aria-label={`Add ${nodeType.label}`}
-                className="w-full cursor-grab rounded-md border bg-background px-2 py-1.5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-auto w-full cursor-grab flex-col items-start gap-0 whitespace-normal px-2 py-1.5 text-left"
                 draggable
                 key={nodeType.type}
                 onClick={() => onAdd(nodeType.type)}
@@ -47,6 +48,7 @@ export function NodePalette({
                 }}
                 title={nodeType.description}
                 type="button"
+                variant="outline"
               >
                 <span className="block font-medium text-sm">
                   {nodeType.label}
@@ -54,7 +56,7 @@ export function NodePalette({
                 <span className="line-clamp-2 block text-muted-foreground text-xs">
                   {nodeType.description}
                 </span>
-              </button>
+              </Button>
             ))}
           </section>
         );

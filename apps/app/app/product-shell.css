@@ -1,0 +1,36 @@
+/*
+ * Product palette and shell tokens, scoped to the body so dialogs, sheets and
+ * menus that portal out of the shell share them. The app runs light-only (see
+ * the theme provider in layout.tsx), so these values are not redefined for dark.
+ */
+.product-app {
+  --radius: 4px;
+  --background: #fff;
+  --card: #fff;
+  --foreground: #262626;
+  --card-foreground: #262626;
+  --primary: #262626;
+  --primary-foreground: #fff;
+  --muted: #f5f5f5;
+  --muted-foreground: #595959;
+  --border: #e6e6e6;
+  --input: #d9d9d9;
+  --popover: #fff;
+  --popover-foreground: #262626;
+  --destructive: #a3211a;
+  --shell-canvas: #f3f3f3;
+  --shell-hover: #e8e8e8;
+  --shell-nav-foreground: #3d3d3d;
+  --shell-hairline: #e6e6e6;
+  --shell-hairline-strong: #d0d0d0;
+  --shell-subtle-foreground: #737373;
+  --shell-avatar: #e9e3dc;
+  --shell-avatar-foreground: #5a4636;
+
+  color: var(--foreground);
+}
+
+/* Outline controls use the darker #d9d9d9 hairline; surfaces keep --border. */
+.product-app :is([data-slot="button"], a).border-border {
+  border-color: var(--input);
+}

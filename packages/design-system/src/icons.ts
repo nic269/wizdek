@@ -6,6 +6,7 @@ export {
   Braces,
   Check,
   ChevronDown,
+  ChevronsUpDown,
   CircleAlert,
   Database,
   FileText,

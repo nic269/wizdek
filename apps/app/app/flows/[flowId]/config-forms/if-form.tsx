@@ -6,6 +6,7 @@ import {
   type ConditionOperator,
   UNARY_OPERATORS,
 } from "@repo/flows/definition";
+import { OptionSelect, type SelectOption } from "../../../lib/option-select";
 import { TemplateInput } from "../template-input";
 import {
   asArray,
@@ -14,7 +15,6 @@ import {
   Field,
   removeAt,
   replaceAt,
-  selectClassName,
 } from "./form-parts";
 
 interface ConditionRow {
@@ -37,6 +37,21 @@ const OPERATOR_LABELS: Record<ConditionOperator, string> = {
   neq: "does not equal",
   startsWith: "starts with",
 };
+
+const OPERATOR_OPTIONS = CONDITION_OPERATORS.map((operator) => ({
+  label: OPERATOR_LABELS[operator],
+  value: operator,
+}));
+
+const COMBINATOR_OPTIONS = [
+  { label: "all conditions match", value: "all" },
+  { label: "any condition matches", value: "any" },
+];
+
+const VALUE_TYPE_OPTIONS: SelectOption<ConditionRow["valueType"]>[] = [
+  { label: "as text", value: "string" },
+  { label: "as number", value: "number" },
+];
 
 const EMPTY_ROW: ConditionRow = {
   left: "",
@@ -66,18 +81,13 @@ export function IfForm({
   return (
     <div className="space-y-4">
       <Field label={heading}>
-        <select
+        <OptionSelect
           aria-label="Combinator"
-          className={selectClassName}
           disabled={disabled}
-          onChange={(event) =>
-            onChange({ ...config, combinator: event.target.value })
-          }
+          onValueChange={(combinator) => onChange({ ...config, combinator })}
+          options={COMBINATOR_OPTIONS}
           value={asString(config.combinator, "all")}
-        >
-          <option value="all">all conditions match</option>
-          <option value="any">any condition matches</option>
-        </select>
+        />
       </Field>
       <div className="space-y-3">
         {conditions.map((condition, index) => (
@@ -95,37 +105,20 @@ export function IfForm({
               value={condition.left}
             />
             <div className="flex gap-2">
-              <select
+              <OptionSelect
                 aria-label={`Condition ${index + 1} operator`}
-                className={selectClassName}
                 disabled={disabled}
-                onChange={(event) =>
-                  update(index, {
-                    operator: event.target.value as ConditionOperator,
-                  })
-                }
+                onValueChange={(operator) => update(index, { operator })}
+                options={OPERATOR_OPTIONS}
                 value={condition.operator}
-              >
-                {CONDITION_OPERATORS.map((operator) => (
-                  <option key={operator} value={operator}>
-                    {OPERATOR_LABELS[operator]}
-                  </option>
-                ))}
-              </select>
-              <select
+              />
+              <OptionSelect
                 aria-label={`Condition ${index + 1} compare as`}
-                className={selectClassName}
                 disabled={disabled}
-                onChange={(event) =>
-                  update(index, {
-                    valueType: event.target.value as ConditionRow["valueType"],
-                  })
-                }
+                onValueChange={(valueType) => update(index, { valueType })}
+                options={VALUE_TYPE_OPTIONS}
                 value={condition.valueType}
-              >
-                <option value="string">as text</option>
-                <option value="number">as number</option>
-              </select>
+              />
             </div>
             {UNARY_OPERATORS.has(condition.operator) ? null : (
               <TemplateInput

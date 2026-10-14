@@ -14,9 +14,18 @@ import {
 } from "@repo/design-system";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { useActiveOrganization } from "../../lib/active-organization";
+import { OptionSelect, type SelectOption } from "../../lib/option-select";
 import type { ShopifyApp } from "../store-labels";
 
 type TokenMode = ShopifyApp["tokenMode"];
+
+const TOKEN_MODE_OPTIONS: SelectOption<TokenMode>[] = [
+  { label: "Non-expiring offline tokens", value: "NON_EXPIRING" },
+  {
+    label: "Expiring offline tokens (refreshed automatically)",
+    value: "EXPIRING",
+  },
+];
 
 interface AppForm {
   clientId: string;
@@ -37,9 +46,6 @@ const EMPTY_FORM: AppForm = {
 };
 
 const SCOPE_SEPARATOR = /[\s,]+/;
-const selectClassName =
-  "h-10 w-full rounded-md border bg-background px-3 text-sm";
-
 const parseScopes = (value: string) =>
   value
     .split(SCOPE_SEPARATOR)
@@ -278,19 +284,12 @@ export function ShopifyAppsPanel() {
               type="url"
               value={form.installLink}
             />
-            <select
+            <OptionSelect
               aria-label="Token mode"
-              className={selectClassName}
-              onChange={(event) =>
-                setField("tokenMode", event.target.value as TokenMode)
-              }
+              onValueChange={(value) => setField("tokenMode", value)}
+              options={TOKEN_MODE_OPTIONS}
               value={form.tokenMode}
-            >
-              <option value="NON_EXPIRING">Non-expiring offline tokens</option>
-              <option value="EXPIRING">
-                Expiring offline tokens (refreshed automatically)
-              </option>
-            </select>
+            />
             <div className="flex gap-2">
               <Button disabled={isSubmitting} type="submit">
                 {isSubmitting ? "Saving..." : "Save app"}

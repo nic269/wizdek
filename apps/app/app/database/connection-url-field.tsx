@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Input } from "@repo/design-system";
+import { Label } from "@repo/design-system/components/ui/label";
 import { useId, useState } from "react";
 import { isLocalHostUrl, unsupportedScheme } from "./database-labels";
 
@@ -25,9 +26,7 @@ export function ConnectionUrlField({
 
   return (
     <div className="space-y-2">
-      <label className="font-medium text-sm" htmlFor={id}>
-        Connection URL
-      </label>
+      <Label htmlFor={id}>Connection URL</Label>
       <div className="flex gap-2">
         <Input
           autoComplete="off"

@@ -1,13 +1,13 @@
 "use client";
 
 import { Button, Input } from "@repo/design-system";
+import { OptionSelect, type SelectOption } from "../../../lib/option-select";
 import {
   asArray,
   type ConfigFormProps,
   Field,
   removeAt,
   replaceAt,
-  selectClassName,
 } from "./form-parts";
 
 interface ManualInput {
@@ -15,6 +15,12 @@ interface ManualInput {
   label: string;
   type: "file" | "text" | "number";
 }
+
+const INPUT_TYPE_OPTIONS: SelectOption<ManualInput["type"]>[] = [
+  { label: "CSV file", value: "file" },
+  { label: "Text", value: "text" },
+  { label: "Number", value: "number" },
+];
 
 export function TriggerManualForm({
   config,
@@ -63,24 +69,16 @@ export function TriggerManualForm({
                 placeholder="key, such as csvFile"
                 value={input.key}
               />
-              <select
+              <OptionSelect
                 aria-label={`Input ${index + 1} type`}
-                className={selectClassName}
+                className="w-36 shrink-0"
                 disabled={disabled}
-                onChange={(event) =>
-                  setInputs(
-                    replaceAt(inputs, index, {
-                      ...input,
-                      type: event.target.value as ManualInput["type"],
-                    })
-                  )
+                onValueChange={(type) =>
+                  setInputs(replaceAt(inputs, index, { ...input, type }))
                 }
+                options={INPUT_TYPE_OPTIONS}
                 value={input.type}
-              >
-                <option value="file">CSV file</option>
-                <option value="text">Text</option>
-                <option value="number">Number</option>
-              </select>
+              />
               <Button
                 aria-label={`Remove input ${index + 1}`}
                 disabled={disabled}

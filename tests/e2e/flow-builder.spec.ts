@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { prisma } from "../../packages/database/src/client";
 import {
+  chooseOption,
   createOrganization,
   createTestSuffix,
   signUp,
@@ -93,8 +94,16 @@ test("an author builds, saves and reopens the CSV tagging flow", async ({
 
   await page.getByTestId("flow-node-if-1").click();
   await panel.getByLabel("Condition 1 value").fill("{{ $json.Total }}");
-  await panel.getByLabel("Condition 1 operator").selectOption("gt");
-  await panel.getByLabel("Condition 1 compare as").selectOption("number");
+  await chooseOption(
+    page,
+    panel.getByLabel("Condition 1 operator"),
+    "is greater than"
+  );
+  await chooseOption(
+    page,
+    panel.getByLabel("Condition 1 compare as"),
+    "as number"
+  );
   await panel.getByLabel("Condition 1 compared with").fill("1000");
 
   await page.getByTestId("flow-node-addTags-1").click();
@@ -124,7 +133,9 @@ test("an author builds, saves and reopens the CSV tagging flow", async ({
     "{{ $json.order.id }}"
   );
   await page.getByTestId("flow-node-if-1").click();
-  await expect(panel.getByLabel("Condition 1 operator")).toHaveValue("gt");
+  await expect(panel.getByLabel("Condition 1 operator")).toContainText(
+    "is greater than"
+  );
   await expect(panel.getByLabel("Condition 1 compared with")).toHaveValue(
     "1000"
   );

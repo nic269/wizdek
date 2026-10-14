@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { E2E_SHOPIFY_ACCESS_TOKEN } from "./support/fake-shopify";
 import {
+  chooseOption,
   connectStoreWithToken,
   createOrganization,
   createTestSuffix,
@@ -94,7 +95,7 @@ test("a developer explores, runs and saves a query in the console", async ({
       (request.postData() ?? "").includes("IntrospectionQuery") &&
       (request.postData() ?? "").includes("2026-04")
   );
-  await page.getByLabel("API version").selectOption("2026-04");
+  await chooseOption(page, page.getByLabel("API version"), "2026-04");
   await schemaReload;
   await expect(queryEditor(page)).toContainText("currencyCode");
 

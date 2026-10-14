@@ -22,6 +22,14 @@ Existing packages under `packages/` come from the boilerplate: `api` (contracts 
 
 `@repo/security` holds the AES-256-GCM `encryptSecret` and `decryptSecret` (`@repo/security/crypto`) used for every stored secret, keyed by `SHOPIFY_TOKEN_ENCRYPTION_KEY`. `@repo/storage` can write and read objects as streams (`putObjectStream`, `getObjectStream`) in addition to whole buffers, for files too large to hold in memory.
 
+## App UI
+
+Signed-in pages render inside `AppShellLayout` (`apps/app/app/app-shell-layout.tsx`), which follows the Meldmark product shell: a collapsible sidebar on a grey canvas, with navigation, ⌘K destination search, the organization switcher and the account menu at its foot, and each page in one white panel that scrolls on its own on desktop. The shell itself is `AppShell` in `@repo/design-system`. The palette and shell tokens are in `apps/app/app/product-shell.css`.
+
+The app is light-only: `layout.tsx` sets `defaultTheme="light"` with system detection off, and the palette has no dark values.
+
+Controls use the shadcn components in `packages/design-system/src/components/ui` instead of native elements: `Select`, `Checkbox`, `Label`, `Field`, `Textarea`, `Combobox`, `Button`, `Input`, and the rest. `OptionSelect` (`apps/app/app/lib/option-select.tsx`) wraps `Select` for a plain list of value and label options. Add a missing component with `pnpm ui:gen <component>`.
+
 ## Shopify package
 
 `packages/shopify` (`@repo/shopify`) is server-only. It may import `@repo/database`, `@repo/logger` and `@repo/security`, and has no client-safe entry point.

@@ -5,6 +5,7 @@ import { Button, ErrorState, LoadingState } from "@repo/design-system";
 import { Badge } from "@repo/design-system/components/ui/badge";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { OptionSelect, type SelectOption } from "../../../../lib/option-select";
 import { RUN_POLL_INTERVAL_MS } from "./use-run-polling";
 
 type RunItem = Awaited<
@@ -14,8 +15,11 @@ type ItemStatus = RunItem["status"];
 
 const PAGE_SIZE = 50;
 
-const STATUS_FILTERS: { label: string; value: ItemStatus | "" }[] = [
-  { label: "All items", value: "" },
+/** The filter option that shows every item, whatever its status. */
+const ALL = "ALL";
+
+const STATUS_FILTERS: SelectOption<ItemStatus | typeof ALL>[] = [
+  { label: "All items", value: ALL },
   { label: "Succeeded", value: "SUCCEEDED" },
   { label: "Failed", value: "FAILED" },
   { label: "Unknown", value: "UNKNOWN" },
@@ -113,18 +117,12 @@ export function RunItemsPanel({
           Items this step received, in the order they arrived.
         </p>
       </div>
-      <select
+      <OptionSelect
         aria-label="Item status filter"
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
-        onChange={(event) => setStatus(event.target.value as ItemStatus | "")}
-        value={status}
-      >
-        {STATUS_FILTERS.map((filter) => (
-          <option key={filter.label} value={filter.value}>
-            {filter.label}
-          </option>
-        ))}
-      </select>
+        onValueChange={(value) => setStatus(value === ALL ? "" : value)}
+        options={STATUS_FILTERS}
+        value={status || ALL}
+      />
       {items.isPending ? <LoadingState label="Loading items" /> : null}
       {items.isError ? (
         <ErrorState

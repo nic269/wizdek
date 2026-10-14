@@ -11,6 +11,7 @@ import {
   Input,
 } from "@repo/design-system";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { OptionSelect } from "../../lib/option-select";
 
 type Organization = Awaited<
   ReturnType<typeof apiClient.organizations.list>
@@ -117,21 +118,18 @@ export function MembersPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <select
+          <OptionSelect
             aria-label="Organization"
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            onChange={(event) => {
-              setOrganizationId(event.target.value);
-              loadInvitations(event.target.value);
+            onValueChange={(value) => {
+              setOrganizationId(value);
+              loadInvitations(value);
             }}
-            value={organizationId}
-          >
-            {organizations.map((organization) => (
-              <option key={organization.id} value={organization.id}>
-                {organization.name}
-              </option>
-            ))}
-          </select>
+            options={organizations.map(({ id, name }) => ({
+              label: name,
+              value: id,
+            }))}
+            value={organizationId || null}
+          />
           <form className="flex flex-col gap-2 sm:flex-row" onSubmit={invite}>
             <Input
               onChange={(event) => setEmail(event.target.value)}

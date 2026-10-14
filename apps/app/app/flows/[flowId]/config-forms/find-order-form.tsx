@@ -1,12 +1,8 @@
 "use client";
 
+import { OptionSelect } from "../../../lib/option-select";
 import { TemplateInput } from "../template-input";
-import {
-  asString,
-  type ConfigFormProps,
-  Field,
-  selectClassName,
-} from "./form-parts";
+import { asString, type ConfigFormProps, Field } from "./form-parts";
 
 export function FindOrderForm({
   config,
@@ -19,16 +15,16 @@ export function FindOrderForm({
   return (
     <div className="space-y-4">
       <Field label="Find the order by">
-        <select
+        <OptionSelect
           aria-label="Find the order by"
-          className={selectClassName}
           disabled={disabled}
-          onChange={(event) => onChange({ ...config, by: event.target.value })}
+          onValueChange={(value) => onChange({ ...config, by: value })}
+          options={[
+            { label: "Order name, such as #1001", value: "name" },
+            { label: "Order ID", value: "id" },
+          ]}
           value={by}
-        >
-          <option value="name">Order name, such as #1001</option>
-          <option value="id">Order ID</option>
-        </select>
+        />
       </Field>
       <Field
         hint="The order is added to the item as order, with id, name, tags, totalPrice and currencyCode."

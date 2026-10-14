@@ -12,20 +12,26 @@ export const PageHeader = ({
   actions?: ReactNode;
   className?: string;
 }) => (
-  <div
+  <header
     className={cn(
-      "flex flex-col gap-4 border-border border-b pb-6 sm:flex-row sm:items-end sm:justify-between",
+      "flex flex-wrap items-end gap-x-4 gap-y-3 border-[var(--shell-hairline,var(--border))] border-b pb-5",
       className
     )}
   >
-    <div className="space-y-1">
-      <h1 className="font-semibold text-2xl text-foreground tracking-normal">
+    <div className="flex min-w-[min(100%,18rem)] flex-1 flex-col gap-1.5">
+      <h1 className="font-semibold text-[26px] text-foreground leading-[1.2] tracking-[-0.01em]">
         {title}
       </h1>
       {description ? (
-        <p className="max-w-2xl text-muted-foreground text-sm">{description}</p>
+        <p className="max-w-[560px] text-pretty text-[15px] text-muted-foreground leading-[1.45]">
+          {description}
+        </p>
       ) : null}
     </div>
-    {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-  </div>
+    {actions ? (
+      <div className="flex flex-none flex-wrap items-center gap-2">
+        {actions}
+      </div>
+    ) : null}
+  </header>
 );

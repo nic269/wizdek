@@ -1,5 +1,12 @@
 "use client";
 
+import { Checkbox as ShadcnCheckbox } from "@repo/design-system/components/ui/checkbox";
+import {
+  FieldDescription,
+  FieldTitle,
+  Field as ShadcnField,
+} from "@repo/design-system/components/ui/field";
+import { Label } from "@repo/design-system/components/ui/label";
 import type { ReactNode } from "react";
 
 export interface ConfigFormProps {
@@ -9,9 +16,6 @@ export interface ConfigFormProps {
   /** Field names seen at this node in the latest run, if any. */
   sampleFields: readonly string[];
 }
-
-export const selectClassName =
-  "h-9 w-full rounded-md border bg-background px-2 text-sm disabled:opacity-60";
 
 export function Field({
   children,
@@ -23,11 +27,13 @@ export function Field({
   label: string;
 }) {
   return (
-    <div className="space-y-1">
-      <p className="font-medium text-sm">{label}</p>
+    <ShadcnField className="gap-1.5">
+      <FieldTitle>{label}</FieldTitle>
       {children}
-      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-    </div>
+      {hint ? (
+        <FieldDescription className="text-xs">{hint}</FieldDescription>
+      ) : null}
+    </ShadcnField>
   );
 }
 
@@ -43,16 +49,14 @@ export function Checkbox({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <input
+    <Label className="font-normal">
+      <ShadcnCheckbox
         checked={checked}
-        className="h-4 w-4"
         disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-        type="checkbox"
+        onCheckedChange={onChange}
       />
       {label}
-    </label>
+    </Label>
   );
 }
 

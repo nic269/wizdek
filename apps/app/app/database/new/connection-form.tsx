@@ -10,6 +10,7 @@ import {
   Input,
   LoadingState,
 } from "@repo/design-system";
+import { Label } from "@repo/design-system/components/ui/label";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
 import { useActiveOrganization } from "../../lib/active-organization";
@@ -58,9 +59,7 @@ export function ConnectionForm() {
       <CardContent className="pt-6">
         <form className="space-y-5" onSubmit={submit}>
           <div className="space-y-2">
-            <label className="font-medium text-sm" htmlFor={nameId}>
-              Name
-            </label>
+            <Label htmlFor={nameId}>Name</Label>
             <Input
               id={nameId}
               maxLength={100}
