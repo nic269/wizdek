@@ -1,15 +1,29 @@
 "use client";
 
-import { apiClient, getApiErrorMessage } from "@repo/api/client";
 import {
+  Activity,
+  Boxes,
   Button,
   buttonVariants,
+  ChevronRight,
+  CircleCheck,
+  CircleDashed,
+  cn,
   EmptyState,
-  ErrorState,
+  EnvTag,
+  ErrorAlert,
+  IdentityChip,
   Input,
-  LoadingState,
+  LoaderCircle,
+  PageHeader,
+  Plus,
+  ReadOnlyBanner,
+  Search,
+  SegmentedControl,
+  SkeletonRows,
+  StatusBadge,
+  Store as StoreIcon,
 } from "@repo/design-system";
-import { Badge } from "@repo/design-system/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,303 +32,386 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/design-system/components/ui/table";
-import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useActiveOrganization } from "../lib/active-organization";
+import { formatRelative } from "../lib/format";
+import { usePermissions } from "../lib/permissions";
+import { queryKeys, useShopifyApps, useStores } from "../lib/queries";
+import { StoreDrawer, useHealthCheck } from "./store-drawer";
 import {
-  formatDateTime,
-  STATUS_LABELS,
+  needsAttention,
+  STRATEGY_ICONS,
   STRATEGY_LABELS,
   type Store,
+  usesOwnWebhookSecret,
 } from "./store-labels";
 
-const STATUS_VARIANTS: Record<
-  Store["status"],
-  "default" | "destructive" | "outline" | "secondary"
-> = {
-  CONNECTED: "default",
-  DISCONNECTED: "outline",
-  PENDING: "secondary",
-  RECONNECT_REQUIRED: "destructive",
+type Filter = "all" | "attention" | "prod";
+
+const COLUMNS = "minmax(240px,2.2fr) 130px 190px 90px 110px 110px";
+
+const lastChecked = (store: Store) => {
+  if (store.status === "PENDING") {
+    return "Awaiting install";
+  }
+  return store.lastHealthCheckAt
+    ? `Checked ${formatRelative(store.lastHealthCheckAt)}`
+    : "Not checked yet";
 };
 
-/** Shown for stores connected by a pasted token, which have no app secret. */
-function WebhookSecretButton({
-  onToggle,
+const WebhookCell = ({ store }: { store: Store }) => {
+  if (!usesOwnWebhookSecret(store)) {
+    return <span className="text-[12.5px] text-muted-foreground">Via app</span>;
+  }
+  return store.hasWebhookSecret ? (
+    <span className="inline-flex items-center gap-1.5 text-(--status-success-fg) text-[12.5px]">
+      <CircleCheck className="size-3.5" />
+      Secret set
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+      <CircleDashed className="size-3.5" />
+      Missing
+    </span>
+  );
+};
+
+const StoreRow = ({
+  checking,
+  onCheck,
+  onOpen,
   store,
 }: {
-  onToggle: () => void;
+  checking: boolean;
+  onCheck: () => void;
+  onOpen: () => void;
   store: Store;
-}) {
-  if (store.strategy !== "STATIC_TOKEN") {
-    return null;
-  }
-  return (
-    <Button
-      onClick={onToggle}
-      size="sm"
-      title="The secret Shopify signs this store's webhooks with. Webhook flows need it."
-      variant="ghost"
-    >
-      {store.hasWebhookSecret ? "Webhook secret saved" : "Add webhook secret"}
-    </Button>
-  );
-}
+}) => (
+  <TableRow
+    className="cursor-pointer"
+    data-testid={`store-${store.shopDomain}`}
+    onClick={onOpen}
+  >
+    <TableCell className="h-[62px]">
+      <div className="flex min-w-0 items-center gap-[11px]">
+        <IdentityChip
+          className="rounded-[7px]!"
+          id={store.id}
+          name={store.name}
+        />
+        <div className="min-w-0">
+          <div className="flex items-center gap-[7px]">
+            <span className="truncate font-semibold text-[13.5px] text-foreground leading-[1.3]">
+              {store.name}
+            </span>
+            <EnvTag environment={store.environment} />
+          </div>
+          <div className="truncate font-mono text-muted-foreground text-xs leading-[1.4]">
+            {store.shopDomain}
+          </div>
+        </div>
+      </div>
+    </TableCell>
+    <TableCell>
+      <span className="flex items-center gap-[7px] text-[13px] [&_svg]:size-3.5 [&_svg]:text-muted-foreground">
+        {STRATEGY_ICONS[store.strategy]}
+        {STRATEGY_LABELS[store.strategy]}
+      </span>
+    </TableCell>
+    <TableCell>
+      <div className="flex flex-col items-start gap-1">
+        <StatusBadge status={store.status} />
+        <span className="text-[11.5px] text-muted-foreground leading-none">
+          {checking ? "Checking…" : lastChecked(store)}
+        </span>
+      </div>
+    </TableCell>
+    <TableCell className="font-medium font-mono text-[13px]">
+      {store.scopes.length > 0 ? store.scopes.length : "—"}
+    </TableCell>
+    <TableCell>
+      <WebhookCell store={store} />
+    </TableCell>
+    <TableCell>
+      <div className="flex justify-end gap-1">
+        <Button
+          aria-label={`Check health of ${store.name}`}
+          disabled={checking}
+          onClick={(event) => {
+            event.stopPropagation();
+            onCheck();
+          }}
+          size="icon-sm"
+          title="Check health"
+          variant="outline"
+        >
+          {checking ? (
+            <LoaderCircle className="size-3.5 animate-spin" />
+          ) : (
+            <Activity className="size-3.5" />
+          )}
+        </Button>
+        {store.status === "RECONNECT_REQUIRED" ? (
+          <Button
+            className="border-(--alert-warning-border) bg-(--status-warning-bg) text-(--status-warning-fg) text-[12.5px] hover:bg-(--status-warning-bg)/80"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen();
+            }}
+            size="sm"
+            variant="outline"
+          >
+            Reconnect
+          </Button>
+        ) : (
+          <Button
+            aria-label={`Open ${store.name}`}
+            className="text-muted-foreground"
+            size="icon-sm"
+            title="Open"
+            variant="ghost"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        )}
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+const StoresHeader = ({
+  appCount,
+  canManage,
+  organizationName,
+}: {
+  appCount: number | undefined;
+  canManage: boolean;
+  organizationName: string | undefined;
+}) => (
+  <PageHeader
+    actions={
+      <>
+        <Link
+          className={buttonVariants({ variant: "outline" })}
+          href="/stores/apps"
+        >
+          <Boxes />
+          Shopify apps
+          {appCount === undefined ? null : (
+            <span className="rounded bg-sunken px-[5px] py-0.5 font-medium font-mono text-[11px] text-muted-foreground">
+              {appCount}
+            </span>
+          )}
+        </Link>
+        {canManage ? (
+          <Link className={buttonVariants()} href="/stores/new">
+            <Plus />
+            Connect store
+          </Link>
+        ) : null}
+      </>
+    }
+    description={`Shopify stores connected to ${organizationName ?? "this organization"}. Open a store for health, scopes and webhook settings.`}
+    title="Stores"
+  />
+);
+
+const StoresTable = ({
+  checking,
+  isLoading,
+  onCheck,
+  onOpen,
+  rows,
+}: {
+  checking: string | null;
+  isLoading: boolean;
+  onCheck: (store: Store) => void;
+  onOpen: (storeId: string) => void;
+  rows: Store[];
+}) => (
+  <Table className="min-w-[900px] table-fixed">
+    <TableHeader>
+      <TableRow>
+        <TableHead>Store</TableHead>
+        <TableHead className="w-[146px]">Connection</TableHead>
+        <TableHead className="w-[206px]">Status</TableHead>
+        <TableHead className="w-[90px]">Scopes</TableHead>
+        <TableHead className="w-[126px]">Webhooks</TableHead>
+        <TableHead className="w-[126px] text-right">Actions</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {isLoading ? (
+        <TableRow className="hover:bg-transparent">
+          <TableCell className="h-auto p-0" colSpan={6}>
+            <SkeletonRows columns={COLUMNS} label="Loading stores" />
+          </TableCell>
+        </TableRow>
+      ) : (
+        rows.map((store) => (
+          <StoreRow
+            checking={checking === store.id}
+            key={store.id}
+            onCheck={() => onCheck(store)}
+            onOpen={() => onOpen(store.id)}
+            store={store}
+          />
+        ))
+      )}
+      {!isLoading && rows.length === 0 ? (
+        <TableRow className="hover:bg-transparent">
+          <TableCell
+            className={cn(
+              "h-auto py-8 text-center text-[13.5px] text-muted-foreground"
+            )}
+            colSpan={6}
+          >
+            No stores match this filter.
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </TableBody>
+  </Table>
+);
 
 export function StoresPanel() {
-  const {
-    error: organizationError,
-    isLoading,
-    organization,
-  } = useActiveOrganization();
-  const [stores, setStores] = useState<Store[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busyStoreId, setBusyStoreId] = useState<string | null>(null);
-  const [confirmingStoreId, setConfirmingStoreId] = useState<string | null>(
-    null
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const { organization } = useActiveOrganization();
+  const { can, isLoading: permissionsLoading } = usePermissions();
+  const organizationId = organization?.id ?? null;
+  const stores = useStores(organizationId);
+  const apps = useShopifyApps(organizationId);
+  const { check, checking } = useHealthCheck(organizationId);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const canManage = can("stores:manage");
+
+  const all = stores.data ?? [];
+  const attention = all.filter(needsAttention);
+  const production = all.filter(({ environment }) => environment === "PROD");
+  const needle = query.trim().toLowerCase();
+  const scoped = { all, attention, prod: production }[filter];
+  const rows = scoped.filter(
+    (store) =>
+      !needle ||
+      `${store.name} ${store.shopDomain}`.toLowerCase().includes(needle)
   );
-  const [secretStoreId, setSecretStoreId] = useState<string | null>(null);
-  const [secret, setSecret] = useState("");
-  const organizationId = organization?.id;
-  const secretStore = stores?.find((store) => store.id === secretStoreId);
+  const isLoading = stores.isLoading || permissionsLoading;
+  const isEmpty = !(isLoading || stores.isError) && all.length === 0;
+  const openId = searchParams.get("store");
+  const open = all.find(({ id }) => id === openId) ?? null;
 
-  const loadStores = useCallback(async () => {
-    if (!organizationId) {
-      return;
+  const setOpen = (storeId: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (storeId) {
+      params.set("store", storeId);
+    } else {
+      params.delete("store");
     }
-    const { data } = await apiClient.shopifyStores.list({ organizationId });
-    setStores(data);
-  }, [organizationId]);
-
-  useEffect(() => {
-    setStores(null);
-    setError(null);
-    loadStores().catch((cause: unknown) =>
-      setError(getApiErrorMessage(cause, "Could not load stores."))
-    );
-  }, [loadStores]);
-
-  const runAction = async (
-    storeId: string,
-    action: () => Promise<{ data: { store: Store } | Store }>,
-    fallback: string
-  ) => {
-    setError(null);
-    setBusyStoreId(storeId);
-    try {
-      const { data } = await action();
-      const updated = "store" in data ? data.store : data;
-      setStores(
-        (current) =>
-          current?.map((store) =>
-            store.id === updated.id ? updated : store
-          ) ?? null
-      );
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, fallback));
-    } finally {
-      setBusyStoreId(null);
-      setConfirmingStoreId(null);
-    }
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, {
+      scroll: false,
+    });
   };
-
-  if (organizationError) {
-    return <ErrorState message={organizationError} />;
-  }
-  if (!(isLoading || organization)) {
-    return (
-      <EmptyState
-        description="Create an organization on the dashboard before connecting stores."
-        title="No organization"
-      />
-    );
-  }
-  if (stores === null && !error) {
-    return <LoadingState label="Loading stores" />;
-  }
+  const refresh = () =>
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.stores(organizationId),
+    });
 
   return (
-    <div className="space-y-4">
-      {error ? <ErrorState message={error} /> : null}
-      {stores?.length === 0 ? (
-        <EmptyState
-          description="Connect a store with an access token, an app install, or app credentials."
-          title="No stores connected"
+    <>
+      <StoresHeader
+        appCount={apps.data?.length}
+        canManage={canManage}
+        organizationName={organization?.name}
+      />
+
+      {permissionsLoading || canManage ? null : (
+        <ReadOnlyBanner>
+          You can view stores but not change them. Ask an Owner for the{" "}
+          <strong>Manage Shopify stores</strong> permission to connect,
+          reconnect or disconnect.
+        </ReadOnlyBanner>
+      )}
+      {stores.isError ? (
+        <ErrorAlert
+          message="Your connections are unaffected."
+          onRetry={() => stores.refetch()}
+          title="Couldn't load stores."
         />
       ) : null}
-      {stores && stores.length > 0 ? (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Store</TableHead>
-                <TableHead>Connection</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Scopes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stores.map((store) => {
-                const isBusy = busyStoreId === store.id;
-                return (
-                  <TableRow
-                    data-testid={`store-${store.shopDomain}`}
-                    key={store.id}
-                  >
-                    <TableCell>
-                      <div className="font-medium">{store.name}</div>
-                      <div
-                        className="max-w-56 truncate text-muted-foreground text-xs"
-                        title={store.shopDomain}
-                      >
-                        {store.shopDomain}
-                      </div>
-                    </TableCell>
-                    <TableCell>{STRATEGY_LABELS[store.strategy]}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANTS[store.status]}>
-                        {STATUS_LABELS[store.status]}
-                      </Badge>
-                      <p className="mt-1 text-muted-foreground text-xs">
-                        Last checked: {formatDateTime(store.lastHealthCheckAt)}
-                      </p>
-                      {store.lastHealthCheckError ? (
-                        <p className="mt-1 max-w-xs whitespace-normal text-destructive text-xs">
-                          {store.lastHealthCheckError}
-                        </p>
-                      ) : null}
-                    </TableCell>
-                    <TableCell title={store.scopes.join(", ")}>
-                      {store.scopes.length === 0
-                        ? "None recorded"
-                        : `${store.scopes.length} granted`}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        {confirmingStoreId === store.id ? (
-                          <>
-                            <Button
-                              disabled={isBusy}
-                              onClick={() =>
-                                runAction(
-                                  store.id,
-                                  () =>
-                                    apiClient.shopifyStores.disconnect({
-                                      storeId: store.id,
-                                    }),
-                                  "Could not disconnect the store."
-                                )
-                              }
-                              size="sm"
-                              variant="destructive"
-                            >
-                              Confirm disconnect
-                            </Button>
-                            <Button
-                              onClick={() => setConfirmingStoreId(null)}
-                              size="sm"
-                              variant="ghost"
-                            >
-                              Cancel
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              disabled={
-                                isBusy || store.status === "DISCONNECTED"
-                              }
-                              onClick={() =>
-                                runAction(
-                                  store.id,
-                                  () =>
-                                    apiClient.shopifyStores.checkHealth({
-                                      storeId: store.id,
-                                    }),
-                                  "Could not check the store."
-                                )
-                              }
-                              size="sm"
-                              variant="outline"
-                            >
-                              {isBusy ? "Checking..." : "Check health"}
-                            </Button>
-                            <a
-                              className={buttonVariants({
-                                size: "sm",
-                                variant: "outline",
-                              })}
-                              href={`/stores/new?shop=${encodeURIComponent(
-                                store.shopDomain
-                              )}`}
-                            >
-                              Reconnect
-                            </a>
-                            <WebhookSecretButton
-                              onToggle={() => {
-                                setSecretStoreId(
-                                  secretStoreId === store.id ? null : store.id
-                                );
-                                setSecret("");
-                              }}
-                              store={store}
-                            />
-                            <Button
-                              disabled={store.status === "DISCONNECTED"}
-                              onClick={() => setConfirmingStoreId(store.id)}
-                              size="sm"
-                              variant="ghost"
-                            >
-                              Disconnect
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      ) : null}
-      {secretStore ? (
-        <form
-          className="flex max-w-2xl flex-wrap items-center gap-2 rounded-md border p-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            runAction(
-              secretStore.id,
-              () =>
-                apiClient.shopifyStores.setWebhookSecret({
-                  secret,
-                  storeId: secretStore.id,
-                }),
-              "Could not save the webhook secret."
-            ).then(() => setSecretStoreId(null));
-          }}
-        >
-          <p className="w-full text-sm">
-            Webhook signing secret for{" "}
-            <span className="font-medium">{secretStore.name}</span>. This is the
-            client secret (API secret key) of the custom app whose token
-            connected the store. It is stored encrypted and never shown again.
-          </p>
-          <Input
-            aria-label="Webhook signing secret"
-            autoComplete="off"
-            className="max-w-sm"
-            minLength={8}
-            onChange={(event) => setSecret(event.target.value)}
-            required
-            type="password"
-            value={secret}
+
+      {isEmpty || stores.isError ? null : (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="relative min-w-[200px] flex-[0_1_300px]">
+            <Search className="pointer-events-none absolute top-[9.5px] left-2.5 size-[15px] text-muted-foreground" />
+            <Input
+              aria-label="Filter stores"
+              className="pl-8"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Filter by name or domain"
+              type="search"
+              value={query}
+            />
+          </div>
+          <SegmentedControl
+            aria-label="Show"
+            onValueChange={setFilter}
+            options={[
+              { count: all.length, label: "All", value: "all" },
+              {
+                count: attention.length,
+                label: "Needs attention",
+                value: "attention",
+              },
+              { count: production.length, label: "Production", value: "prod" },
+            ]}
+            value={filter}
           />
-          <Button size="sm" type="submit">
-            Save secret
-          </Button>
-        </form>
+        </div>
+      )}
+
+      {isEmpty ? (
+        <EmptyState
+          action={
+            canManage ? (
+              <Link className={buttonVariants()} href="/stores/new">
+                <Plus />
+                Connect your first store
+              </Link>
+            ) : undefined
+          }
+          description="Connect a store to run GraphQL against it, build flows and receive webhooks. It takes about a minute with an access token."
+          icon={<StoreIcon />}
+          note={canManage ? undefined : "Only Owners can connect stores."}
+          title="No stores connected yet"
+        />
       ) : null}
-    </div>
+
+      {isEmpty || stores.isError ? null : (
+        <StoresTable
+          checking={checking}
+          isLoading={isLoading}
+          onCheck={check}
+          onOpen={setOpen}
+          rows={rows}
+        />
+      )}
+
+      <StoreDrawer
+        canManage={canManage}
+        checking={checking === open?.id}
+        onCheck={() => open && check(open)}
+        onClose={() => setOpen(null)}
+        onRefresh={refresh}
+        store={open}
+      />
+    </>
   );
 }

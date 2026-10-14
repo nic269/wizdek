@@ -1,17 +1,13 @@
-import { PageHeader } from "@repo/design-system";
+import type { Metadata } from "next";
 import { AppShellLayout } from "../../app-shell-layout";
 import { ShopifyAppsPanel } from "./shopify-apps-panel";
+
+export const metadata: Metadata = { title: "Shopify apps" };
 
 export default function ShopifyAppsPage() {
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          description="Apps from the Shopify Dev Dashboard that this organization connects stores through."
-          title="Shopify apps"
-        />
-        <ShopifyAppsPanel />
-      </div>
+      <ShopifyAppsPanel />
     </AppShellLayout>
   );
 }

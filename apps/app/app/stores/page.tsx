@@ -1,30 +1,16 @@
-import { buttonVariants, PageHeader } from "@repo/design-system";
+import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AppShellLayout } from "../app-shell-layout";
 import { StoresPanel } from "./stores-panel";
+
+export const metadata: Metadata = { title: "Stores" };
 
 export default function StoresPage() {
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          actions={
-            <>
-              <a
-                className={buttonVariants({ variant: "outline" })}
-                href="/stores/apps"
-              >
-                Shopify apps
-              </a>
-              <a className={buttonVariants()} href="/stores/new">
-                Connect store
-              </a>
-            </>
-          }
-          description="Shopify stores connected to the active organization."
-          title="Stores"
-        />
+      <Suspense>
         <StoresPanel />
-      </div>
+      </Suspense>
     </AppShellLayout>
   );
 }
