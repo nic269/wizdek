@@ -73,7 +73,7 @@ Order: 1 → 2 → 3 → 4. Phase 5 needs only phase 1 and may run beside 2–4.
 - [ ] Console loads the schema, the Explorer lists queries and mutations, ticking fields builds the query, autocomplete and docs work.
 - [ ] A mutation with variables returns its response, shows cost when detailed cost is on, and separates GraphQL errors from `userErrors`.
 - [ ] Tabs, history and saved queries persist; a role without mutation permission is rejected at the API; every execution is audited.
-- [ ] The CSV flow (upload, parse, IF total > 1000, tag) can be built, saved, reopened and validated on the canvas.
+- [x] The CSV flow (upload, parse, IF total > 1000, tag) can be built, saved, reopened and validated on the canvas.
 - [ ] Running it tags every order correctly; a failing row does not abort others; re-running adds no duplicate tags.
 - [ ] Killing the API mid-run and restarting resumes the run without re-executing finished items or surfacing unhandled `THROTTLED` errors.
 - [ ] Webhook and schedule triggers start flows; new nodes register without changing the executor.
