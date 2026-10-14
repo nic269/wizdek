@@ -20,7 +20,7 @@ function Command({
   return (
     <CommandPrimitive
       className={cn(
-        "flex size-full flex-col overflow-hidden rounded-xl! bg-popover p-1 text-popover-foreground",
+        "flex size-full flex-col overflow-hidden rounded-panel! bg-popover p-1 text-popover-foreground",
         className
       )}
       data-slot="command"
@@ -51,7 +51,7 @@ function CommandDialog({
       </DialogHeader>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          "top-1/3 translate-y-0 overflow-hidden rounded-panel! p-0",
           className
         )}
         showCloseButton={showCloseButton}

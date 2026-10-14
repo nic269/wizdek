@@ -24,7 +24,7 @@ Existing packages under `packages/` come from the boilerplate: `api` (contracts 
 
 ## App UI
 
-Signed-in pages render inside `AppShellLayout` (`apps/app/app/app-shell-layout.tsx`), which follows the Meldmark product shell: a collapsible sidebar on a grey canvas, with navigation, ⌘K destination search, the organization switcher and the account menu at its foot, and each page in one white panel that scrolls on its own on desktop. The shell itself is `AppShell` in `@repo/design-system`. The palette and shell tokens are in `apps/app/app/product-shell.css`.
+Signed-in pages render inside `AppShellLayout` (`apps/app/app/app-shell-layout.tsx`), which follows the Meldmark product shell: a collapsible sidebar on a grey canvas, with navigation, ⌘K destination search, the organization switcher and the account menu at its foot, and each page in one white panel that scrolls on its own on desktop. The shell itself is `AppShell` in `@repo/design-system`. The visual language is wizdek's "Paper" direction (`docs/design/design_handoff_wizdek_redesign/`): the shadcn roles are set in `apps/app/app/theme.tweakcn.css`, and the tokens beyond them (sunken and faint greys, status, environment and flow-category colours, panel and menu radii, elevation) are in `packages/design-system/src/styles/wizdek-tokens.css`, mapped to Tailwind utilities such as `bg-sunken` and `rounded-panel` in `theme-contract.css`. The alternate "Console" direction is kept there as an unused `.theme-console` class.
 
 The app is light-only: `layout.tsx` sets `defaultTheme="light"` with system detection off, and the palette has no dark values.
 

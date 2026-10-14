@@ -1,2 +1,63 @@
-/* Optional product override. Empty means inherit the shared default theme.
-   Paste a complete tweakcn Tailwind v4 CSS export here to override it. */
+/*
+ * wizdek "Paper" direction, as shadcn roles. Tokens outside the shadcn set
+ * (sunken, faint, status, environment and category colours) live in
+ * @repo/design-system/src/styles/wizdek-tokens.css. The app is light-only, so
+ * no .dark block is given.
+ */
+:root {
+  --font-sans: Albert Sans, ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Albert Sans, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: Geist Mono, ui-monospace, Menlo, monospace;
+
+  --background: #f3f3f1;
+  --foreground: #1d1d1b;
+  --card: #ffffff;
+  --card-foreground: #1d1d1b;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1b;
+  --primary: #1d1d1b;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f3f0;
+  --secondary-foreground: #1d1d1b;
+  --muted: #f3f3f0;
+  --muted-foreground: #66665f;
+  --accent: oklch(0.5 0.16 265);
+  --accent-foreground: #ffffff;
+  --destructive: #a3211a;
+  --destructive-foreground: #ffffff;
+  --success: #2f9e5c;
+  --success-foreground: #ffffff;
+  --warning: #d39a1c;
+  --warning-foreground: #1d1d1b;
+  --border: #e9e8e4;
+  --input: #d9d8d3;
+  --ring: oklch(0.5 0.16 265);
+
+  --chart-1: #2f9e5c;
+  --chart-2: #d1453b;
+  --chart-3: #e8590c;
+  --chart-4: #3b7be0;
+  --chart-5: #a3a39c;
+
+  --sidebar: #f3f3f1;
+  --sidebar-foreground: #1d1d1b;
+  --sidebar-primary: #1d1d1b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9e9e5;
+  --sidebar-accent-foreground: #1d1d1b;
+  --sidebar-border: #e3e2dd;
+  --sidebar-ring: oklch(0.5 0.16 265);
+
+  --radius: 6px;
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --shadow-2xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 14px 34px -10px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 24px 60px -12px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0 24px 60px -12px rgba(0, 0, 0, 0.3);
+}

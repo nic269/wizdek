@@ -1,0 +1,172 @@
+/*
+ * wizdek tokens beyond the shadcn roles. The shadcn roles themselves come from
+ * the app theme (apps/app/app/theme.tweakcn.css). Every token here is mapped to
+ * a Tailwind utility in theme-contract.css, so `bg-sunken`, `text-faint`,
+ * `rounded-panel` and `shadow-popover` work in components.
+ */
+:root {
+  --foreground-2: #3a3a37;
+  --faint: #93938b;
+  --sunken: #f8f8f6;
+  --hover: #f3f3f0;
+  --accent-soft: oklch(0.955 0.025 265);
+  --accent-ink: oklch(0.43 0.16 265);
+
+  --sidebar-muted: #6c6c65;
+  --sidebar-hover: #e9e9e5;
+  --sidebar-active: #ffffff;
+  --sidebar-active-shadow: 0 0 0 1px #e3e2dd, 0 1px 2px rgba(0, 0, 0, 0.05);
+  --sidebar-field: #fbfbfa;
+  --brand-mark: #1d1d1b;
+
+  /* Section labels: Albert Sans 11.5px/500, sentence case. */
+  --label-font: var(--font-sans);
+  --label-size: 11.5px;
+  --label-transform: none;
+  --label-tracking: 0;
+
+  --radius-card: 10px;
+  --radius-panel: 12px;
+  --radius-menu: 8px;
+
+  --shadow-node: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-popover: 0 14px 34px -10px rgba(0, 0, 0, 0.2);
+  --shadow-dialog: 0 24px 60px -12px rgba(0, 0, 0, 0.3);
+  --shadow-toast: 0 12px 30px -8px rgba(0, 0, 0, 0.35);
+
+  /* Status palette, shared by every entity state. */
+  --status-success-bg: #e8f4ec;
+  --status-success-fg: #1f6b3f;
+  --status-success-dot: #2f9e5c;
+  --status-warning-bg: #fbf1db;
+  --status-warning-fg: #7a5410;
+  --status-warning-dot: #d39a1c;
+  --status-danger-bg: #fbeceb;
+  --status-danger-fg: #9b231c;
+  --status-danger-dot: #d1453b;
+  --status-info-bg: #e9f0fb;
+  --status-info-fg: #1f4f99;
+  --status-info-dot: #3b7be0;
+  --status-neutral-bg: #f0f0ed;
+  --status-neutral-fg: #55554f;
+  --status-neutral-dot: #a3a39c;
+  --status-unknown-bg: #e8590c;
+  --status-unknown-fg: #ffffff;
+  --status-unknown-dot: #ffffff;
+
+  /* Alerts. */
+  --alert-danger-bg: #fdf3f2;
+  --alert-danger-border: #f0c9c5;
+  --alert-danger-fg: #7d1d17;
+  --alert-warning-bg: #fdf7e8;
+  --alert-warning-border: #ecd8a8;
+  --alert-warning-fg: #6a490c;
+  --alert-unknown-bg: #fff4ec;
+  --alert-unknown-border: #f6c7a7;
+  --alert-unknown-fg: #8a3507;
+
+  /* Production risk: tinted borders and backgrounds around a PROD target. */
+  --danger-solid: #a3211a;
+  --danger-outline: #e3b0aa;
+  --prod-border: #e9b7b2;
+  --prod-bg: #fffafa;
+  --prod-band-bg: #fbeceb;
+  --prod-band-fg: #7d1d17;
+
+  /* Environment tags. */
+  --env-prod-bg: #fbeceb;
+  --env-prod-fg: #9b231c;
+  --env-staging-bg: #e9f0fb;
+  --env-staging-fg: #1f4f99;
+  --env-dev-bg: #f0f0ed;
+  --env-dev-fg: #55554f;
+
+  /* Flow node categories, as hues for oklch(). */
+  --category-trigger: 300;
+  --category-data: 230;
+  --category-logic: 75;
+  --category-action: 160;
+
+  /* Toasts. */
+  --toast-bg: #1d1d1b;
+  --toast-fg: #f4f4f2;
+  --toast-muted: #b9b9b2;
+  --toast-success: #6fcf97;
+  --toast-error: #ff8a80;
+  --toast-info: #9ec1ff;
+  --toast-warning: #f2c46d;
+}
+
+/*
+ * The "Console" direction, kept ready as a token swap and not applied
+ * anywhere yet. Enabling it also needs the Geist font loaded, which the Paper
+ * theme does not request.
+ */
+.theme-console {
+  --font-sans: Geist, ui-sans-serif, system-ui, sans-serif;
+  --foreground: #141518;
+  --card-foreground: #141518;
+  --popover-foreground: #141518;
+  --foreground-2: #33353b;
+  --muted-foreground: #5f6168;
+  --faint: #8b8d94;
+  --border: #e7e8eb;
+  --input: #d6d8dd;
+  --sunken: #f7f7f8;
+  --hover: #f2f3f5;
+  --muted: #f2f3f5;
+  --secondary: #f2f3f5;
+  --primary: oklch(0.5 0.2 292);
+  --accent: oklch(0.53 0.2 292);
+  --ring: oklch(0.53 0.2 292);
+  --accent-soft: oklch(0.95 0.03 292);
+  --accent-ink: oklch(0.45 0.2 292);
+  --background: #17181b;
+  --sidebar: #16171a;
+  --sidebar-foreground: #ececef;
+  --sidebar-muted: #9a9ca5;
+  --sidebar-hover: #222328;
+  --sidebar-active: #2a2b31;
+  --sidebar-active-shadow: inset 0 0 0 1px #34353c;
+  --sidebar-border: #2a2b30;
+  --sidebar-field: #1d1e22;
+  --brand-mark: oklch(0.53 0.2 292);
+  --label-font: var(--font-mono);
+  --label-size: 10.5px;
+  --label-transform: uppercase;
+  --label-tracking: 0.07em;
+  --radius: 5px;
+  --radius-panel: 10px;
+}
+
+@keyframes wz-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes wz-shimmer {
+  from {
+    background-position: -400px 0;
+  }
+  to {
+    background-position: 400px 0;
+  }
+}
+
+@keyframes wz-indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+::selection {
+  background: oklch(0.88 0.06 265);
+}

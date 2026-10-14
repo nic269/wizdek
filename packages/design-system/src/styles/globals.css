@@ -1,5 +1,6 @@
 @import "./fonts/fonts.css";
 @import "./theme-contract.css";
+@import "./wizdek-tokens.css";
 
 @layer base {
   *,

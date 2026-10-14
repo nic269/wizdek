@@ -22,24 +22,32 @@ const Toaster = ({ theme: themeProp, ...props }: ToasterProps) => {
     <Sonner
       className="toaster group"
       icons={{
-        error: <OctagonXIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
-        success: <CircleCheckIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
+        error: <OctagonXIcon className="size-4 text-(--toast-error)" />,
+        info: <InfoIcon className="size-4 text-(--toast-info)" />,
+        loading: (
+          <Loader2Icon className="size-4 animate-spin text-(--toast-info)" />
+        ),
+        success: <CircleCheckIcon className="size-4 text-(--toast-success)" />,
+        warning: (
+          <TriangleAlertIcon className="size-4 text-(--toast-warning)" />
+        ),
       }}
+      position="bottom-right"
       style={
         {
-          "--border-radius": "var(--radius)",
-          "--normal-bg": "var(--popover)",
-          "--normal-border": "var(--border)",
-          "--normal-text": "var(--popover-foreground)",
+          "--border-radius": "10px",
+          "--normal-bg": "var(--toast-bg)",
+          "--normal-border": "var(--toast-bg)",
+          "--normal-text": "var(--toast-fg)",
         } as React.CSSProperties
       }
       theme={resolvedTheme}
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          description: "!text-(--toast-muted)",
+          title: "!font-semibold",
+          toast:
+            "cn-toast !min-w-[280px] !max-w-[380px] !px-3.5 !py-3 !font-sans !text-[13px] !leading-[1.45] !shadow-toast",
         },
       }}
       {...props}
