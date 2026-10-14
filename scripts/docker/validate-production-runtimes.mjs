@@ -110,6 +110,31 @@ const waitForHttp = async (url) => {
   throw new Error(`Timed out waiting for ${url}`);
 };
 
+const waitForPostgres = async (containerName) => {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    try {
+      // The image restarts the server once after initialising, so a query
+      // must succeed, not just pg_isready.
+      await runQuiet("docker", [
+        "exec",
+        containerName,
+        "psql",
+        "-U",
+        "postgres",
+        "-d",
+        "shopify_toolkit",
+        "-c",
+        "SELECT 1",
+      ]);
+      return;
+    } catch {
+      await delay(1000);
+    }
+  }
+  throw new Error(`Timed out waiting for ${containerName}`);
+};
+
 const describeContainerFailure = async (containerName) => {
   try {
     const inspect = await runQuiet("docker", [
@@ -201,6 +226,12 @@ const urls = {
 };
 const authWebUrl = urls.web ?? urls.app;
 
+// The API needs a reachable Postgres at startup: production requires the
+// durable job queue, which connects when the API boots.
+const postgresContainerName = `${imagePrefix}-postgres`;
+const postgresUrl =
+  "postgresql://postgres:postgres@postgres:5432/shopify_toolkit";
+
 const buildArgs = [
   "API_INTERNAL_URL=http://api:3002",
   "APP_INTERNAL_URL=http://app:3000",
@@ -221,7 +252,8 @@ const surfaces = [
       `NEXT_PUBLIC_WEB_URL=${authWebUrl}`,
       "BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters",
       "BETTER_AUTH_URL=http://api:3002/api/auth",
-      "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/personal_saas_boilerplate",
+      `DATABASE_URL=${postgresUrl}`,
+      "JOBS_PROVIDER=pgboss",
       "MAIL_PROVIDER=resend",
       "RESEND_API_KEY=test-key",
       "RESEND_FROM_EMAIL=noreply@example.com",
@@ -246,7 +278,7 @@ const surfaces = [
       `NEXT_PUBLIC_WEB_URL=${authWebUrl}`,
       "BETTER_AUTH_SECRET=replace-with-at-least-32-random-characters",
       "BETTER_AUTH_URL=http://api:3002/api/auth",
-      "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/personal_saas_boilerplate",
+      `DATABASE_URL=${postgresUrl}`,
     ],
     healthPath: "/sign-in",
     hostPort: String(appPort),
@@ -289,6 +321,27 @@ try {
 
   await removeNetworkIfExists(networkName);
   await run("docker", ["network", "create", networkName]);
+
+  await removeIfExists("container", postgresContainerName);
+  await run("docker", [
+    "run",
+    "--detach",
+    "--name",
+    postgresContainerName,
+    "--network",
+    networkName,
+    "--network-alias",
+    "postgres",
+    "--env",
+    "POSTGRES_DB=shopify_toolkit",
+    "--env",
+    "POSTGRES_PASSWORD=postgres",
+    "--env",
+    "POSTGRES_USER=postgres",
+    "postgres:17-alpine",
+  ]);
+  containerNames.push(postgresContainerName);
+  await waitForPostgres(postgresContainerName);
 
   for (const surface of surfaces) {
     const args = [
@@ -362,6 +415,17 @@ try {
         details ? `\n${details}` : ""
       }`
     );
+  }
+
+  // Database backups shell out to these as the image's runtime user.
+  for (const tool of ["pg_dump", "pg_restore"]) {
+    const version = await runQuiet("docker", [
+      "exec",
+      apiSurface.containerName,
+      tool,
+      "--version",
+    ]);
+    console.log(`api ${tool}: ${version}`);
   }
 
   for (const surface of surfaces.slice(1)) {
