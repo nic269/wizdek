@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { AppShellLayout } from "../../app-shell-layout";
 import { requireConnectionAccess } from "./connection-access";
 import { ConnectionDetail } from "./connection-detail";
+
+export const metadata: Metadata = { title: "Database connection" };
 
 export default async function DatabaseConnectionPage({
   params,

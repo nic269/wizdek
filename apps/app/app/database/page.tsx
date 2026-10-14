@@ -1,22 +1,13 @@
-import { buttonVariants, PageHeader } from "@repo/design-system";
+import type { Metadata } from "next";
 import { AppShellLayout } from "../app-shell-layout";
 import { ConnectionsPanel } from "./connections-panel";
+
+export const metadata: Metadata = { title: "Database" };
 
 export default function DatabasePage() {
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          actions={
-            <a className={buttonVariants()} href="/database/new">
-              Add connection
-            </a>
-          }
-          description="Databases this organization can back up. Open a connection to use its tools."
-          title="Database"
-        />
-        <ConnectionsPanel />
-      </div>
+      <ConnectionsPanel />
     </AppShellLayout>
   );
 }

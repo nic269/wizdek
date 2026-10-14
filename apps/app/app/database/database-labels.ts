@@ -10,46 +10,16 @@ export type DatabaseBackup = Awaited<
 
 export type BackupStatus = DatabaseBackup["status"];
 
+/** The connection's SSL mode as shown next to its port. */
+export const sslLabel = (sslMode: string | null) => sslMode ?? "default";
+
 export const ENGINE_LABELS: Record<DatabaseConnection["engine"], string> = {
   POSTGRESQL: "PostgreSQL",
-};
-
-export const BACKUP_STATUS_LABELS: Record<BackupStatus, string> = {
-  COMPLETED: "Completed",
-  FAILED: "Failed",
-  QUEUED: "Queued",
-  RUNNING: "Running",
-};
-
-export const BACKUP_STATUS_VARIANTS: Record<
-  BackupStatus,
-  "default" | "destructive" | "outline" | "secondary"
-> = {
-  COMPLETED: "default",
-  FAILED: "destructive",
-  QUEUED: "secondary",
-  RUNNING: "secondary",
 };
 
 /** Whether a backup can still change, and so is worth refreshing. */
 export const isBackupActive = (status: BackupStatus) =>
   status === "QUEUED" || status === "RUNNING";
-
-const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
-
-/** "48.2 MB" from a byte count sent as a decimal string. */
-export const formatBytes = (value: string | null): string => {
-  if (value === null) {
-    return "—";
-  }
-  let size = Number(value);
-  let unit = 0;
-  while (size >= 1024 && unit < BYTE_UNITS.length - 1) {
-    size /= 1024;
-    unit += 1;
-  }
-  return `${unit === 0 ? size : size.toFixed(1)} ${BYTE_UNITS[unit]}`;
-};
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 

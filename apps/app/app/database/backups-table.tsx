@@ -1,8 +1,24 @@
 "use client";
 
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
-import { Button, buttonVariants, ErrorState } from "@repo/design-system";
-import { Badge } from "@repo/design-system/components/ui/badge";
+import {
+  Button,
+  buttonVariants,
+  cn,
+  Download,
+  StatusBadge,
+  Trash2,
+  toast,
+} from "@repo/design-system";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@repo/design-system/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -11,151 +27,199 @@ import {
   TableHeader,
   TableRow,
 } from "@repo/design-system/components/ui/table";
-import { useState } from "react";
-import { formatDateTime, formatDuration } from "../flows/flow-labels";
+import { useEffect, useState } from "react";
+import { formatBytes, formatDuration, formatWhen } from "../lib/format";
 import {
-  BACKUP_STATUS_LABELS,
-  BACKUP_STATUS_VARIANTS,
   backupDownloadPath,
   type DatabaseBackup,
-  formatBytes,
   isBackupActive,
 } from "./database-labels";
+
+/** Re-renders every second while something on screen is still running. */
+const useTick = (active: boolean) => {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    const timer = window.setInterval(() => setTick((tick) => tick + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [active]);
+};
+
+const StatusCell = ({ backup }: { backup: DatabaseBackup }) => {
+  const active = isBackupActive(backup.status);
+  return (
+    <div className="flex min-w-0 flex-col items-start gap-1.5">
+      <StatusBadge status={backup.status} />
+      {active ? (
+        <div className="flex w-full max-w-[260px] items-center gap-2">
+          <div className="relative h-[5px] flex-1 overflow-hidden rounded-full bg-border">
+            <div className="absolute inset-y-0 w-2/5 animate-[wz-indeterminate_1s_ease-in-out_infinite] rounded-full bg-(--status-info-dot)" />
+          </div>
+          <span className="font-medium font-mono text-[11.5px] text-muted-foreground">
+            {backup.status === "QUEUED"
+              ? "waiting"
+              : formatDuration(backup.startedAt ?? backup.createdAt)}
+          </span>
+        </div>
+      ) : null}
+      {backup.status === "FAILED" ? (
+        <span className="whitespace-normal text-(--status-danger-fg) text-xs leading-[1.35]">
+          {backup.error ?? "No reason was recorded."}
+        </span>
+      ) : null}
+      {backup.status === "COMPLETED" ? (
+        <span className="text-muted-foreground text-xs leading-[1.35]">
+          pg_dump {backup.toolVersion ?? ""} · custom format
+        </span>
+      ) : null}
+    </div>
+  );
+};
+
+const DeleteBackup = ({
+  backup,
+  onDeleted,
+}: {
+  backup: DatabaseBackup;
+  onDeleted: () => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [isWorking, setIsWorking] = useState(false);
+  const remove = async () => {
+    setIsWorking(true);
+    try {
+      await apiClient.databaseBackups.delete({ backupId: backup.id });
+      toast.success("Backup deleted", {
+        description: formatWhen(backup.createdAt),
+      });
+      setOpen(false);
+      onDeleted();
+    } catch (cause) {
+      toast.error("Could not delete the backup", {
+        description: getApiErrorMessage(cause, "Try again."),
+      });
+    } finally {
+      setIsWorking(false);
+    }
+  };
+  return (
+    <>
+      <Button
+        aria-label="Delete backup"
+        className="text-muted-foreground hover:bg-(--alert-danger-bg) hover:text-(--status-danger-fg)"
+        onClick={() => setOpen(true)}
+        size="icon-sm"
+        title="Delete backup"
+        variant="ghost"
+      >
+        <Trash2 className="size-[15px]" />
+      </Button>
+      <AlertDialog onOpenChange={setOpen} open={open}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this backup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The file from {formatWhen(backup.createdAt)} is removed from
+              storage. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button disabled={isWorking} onClick={remove} variant="danger">
+              {isWorking ? "Deleting…" : "Delete backup"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
 
 /** A backup history, with download and delete for those allowed to. */
 export function BackupsTable({
   backups,
   canBackup,
+  freshId,
   onChanged,
-  showConnection = false,
 }: {
   backups: DatabaseBackup[];
   canBackup: boolean;
+  /** A backup that just finished, highlighted for a moment. */
+  freshId: string | null;
   onChanged: () => void;
-  showConnection?: boolean;
 }) {
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const remove = async (backupId: string) => {
-    setError(null);
-    setBusyId(backupId);
-    try {
-      await apiClient.databaseBackups.delete({ backupId });
-      onChanged();
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not delete the backup."));
-    } finally {
-      setBusyId(null);
-      setConfirmingId(null);
-    }
-  };
-
+  useTick(backups.some((backup) => isBackupActive(backup.status)));
   return (
-    <div className="space-y-3">
-      {error ? <ErrorState message={error} /> : null}
-      <div className="overflow-x-auto rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {showConnection ? <TableHead>Connection</TableHead> : null}
-              <TableHead>Started</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {backups.map((backup) => (
-              <TableRow
-                data-testid={`database-backup-${backup.id}`}
-                key={backup.id}
-              >
-                {showConnection ? (
-                  <TableCell>
-                    <div className="font-medium">{backup.connectionName}</div>
-                    <div className="text-muted-foreground text-xs">
-                      {backup.databaseName}
-                    </div>
-                  </TableCell>
-                ) : null}
-                <TableCell>{formatDateTime(backup.createdAt)}</TableCell>
-                <TableCell>
-                  <Badge variant={BACKUP_STATUS_VARIANTS[backup.status]}>
-                    {BACKUP_STATUS_LABELS[backup.status]}
-                  </Badge>
-                  {backup.error ? (
-                    <p className="mt-1 max-w-sm whitespace-normal text-destructive text-xs">
-                      {backup.error}
-                    </p>
-                  ) : null}
-                  {backup.toolVersion ? (
-                    <p
-                      className="mt-1 max-w-sm truncate text-muted-foreground text-xs"
-                      title={`${backup.toolVersion} · server ${backup.serverVersion ?? "unknown"}`}
+    <Table className="min-w-[820px] table-fixed">
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[206px]">Started</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="w-[116px]">Size</TableHead>
+          <TableHead className="w-[116px]">Duration</TableHead>
+          <TableHead className="w-[176px] text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {backups.map((backup) => {
+          const active = isBackupActive(backup.status);
+          return (
+            <TableRow
+              className={cn(
+                "transition-colors duration-700",
+                backup.id === freshId && "bg-[#f3faf5] hover:bg-[#f3faf5]",
+                active && "bg-[#f6f9fe] hover:bg-[#f6f9fe]"
+              )}
+              data-testid={`database-backup-${backup.id}`}
+              key={backup.id}
+            >
+              <TableCell className="h-[62px]">
+                <div className="font-medium text-[13px] text-foreground">
+                  {formatWhen(backup.startedAt ?? backup.createdAt)}
+                </div>
+                <div className="text-muted-foreground text-xs leading-[1.4]">
+                  by {backup.requestedByName ?? "someone"}
+                </div>
+              </TableCell>
+              <TableCell className="whitespace-normal">
+                <StatusCell backup={backup} />
+              </TableCell>
+              <TableCell className="font-mono text-[12.5px]">
+                {formatBytes(backup.sizeBytes)}
+              </TableCell>
+              <TableCell className="font-mono text-[12.5px]">
+                {backup.startedAt && !active
+                  ? formatDuration(backup.startedAt, backup.completedAt)
+                  : "—"}
+              </TableCell>
+              <TableCell>
+                <div className="flex justify-end gap-1.5">
+                  {canBackup &&
+                  backup.status === "COMPLETED" &&
+                  backup.fileName ? (
+                    <a
+                      className={buttonVariants({
+                        size: "sm",
+                        variant: "outline",
+                      })}
+                      download
+                      href={backupDownloadPath(backup.id)}
                     >
-                      {backup.toolVersion}
-                    </p>
+                      <Download />
+                      Download
+                    </a>
                   ) : null}
-                </TableCell>
-                <TableCell>{formatBytes(backup.sizeBytes)}</TableCell>
-                <TableCell>
-                  {formatDuration(backup.startedAt, backup.completedAt)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-2">
-                    {confirmingId === backup.id ? (
-                      <>
-                        <Button
-                          disabled={busyId === backup.id}
-                          onClick={() => remove(backup.id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          Confirm delete
-                        </Button>
-                        <Button
-                          onClick={() => setConfirmingId(null)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        {canBackup && backup.status === "COMPLETED" ? (
-                          <a
-                            className={buttonVariants({
-                              size: "sm",
-                              variant: "outline",
-                            })}
-                            download
-                            href={backupDownloadPath(backup.id)}
-                          >
-                            Download
-                          </a>
-                        ) : null}
-                        {canBackup && !isBackupActive(backup.status) ? (
-                          <Button
-                            onClick={() => setConfirmingId(backup.id)}
-                            size="sm"
-                            variant="ghost"
-                          >
-                            Delete
-                          </Button>
-                        ) : null}
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+                  {canBackup && !active ? (
+                    <DeleteBackup backup={backup} onDeleted={onChanged} />
+                  ) : null}
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

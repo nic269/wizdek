@@ -54,15 +54,20 @@ test("an owner backs up a database, downloads it, and a member has no access", a
   await expect(page.getByText("No database connections")).toBeVisible();
 
   await page.goto("/database/new");
-  await page.getByLabel("Name").fill("E2E source");
-  await page.getByLabel("Connection URL").fill(url);
-  await expect(page.getByText("This URL points at localhost")).toBeVisible();
-  await page.getByRole("button", { name: "Save connection" }).click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByLabel("Name", { exact: true }).fill("E2E source");
+  await sheet.getByLabel("Database URL").fill(url);
+  await expect(sheet.getByText("This URL points at localhost")).toBeVisible();
+  await sheet.getByRole("button", { name: "Test & save" }).click();
   await expect(page).toHaveURL(CONNECTION_URL_PATTERN, { timeout: 30_000 });
   const connectionPath = new URL(page.url()).pathname;
   await expect(page.getByRole("heading", { name: "E2E source" })).toBeVisible();
 
   await page.getByRole("button", { name: "Back up now" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Start backup" })
+    .click();
   const row = page.locator('[data-testid^="database-backup-"]').first();
   await expect(row).toContainText("Completed", { timeout: 90_000 });
 
@@ -105,7 +110,7 @@ test("an owner backs up a database, downloads it, and a member has no access", a
     await expect(memberPage).toHaveURL(DASHBOARD_URL_PATTERN);
 
     await memberPage.goto("/database");
-    await expect(memberPage.getByText(NO_PERMISSION_PATTERN)).toBeVisible();
+    await expect(memberPage.getByText(NO_PERMISSION_PATTERN).first()).toBeVisible();
     await expect(memberPage.getByText("E2E source")).toHaveCount(0);
     const detail = await memberPage.goto(connectionPath);
     expect(detail?.status()).toBe(404);
@@ -115,12 +120,18 @@ test("an owner backs up a database, downloads it, and a member has no access", a
 
   // The owner deletes the backup, then the connection.
   await page.goto(connectionPath);
-  await row.getByRole("button", { name: "Delete" }).click();
-  await row.getByRole("button", { name: "Confirm delete" }).click();
+  await row.getByRole("button", { name: "Delete backup" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete backup" })
+    .click();
   await expect(page.getByText("No backups")).toBeVisible();
 
-  await page.getByRole("button", { exact: true, name: "Delete" }).click();
-  await page.getByRole("button", { name: "Confirm delete" }).click();
+  await page.getByRole("button", { name: "Delete connection…" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete connection" })
+    .click();
   await expect(page).toHaveURL(DATABASE_URL_PATTERN);
   await expect(page.getByText("No database connections")).toBeVisible();
 });

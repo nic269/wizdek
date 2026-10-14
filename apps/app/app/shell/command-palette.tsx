@@ -58,7 +58,7 @@ const ACTIONS: Entry[] = [
   },
   {
     hint: "Database",
-    href: "/database?new=1",
+    href: "/database/new",
     icon: <Database />,
     label: "Add a database connection",
     permission: "databases:manage",
