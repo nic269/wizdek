@@ -1,12 +1,220 @@
 /*
- * GraphiQL fills its container, so the console needs a definite height. The
- * rules are scoped to the console so nothing here reaches the app shell.
+ * GraphiQL, restyled to wizdek. Every rule is scoped to `.graphql-console`
+ * so nothing reaches the app shell. GraphiQL's own colours are HSL channel
+ * triples; they are set to the wizdek palette here.
  */
 .graphql-console {
-  height: calc(100vh - 12rem);
-  min-height: 34rem;
+  display: flex;
+  min-height: 0;
 }
 
 .graphql-console .graphiql-container {
+  --color-base: 0, 0%, 100%;
+  --color-neutral: 60, 4%, 11%;
+  --color-primary: 232, 45%, 45%;
+  --color-secondary: 232, 45%, 45%;
+  --color-tertiary: 20, 70%, 45%;
+  --color-info: 216, 72%, 55%;
+  --color-success: 145, 54%, 40%;
+  --color-warning: 40, 77%, 47%;
+  --color-error: 4, 61%, 52%;
+  --font-family: var(--font-sans);
+  --font-family-mono: var(--font-mono);
+  --font-size-body: 13.5px;
+  --border-radius-4: 4px;
+  --border-radius-8: 6px;
+  --border-radius-12: 8px;
+  --popover-box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.2);
+  width: 100%;
   height: 100%;
+  background: var(--card);
+}
+
+/* Icon rail: 48px on the sunken colour; the open panel's icon sits raised. */
+.graphql-console .graphiql-container .graphiql-sidebar {
+  gap: 4px;
+  width: 48px;
+  padding: 10px 0;
+  background: var(--sunken);
+  border-right: 1px solid var(--border);
+}
+
+.graphql-console .graphiql-container .graphiql-sidebar button,
+.graphql-console .graphiql-container .graphiql-sidebar a {
+  width: 34px;
+  height: 34px;
+  color: var(--muted-foreground);
+  border-radius: 7px;
+}
+
+.graphql-console .graphiql-container .graphiql-sidebar button:hover {
+  color: var(--foreground);
+  background: transparent;
+}
+
+.graphql-console .graphiql-container .graphiql-sidebar button.active {
+  color: var(--foreground);
+  background: var(--card);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.graphql-console .graphiql-container .graphiql-sidebar svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Plugin panel: 248px with its own scroll and hairline. */
+.graphql-console .graphiql-container .graphiql-plugin {
+  min-width: 248px;
+  padding: 12px;
+  font-size: 13px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+}
+
+.graphql-console .graphiql-container .graphiql-horizontal-drag-bar {
+  width: 1px;
+  background: var(--border);
+}
+
+/* Session tabs: sunken strip, the current tab white with a hairline. */
+.graphql-console .graphiql-container .graphiql-sessions {
+  margin: 0;
+  background: var(--card);
+  border-radius: 0;
+}
+
+.graphql-console .graphiql-container .graphiql-session-header {
+  height: auto;
+  padding: 8px 10px 0;
+  background: var(--sunken);
+  border-bottom: 1px solid var(--border);
+}
+
+.graphql-console .graphiql-container .graphiql-tab {
+  height: 32px;
+  margin-bottom: -1px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+}
+
+.graphql-console .graphiql-container .graphiql-tab.graphiql-tab-active {
+  color: var(--foreground);
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.graphql-console .graphiql-container .graphiql-session {
+  padding: 0;
+}
+
+.graphql-console .graphiql-container .graphiql-editors {
+  margin: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.graphql-console .graphiql-container .graphiql-editors.full-height {
+  margin-top: 0;
+}
+
+.graphql-console .graphiql-container .graphiql-query-editor {
+  padding: 10px 0 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Run button: accent for a query, amber for a mutation, red on production. */
+.graphql-console .graphiql-container .graphiql-execute-button {
+  width: 34px;
+  height: 30px;
+  background: var(--accent);
+  border-radius: var(--radius);
+}
+
+.graphql-console .graphiql-container .graphiql-execute-button:hover {
+  filter: brightness(1.08);
+}
+
+.graphql-console[data-run-tone="mutation"]
+  .graphiql-container
+  .graphiql-execute-button {
+  background: oklch(0.55 0.13 70);
+}
+
+.graphql-console[data-run-tone="mutation-prod"]
+  .graphiql-container
+  .graphiql-execute-button {
+  background: var(--danger-solid);
+}
+
+.graphql-console .graphiql-container .graphiql-toolbar-button {
+  color: var(--muted-foreground);
+  border-radius: 6px;
+}
+
+.graphql-console .graphiql-container .graphiql-toolbar-button:hover {
+  color: var(--foreground);
+  background: var(--hover);
+}
+
+/* Variables and headers: small tabs under the editor. */
+.graphql-console .graphiql-container .graphiql-editor-tools {
+  gap: 2px;
+  padding: 6px 10px;
+}
+
+.graphql-console .graphiql-container .graphiql-editor-tools button {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  border-radius: 5px;
+}
+
+.graphql-console .graphiql-container .graphiql-editor-tools button.active {
+  color: var(--foreground);
+  background: var(--hover);
+}
+
+/* Response pane: sunken, with the status bar under it. */
+.graphql-console .graphiql-container .graphiql-response {
+  padding-top: 10px;
+  background: var(--sunken);
+}
+
+.graphql-console .graphiql-container .graphiql-response .result-window {
+  font-size: 13px;
+}
+
+.graphql-console .graphiql-container .graphiql-footer {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+/* The saved-queries panel draws its own controls. */
+.graphql-console .wizdek-saved-queries input {
+  font-family: var(--font-sans);
+}
+
+.graphql-console .graphiql-container .graphiql-spinner {
+  color: var(--accent);
+}
+
+/* The GraphiQL wordmark is not part of the wizdek chrome. */
+.graphql-console .graphiql-container .graphiql-logo {
+  display: none;
+}
+
+.graphql-console .graphiql-container .graphiql-main,
+.graphql-console .graphiql-container .graphiql-sessions {
+  background: var(--card);
 }

@@ -1,8 +1,11 @@
 import { getCurrentSession } from "@repo/auth/session";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShellLayout } from "../app-shell-layout";
-import { ConsoleLoader } from "./console-loader";
+import { ConsoleGate } from "./console-gate";
+
+export const metadata: Metadata = { title: "GraphQL" };
 
 export default async function GraphqlConsolePage() {
   const session = await getCurrentSession(await headers());
@@ -11,8 +14,8 @@ export default async function GraphqlConsolePage() {
   }
 
   return (
-    <AppShellLayout>
-      <ConsoleLoader userId={session.user.id} />
+    <AppShellLayout width="full">
+      <ConsoleGate userId={session.user.id} />
     </AppShellLayout>
   );
 }

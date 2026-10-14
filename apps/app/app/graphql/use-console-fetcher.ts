@@ -1,6 +1,7 @@
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
 import type { GraphiQLProps } from "graphiql";
 import { useEffect, useMemo, useRef } from "react";
+import { operationOf } from "./operation-kind";
 
 type Fetcher = GraphiQLProps["fetcher"];
 
@@ -27,21 +28,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  */
 export const useConsoleFetcher = ({
   apiVersion,
+  confirmMutation,
   costDebug,
   onOutcome,
   storeId,
 }: {
   apiVersion: string | undefined;
+  /** Asked before a mutation is sent; resolving false cancels it. */
+  confirmMutation: (operationName: string | null) => Promise<boolean>;
   costDebug: boolean;
   onOutcome: (outcome: ExecutionOutcome) => void;
   storeId: string;
 }): Fetcher => {
-  // Read at call time so toggling cost or replacing the callback does not
+  // Read at call time so toggling cost or replacing the callbacks does not
   // rebuild the fetcher and trigger a schema reload.
-  const latest = useRef({ costDebug, onOutcome });
+  const latest = useRef({ confirmMutation, costDebug, onOutcome });
   useEffect(() => {
-    latest.current = { costDebug, onOutcome };
-  }, [costDebug, onOutcome]);
+    latest.current = { confirmMutation, costDebug, onOutcome };
+  }, [confirmMutation, costDebug, onOutcome]);
 
   return useMemo<Fetcher>(
     () => async (params) => {
@@ -55,6 +59,15 @@ export const useConsoleFetcher = ({
           });
         }
       };
+      const operation = operationOf(params.query, params.operationName);
+      if (
+        operation.kind === "mutation" &&
+        !(await latest.current.confirmMutation(operation.name))
+      ) {
+        const message = "Canceled. The mutation was not sent.";
+        report({ kind: "refused", message });
+        return { errors: [{ message }] };
+      }
       try {
         const { data } = await apiClient.shopifyGraphql.execute({
           ...(apiVersion ? { apiVersion } : {}),

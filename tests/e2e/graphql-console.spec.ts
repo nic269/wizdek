@@ -8,6 +8,8 @@ import {
   signUp,
 } from "./support/user-flows";
 
+const HTTP_OK = /HTTP\s*200/;
+const NO_GRAPHQL_ERRORS = /GraphQL errors\s*0/;
 const EXECUTE_BUTTON = /Execute query/;
 
 const queryEditor = (page: Page) =>
@@ -71,9 +73,9 @@ test("a developer explores, runs and saves a query in the console", async ({
   await page.getByRole("button", { name: EXECUTE_BUTTON }).click();
   await expect(page.locator(".graphiql-response")).toContainText("Fake Store");
   const statusBar = page.getByTestId("response-status-bar");
-  await expect(statusBar).toContainText("HTTP: 200");
-  await expect(statusBar).toContainText("GraphQL errors: 0");
-  await expect(statusBar).toContainText("Requested cost: 3");
+  await expect(statusBar).toContainText(HTTP_OK);
+  await expect(statusBar).toContainText(NO_GRAPHQL_ERRORS);
+  await expect(statusBar).toContainText("3 req");
 
   // Mutations appear in the Explorer once a mutation operation is added.
   await explorer.locator("select").selectOption("mutation");
@@ -110,7 +112,7 @@ test("a developer explores, runs and saves a query in the console", async ({
   await page.getByRole("button", { name: "New tab" }).click();
   await expect(queryEditor(page)).not.toContainText("currencyCode");
   await openPlugin(page, "Saved queries");
-  await page.getByRole("button", { exact: true, name: "Load" }).click();
+  await page.getByRole("button", { name: "Load Shop currency" }).click();
   await expect(queryEditor(page)).toContainText("currencyCode");
 
   expect(errors).toEqual([]);

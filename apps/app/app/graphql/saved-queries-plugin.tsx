@@ -2,9 +2,25 @@
 
 import { useGraphiQL } from "@graphiql/react";
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
-import { Button, Input } from "@repo/design-system";
+import {
+  Button,
+  cn,
+  Ellipsis,
+  Input,
+  Search,
+  SectionLabel,
+  toast,
+} from "@repo/design-system";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/design-system/components/ui/dropdown-menu";
 import type { GraphiQLProps } from "graphiql";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { formatRelative } from "../lib/format";
+import { operationOf } from "./operation-kind";
 
 type Plugin = NonNullable<GraphiQLProps["plugins"]>[number];
 
@@ -31,13 +47,129 @@ function SavedQueriesIcon() {
   );
 }
 
-function SavedQueriesPanel({ organizationId }: { organizationId: string }) {
+const KIND_BADGES = {
+  mutation: "bg-(--status-warning-bg) text-(--status-warning-fg)",
+  query: "bg-(--status-info-bg) text-(--status-info-fg)",
+  subscription: "bg-(--status-neutral-bg) text-(--status-neutral-fg)",
+} as const;
+
+/** Q or M, coloured like the Run button: queries blue, mutations amber. */
+export const KindBadge = ({ query }: { query: string }) => {
+  const { kind } = operationOf(query);
+  return (
+    <span
+      className={cn(
+        "flex-none rounded-[3px] px-1 font-mono font-semibold text-[9.5px] leading-4",
+        KIND_BADGES[kind]
+      )}
+      title={kind}
+    >
+      {kind === "mutation" ? "M" : "Q"}
+    </span>
+  );
+};
+
+const SavedRow = ({
+  onDelete,
+  onLoad,
+  onRename,
+  savedQuery,
+}: {
+  onDelete: () => void;
+  onLoad: () => void;
+  onRename: (name: string) => Promise<boolean>;
+  savedQuery: SavedQuery;
+}) => {
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(savedQuery.name);
+  if (renaming) {
+    return (
+      <form
+        className="flex gap-1.5 px-1.5 py-1"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (await onRename(name)) {
+            setRenaming(false);
+          }
+        }}
+      >
+        <Input
+          aria-label="New name"
+          autoFocus
+          className="h-[30px] text-[12.5px]"
+          maxLength={120}
+          onChange={(event) => setName(event.target.value)}
+          required
+          value={name}
+        />
+        <Button size="sm" type="submit">
+          Rename
+        </Button>
+      </form>
+    );
+  }
+  return (
+    <div className="group flex items-start gap-1 rounded-md hover:bg-hover">
+      <Button
+        aria-label={`Load ${savedQuery.name}`}
+        className="h-auto min-w-0 flex-1 items-start justify-start gap-2 px-1.5 py-[7px] text-left font-normal hover:bg-transparent"
+        onClick={onLoad}
+        variant="ghost"
+      >
+        <KindBadge query={savedQuery.query} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium font-mono text-[12.5px] leading-[1.3]">
+            {savedQuery.name}
+          </span>
+          <span className="block text-[11.5px] text-muted-foreground leading-[1.35]">
+            {formatRelative(savedQuery.updatedAt)}
+          </span>
+        </span>
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              aria-label={`More actions for ${savedQuery.name}`}
+              className="mt-1 size-6 text-muted-foreground opacity-0 group-hover:opacity-100 aria-expanded:opacity-100"
+              size="icon-xs"
+              variant="ghost"
+            />
+          }
+        >
+          <Ellipsis className="size-3.5" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={onLoad}>Load</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setRenaming(true)}>
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-(--status-danger-fg)"
+            onClick={onDelete}
+          >
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
+
+function SavedQueriesPanel({
+  organizationId,
+  organizationName,
+  userId,
+}: {
+  organizationId: string;
+  organizationName: string;
+  userId: string;
+}) {
   const queryEditor = useGraphiQL((state) => state.queryEditor);
   const variableEditor = useGraphiQL((state) => state.variableEditor);
   const [savedQueries, setSavedQueries] = useState<SavedQuery[]>([]);
+  const [filter, setFilter] = useState("");
   const [name, setName] = useState("");
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [newName, setNewName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -50,8 +182,10 @@ function SavedQueriesPanel({ organizationId }: { organizationId: string }) {
     try {
       await action();
       await load();
+      return true;
     } catch (cause) {
       setError(getApiErrorMessage(cause, fallback));
+      return false;
     }
   };
 
@@ -61,7 +195,7 @@ function SavedQueriesPanel({ organizationId }: { organizationId: string }) {
     );
   }, [load]);
 
-  const save = (event: FormEvent<HTMLFormElement>) => {
+  const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const query = queryEditor?.getValue() ?? "";
     const variables = variableEditor?.getValue() ?? "";
@@ -69,43 +203,90 @@ function SavedQueriesPanel({ organizationId }: { organizationId: string }) {
       setError("Write a query before saving it.");
       return;
     }
-    return attempt(async () => {
+    const saved = await attempt(async () => {
       await apiClient.savedQueries.create({
         name,
         organizationId,
         query,
         ...(variables.trim() ? { variables } : {}),
       });
-      setName("");
     }, "Could not save the query.");
+    if (saved) {
+      toast.success("Query saved", {
+        description: `Shared with everyone in ${organizationName}.`,
+      });
+      setName("");
+    }
   };
 
-  const rename = (event: FormEvent<HTMLFormElement>, savedQueryId: string) => {
-    event.preventDefault();
-    return attempt(async () => {
-      await apiClient.savedQueries.update({
-        name: newName,
-        organizationId,
-        savedQueryId,
-      });
-      setRenamingId(null);
-    }, "Could not rename the query.");
-  };
+  const needle = filter.trim().toLowerCase();
+  const visible = savedQueries.filter(
+    (savedQuery) => !needle || savedQuery.name.toLowerCase().includes(needle)
+  );
+  const groups = [
+    {
+      label: `Shared in ${organizationName}`,
+      rows: visible.filter(({ createdById }) => createdById !== userId),
+    },
+    {
+      label: "Mine",
+      rows: visible.filter(({ createdById }) => createdById === userId),
+    },
+  ].filter(({ rows }) => rows.length > 0);
+
+  const row = (savedQuery: SavedQuery) => (
+    <SavedRow
+      key={savedQuery.id}
+      onDelete={() =>
+        attempt(
+          () =>
+            apiClient.savedQueries.delete({
+              organizationId,
+              savedQueryId: savedQuery.id,
+            }),
+          "Could not delete the query."
+        )
+      }
+      onLoad={() => {
+        queryEditor?.setValue(savedQuery.query);
+        variableEditor?.setValue(savedQuery.variables ?? "");
+      }}
+      onRename={(newName) =>
+        attempt(
+          () =>
+            apiClient.savedQueries.update({
+              name: newName,
+              organizationId,
+              savedQueryId: savedQuery.id,
+            }),
+          "Could not rename the query."
+        )
+      }
+      savedQuery={savedQuery}
+    />
+  );
 
   return (
-    <div className="space-y-4 text-sm">
-      <div>
-        <h2 className="font-semibold text-lg">Saved queries</h2>
-        <p className="text-muted-foreground text-xs">
-          Shared with everyone in this organization.
-        </p>
+    <div className="wizdek-saved-queries flex flex-col gap-2.5 text-sm">
+      <h2 className="font-semibold text-[13px] leading-none">Saved queries</h2>
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-2 left-2 size-[13px] text-muted-foreground" />
+        <Input
+          aria-label="Filter saved queries"
+          className="h-[30px] pl-[27px] text-[12.5px]"
+          onChange={(event) => setFilter(event.target.value)}
+          placeholder="Filter"
+          type="search"
+          value={filter}
+        />
       </div>
-      <form className="flex gap-2" onSubmit={save}>
+      <form className="flex gap-1.5" onSubmit={save}>
         <Input
           aria-label="Saved query name"
+          className="h-[30px] text-[12.5px]"
           maxLength={120}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Name for the current query"
+          placeholder="Name the current query"
           required
           value={name}
         />
@@ -113,85 +294,31 @@ function SavedQueriesPanel({ organizationId }: { organizationId: string }) {
           Save
         </Button>
       </form>
-      {error ? <p className="text-destructive text-xs">{error}</p> : null}
+      {error ? (
+        <p className="text-(--status-danger-fg) text-xs">{error}</p>
+      ) : null}
       {savedQueries.length === 0 ? (
         <p className="text-muted-foreground text-xs">Nothing saved yet.</p>
-      ) : (
-        <ul className="divide-y rounded-md border">
-          {savedQueries.map((savedQuery) => (
-            <li className="space-y-2 px-3 py-2" key={savedQuery.id}>
-              {renamingId === savedQuery.id ? (
-                <form
-                  className="flex gap-2"
-                  onSubmit={(event) => rename(event, savedQuery.id)}
-                >
-                  <Input
-                    aria-label="New name"
-                    maxLength={120}
-                    onChange={(event) => setNewName(event.target.value)}
-                    required
-                    value={newName}
-                  />
-                  <Button size="sm" type="submit">
-                    Rename
-                  </Button>
-                </form>
-              ) : (
-                <p className="truncate font-medium" title={savedQuery.name}>
-                  {savedQuery.name}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => {
-                    queryEditor?.setValue(savedQuery.query);
-                    variableEditor?.setValue(savedQuery.variables ?? "");
-                  }}
-                  size="sm"
-                  variant="outline"
-                >
-                  Load
-                </Button>
-                <Button
-                  onClick={() => {
-                    setRenamingId(
-                      renamingId === savedQuery.id ? null : savedQuery.id
-                    );
-                    setNewName(savedQuery.name);
-                  }}
-                  size="sm"
-                  variant="ghost"
-                >
-                  {renamingId === savedQuery.id ? "Cancel" : "Rename"}
-                </Button>
-                <Button
-                  onClick={() =>
-                    attempt(
-                      () =>
-                        apiClient.savedQueries.delete({
-                          organizationId,
-                          savedQueryId: savedQuery.id,
-                        }),
-                      "Could not delete the query."
-                    )
-                  }
-                  size="sm"
-                  variant="ghost"
-                >
-                  Delete
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      ) : null}
+      {groups.map((group) => (
+        <section key={group.label}>
+          <SectionLabel className="px-1.5 pt-3 pb-1.5">
+            {group.label}
+          </SectionLabel>
+          {group.rows.map(row)}
+        </section>
+      ))}
     </div>
   );
 }
 
 /** A GraphiQL sidebar plugin listing the organization's shared queries. */
-export const createSavedQueriesPlugin = (organizationId: string): Plugin => ({
-  content: () => <SavedQueriesPanel organizationId={organizationId} />,
+export const createSavedQueriesPlugin = (options: {
+  organizationId: string;
+  organizationName: string;
+  userId: string;
+}): Plugin => ({
+  content: () => <SavedQueriesPanel {...options} />,
   icon: SavedQueriesIcon,
   title: "Saved queries",
 });

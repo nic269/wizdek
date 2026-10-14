@@ -7,6 +7,7 @@ export {
   ArrowRight,
   BadgeCheck,
   Bell,
+  Bookmark,
   BellDot,
   Box,
   Boxes,
