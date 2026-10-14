@@ -20,9 +20,11 @@ Tenancy is the boilerplate's Organization model. Every product record belongs to
 
 Existing packages under `packages/` come from the boilerplate: `api` (contracts and routers), `auth`, `access-control`, `database` (Prisma schema and migrations), `jobs`, `storage`, `design-system`, and supporting packages. Import rules between them are declared in `boundaries.config.json` and enforced by `pnpm boundaries`.
 
+`@repo/security` holds the AES-256-GCM `encryptSecret` and `decryptSecret` (`@repo/security/crypto`) used for every stored secret, keyed by `SHOPIFY_TOKEN_ENCRYPTION_KEY`. `@repo/storage` can write and read objects as streams (`putObjectStream`, `getObjectStream`) in addition to whole buffers, for files too large to hold in memory.
+
 ## Shopify package
 
-`packages/shopify` (`@repo/shopify`) is server-only. It may import `@repo/database` and `@repo/logger`, and has no client-safe entry point.
+`packages/shopify` (`@repo/shopify`) is server-only. It may import `@repo/database`, `@repo/logger` and `@repo/security`, and has no client-safe entry point.
 
 | Entry point | Contents |
 |-------------|----------|
@@ -31,7 +33,7 @@ Existing packages under `packages/` come from the boilerplate: `api` (contracts 
 | `@repo/shopify/graphql` | `classifyOperation` decides whether a document runs a query, mutation, subscription or introspection, without executing it |
 | `@repo/shopify/oauth` | Callback HMAC and session-token validation, authorization-code and token-exchange adapters, refresh and client-credentials grants |
 | `@repo/shopify/stores` | Organization-scoped store and app repository, access token resolver, per-store client, health check |
-| `@repo/shopify/crypto` | AES-256-GCM `encryptSecret` and `decryptSecret` |
+| `@repo/shopify/crypto` | Re-exports `encryptSecret` and `decryptSecret` from `@repo/security/crypto` |
 | `@repo/shopify/testing` | In-process fake Shopify server for tests |
 
 ### Data model
@@ -223,6 +225,17 @@ Schedules use the job provider's `schedule` with the activation id as the key. T
 A node's `mode` can be `batch`: `executeBatch` receives every pending item in one call and returns an outcome per item, and the node keeps what it needs to resume in `stepState`. `shopify.bulkMutation` works this way. It writes `submitting` before starting the bulk operation and `submitted` with the operation id after, so a restart can tell the three cases apart: never started, started and resumable, or impossible to tell (items become `UNKNOWN`).
 
 `idempotent` can be a function of the config. `shopify.graphql` is repeatable for a query and not for a document that may mutate; the check is deliberately cautious and treats any use of the word `mutation` as a mutation.
+
+## Database tools
+
+`packages/database-tools` (`@repo/database-tools`) is server-only and may import `@repo/database`, `@repo/jobs`, `@repo/logger`, `@repo/security` and `@repo/storage`. The user guide is [Database tools](./database.md); [decision 0005](./decisions/0005-database-backups-with-native-dump-tools.md) records why it works this way.
+
+- **Data model.** `DatabaseConnection` is one saved database per organization, unique by name, with the URL in `urlEncrypted` and host, port, database and user in clear for display. `DatabaseBackup` is one attempt with status `QUEUED`, `RUNNING`, `COMPLETED` or `FAILED`, the stored object's key, size and SHA-256, and the tool and server versions. A backup keeps a copy of its connection's name and outlives the connection (`onDelete: SetNull`).
+- **Engines.** Each engine is a `DatabaseEngineAdapter` (`src/engines/types.ts`): URL schemes, `parseUrl`, `check`, `toolVersion`, `dump` and `verify`. `resolveAdapter` picks one by URL scheme. PostgreSQL is the only adapter.
+- **Child processes.** `runTool` spawns without a shell, gives the child only the environment it is passed, keeps the last few kilobytes of output, redacts secrets from it, and stops the child when the signal aborts. The PostgreSQL adapter passes the connection in `PG*` variables, never as arguments.
+- **The job.** `startBackup` records a `QUEUED` row and enqueues `database-backup` with only the backup id, one at a time per connection. `runBackup` checks versions, dumps to `DATABASE_BACKUP_TMP_DIR`, verifies, uploads with `putObjectStream` and records the result; any failure is recorded with a redacted reason and leaves nothing stored. The API marks backups that can no longer finish as failed at startup (`failInterruptedDatabaseBackups`).
+- **API.** Contracts are in `packages/api/src/contracts/databases.ts`; permissions are `databases:read`, `databases:manage` and `databases:backup`, checked against the organization of the connection or backup row. Downloads are served by a plain Hono route, `GET /api/databases/backups/:backupId/download`, which redirects to a 60-second signed URL when storage supports one and otherwise streams the file.
+- **UI.** `apps/app/app/database` holds the connection list, the add form and a per-connection page whose server component checks permissions before rendering, like the flow builder.
 
 ## Local development
 

@@ -58,6 +58,6 @@ Until a secret is saved, a webhook flow cannot be activated on such a store.
 
 ## Operating notes
 
-- `SHOPIFY_TOKEN_ENCRYPTION_KEY` encrypts every stored token and client secret. Back it up with the database. If it is lost or changed, every store must be reconnected.
+- `SHOPIFY_TOKEN_ENCRYPTION_KEY` encrypts every stored token and client secret, and the URLs of [database connections](./database.md). Back it up with the database. If it is lost or changed, every store must be reconnected and every database connection added again.
 - OAuth needs a URL Shopify can redirect to. Shopify may refuse an `http://localhost` redirect URL; if it does, run the app behind a tunnel or on its deployed host and register that URL instead. The access-token and app-credentials methods are unaffected.
 - Connection events (app created, updated, deleted; store connected, OAuth started, disconnected) are written to the organization's audit log. Tokens and secrets are never included.

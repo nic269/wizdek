@@ -23,6 +23,8 @@ corepack pnpm dev
 
 Set random values of at least 32 characters for `BETTER_AUTH_SECRET` and `SHOPIFY_TOKEN_ENCRYPTION_KEY` in `.env`. If port 5432 is already in use, set `POSTGRES_PORT` and the port in `DATABASE_URL` to a free port before starting Postgres.
 
+Database backups and their tests need the PostgreSQL client tools (`pg_dump`, `pg_restore`) version 17 or newer. On macOS run `brew install libpq` and set `POSTGRES_CLIENT_BIN_DIR=/opt/homebrew/opt/libpq/bin` in `.env`. See [Database tools](./docs/database.md#setting-up-the-client-tools).
+
 Run `corepack pnpm release:check` before release.
 
 ## Origin
