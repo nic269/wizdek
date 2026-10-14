@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="height: calc(100vh - 18px); min-height: 620px; display: flex; flex-direction: column">
+<sc-if value="{{ noAccess }}" hint-placeholder-val="{{ false }}">
+  <div style="flex: 1; display: grid; place-items: center; padding: 40px 24px">
+    <div style="max-width: 440px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted)"><i class="icon-lock" style="font-size: 21px"></i></div>
+      <div style="font: 600 19px/1.25 var(--font); letter-spacing: -0.01em">The GraphQL console isn’t available to Viewers</div>
+      <div style="font: 400 14px/1.55 var(--font); color: var(--muted); text-wrap: pretty">Running queries needs the <span style="font: 500 12.5px var(--mono); color: var(--ink2); background: var(--sunken); padding: 2px 5px; border-radius: 4px">graphql:query</span> permission. Ask an Owner or Admin in wizloft to change your role.</div>
+      <div style="display: flex; gap: 8px; margin-top: 6px"><button onClick="{{ goAccess }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">See roles</button><button onClick="{{ goDash }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Back to dashboard</button></div>
+    </div>
+  </div>
+</sc-if>
+<sc-if value="{{ hasAccess }}" hint-placeholder-val="{{ true }}">
+  <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap">
+    <h1 style="margin: 0 6px 0 4px; font: 600 17px/1 var(--font); letter-spacing: -0.01em">GraphQL</h1>
+    <div style="position: relative">
+      <button onClick="{{ toggleStore }}" style="display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px 0 8px; border: 1px solid {{ store.bd }}; background: {{ store.bg }}; border-radius: var(--r); cursor: pointer; color: var(--ink); min-width: 290px">
+        <span style="width: 22px; height: 22px; border-radius: 5px; background: {{ store.tint }}; color: {{ store.color }}; display: grid; place-items: center; font: 700 10px/1 var(--font)">{{ store.ini }}</span>
+        <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: 1"><span style="font: 600 13px/1 var(--font)">{{ store.name }}</span><span style="font: 400 11px/1 var(--mono); color: var(--muted)">{{ store.domain }}</span></span>
+        <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ store.envBg }}; color: {{ store.envFg }}">{{ store.env }}</span>
+        <i class="icon-chevron-down" style="font-size: 14px; color: var(--muted)"></i>
+      </button>
+      <sc-if value="{{ storeOpen }}">
+        <div style="position: absolute; top: calc(100% + 6px); left: 0; width: 340px; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.2); padding: 6px; animation: wzin .14s ease">
+          <div style="font: 500 11.5px/1 var(--font); color: var(--muted); padding: 8px 8px 6px">Connected stores</div>
+          <sc-for list="{{ stores }}" as="s" hint-placeholder-count="4">
+            <button onClick="{{ s.pick }}" disabled="{{ s.disabled }}" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px; border: 0; background: transparent; border-radius: 6px; cursor: {{ s.cursor }}; text-align: left; opacity: {{ s.op }}; color: var(--ink)" style-hover="background: var(--hover)">
+              <span style="width: 22px; height: 22px; border-radius: 5px; background: {{ s.tint }}; color: {{ s.color }}; display: grid; place-items: center; font: 700 10px/1 var(--font)">{{ s.ini }}</span>
+              <span style="flex: 1; min-width: 0"><span style="display: block; font: 500 13px/1.25 var(--font)">{{ s.name }}</span><span style="display: block; font: 400 11.5px/1.3 var(--font); color: var(--muted)">{{ s.sub }}</span></span>
+              <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ s.envBg }}; color: {{ s.envFg }}">{{ s.env }}</span>
+              <sc-if value="{{ s.active }}"><i class="icon-check" style="font-size: 14px"></i></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+    <button style="display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 10px; border: 1px solid var(--line2); background: var(--panel); border-radius: var(--r); cursor: pointer; color: var(--ink); font: 500 13px/1 var(--mono)">2026-07<i class="icon-chevron-down" style="font-size: 14px; color: var(--muted)"></i></button>
+    <button onClick="{{ toggleCost }}" style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px; border: 0; background: transparent; cursor: pointer; color: var(--ink2); font: 500 13px/1 var(--font)">
+      <span style="width: 30px; height: 18px; border-radius: 99px; background: {{ costTrack }}; position: relative; transition: background .15s"><span style="position: absolute; top: 2px; left: {{ costKnob }}; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s"></span></span>Detailed cost
+    </button>
+    <div style="flex: 1"></div>
+    <span style="font: 400 12px/1 var(--font); color: var(--muted); display: flex; align-items: center; gap: 6px"><i class="icon-cloud-check" style="font-size: 14px"></i>Saved queries sync to wizloft</span>
+  </div>
+
+  <sc-if value="{{ isProd }}">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: #fbeceb; border-bottom: 1px solid #f0c9c5; color: #7d1d17; font: 400 12.5px/1.4 var(--font)">
+      <i class="icon-triangle-alert" style="font-size: 14px"></i>
+      <span style="flex: 1"><strong style="font-weight: 600">Production store.</strong> Mutations run here change live data on <span style="font-family: var(--mono)">{{ store.domain }}</span>.</span>
+      <span style="font: 500 11.5px/1 var(--mono); opacity: .8">{{ scopeNote }}</span>
+    </div>
+  </sc-if>
+
+  <div style="flex: 1; min-height: 0; display: flex; overflow: hidden">
+    <div style="width: 48px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; background: var(--sunken)">
+      <sc-for list="{{ rail }}" as="rl" hint-placeholder-count="4">
+        <button onClick="{{ rl.pick }}" title="{{ rl.label }}" style="width: 34px; height: 34px; border: 0; border-radius: 7px; background: {{ rl.bg }}; color: {{ rl.fg }}; box-shadow: {{ rl.sh }}; cursor: pointer; display: grid; place-items: center" style-hover="color: var(--ink)"><i class="icon-{{ rl.icon }}" style="font-size: 17px"></i></button>
+      </sc-for>
+      <div style="flex: 1"></div>
+      <button title="Shortcuts" style="width: 34px; height: 34px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer"><i class="icon-command" style="font-size: 16px"></i></button>
+    </div>
+
+    <sc-if value="{{ panelOpen }}">
+      <div style="width: 248px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px"><span style="font: 600 13px/1 var(--font); flex: 1">{{ panelTitle }}</span><button onClick="{{ closePanel }}" style="width: 24px; height: 24px; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 5px"><i class="icon-x" style="font-size: 14px"></i></button></div>
+        <div style="padding: 0 12px 10px"><div style="position: relative"><i class="icon-search" style="position: absolute; left: 8px; top: 8px; font-size: 13px; color: var(--muted)"></i><input placeholder="Filter" style="width: 100%; height: 30px; padding: 0 8px 0 27px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 12.5px; outline: none; color: var(--ink)"></div></div>
+        <div style="flex: 1; overflow: auto; padding: 0 6px 10px">
+          <sc-for list="{{ panelItems }}" as="pi" hint-placeholder-count="6">
+            <sc-if value="{{ pi.head }}"><div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted); padding: 12px 6px 6px">{{ pi.label }}</div></sc-if>
+            <sc-if value="{{ pi.row }}">
+              <button onClick="{{ pi.go }}" style="width: 100%; display: flex; align-items: flex-start; gap: 8px; padding: 7px 6px; border: 0; background: {{ pi.bg }}; border-radius: 6px; cursor: pointer; text-align: left; color: var(--ink)" style-hover="background: var(--hover)">
+                <span style="font: 600 9.5px/16px var(--mono); padding: 0 4px; border-radius: 3px; background: {{ pi.kBg }}; color: {{ pi.kFg }}; flex: none">{{ pi.k }}</span>
+                <span style="flex: 1; min-width: 0"><span style="display: block; font: 500 12.5px/1.3 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ pi.label }}</span><span style="display: block; font: 400 11.5px/1.35 var(--font); color: var(--muted)">{{ pi.sub }}</span></span>
+              </button>
+            </sc-if>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: flex-end; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--line); background: var(--sunken); overflow-x: auto; scrollbar-width: none; min-width: 0">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="2">
+          <button onClick="{{ tb.pick }}" style="display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 10px 0 12px; border: 1px solid {{ tb.bd }}; border-bottom: 0; border-radius: 7px 7px 0 0; background: {{ tb.bg }}; color: {{ tb.fg }}; font: 500 12.5px/1 var(--mono); cursor: pointer; margin-bottom: -1px; white-space: nowrap; flex: none">
+            <span style="font: 600 9.5px/1 var(--mono); padding: 2px 4px; border-radius: 3px; background: {{ tb.kBg }}; color: {{ tb.kFg }}">{{ tb.k }}</span>{{ tb.name }}<i class="icon-x" style="font-size: 12px; color: var(--faint)"></i>
+          </button>
+        </sc-for>
+        <button style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 6px; margin-bottom: 1px"><i class="icon-plus" style="font-size: 15px"></i></button>
+      </div>
+      <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr)">
+        <div style="display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line)">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line)">
+            <button onClick="{{ run }}" style="display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border: 1px solid {{ runBg }}; background: {{ runBg }}; color: #fff; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer; white-space: nowrap; flex: none"><i class="icon-{{ runIcon }}" style="font-size: 13px; animation: {{ runAnim }}"></i>{{ runLabel }}</button>
+            <span style="font: 500 10.5px/1 var(--mono); color: var(--muted); padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px">⌘↵</span>
+            <div style="flex: 1"></div>
+            <button title="Prettify" style="width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer" style-hover="background: var(--hover); color: var(--ink)"><i class="icon-wand-sparkles" style="font-size: 15px"></i></button>
+            <button title="Copy" style="width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer" style-hover="background: var(--hover); color: var(--ink)"><i class="icon-copy" style="font-size: 15px"></i></button>
+            <button onClick="{{ saveQuery }}" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer"><i class="icon-bookmark" style="font-size: 13px"></i>Save</button>
+          </div>
+          <div style="flex: 1; min-height: 0; overflow: auto; padding: 10px 0; font: 400 13px/21px var(--mono)">
+            <sc-for list="{{ code }}" as="ln" hint-placeholder-count="20">
+              <div style="display: flex; white-space: pre"><span style="width: 44px; flex: none; text-align: right; padding-right: 14px; color: var(--faint); user-select: none">{{ ln.n }}</span><span><sc-for list="{{ ln.t }}" as="tk"><span style="color: {{ tk.c }}">{{ tk.s }}</span></sc-for></span></div>
+            </sc-for>
+          </div>
+          <div style="border-top: 1px solid var(--line)">
+            <div style="display: flex; align-items: center; gap: 2px; padding: 6px 10px">
+              <button style="height: 26px; padding: 0 9px; border: 0; border-radius: 5px; background: var(--hover); color: var(--ink); font: 500 12px/1 var(--font); cursor: pointer">Variables</button>
+              <button style="height: 26px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: 500 12px/1 var(--font); cursor: pointer">Headers</button>
+              <div style="flex: 1"></div><i class="icon-chevron-down" style="font-size: 14px; color: var(--muted)"></i>
+            </div>
+            <div style="padding: 2px 0 12px; font: 400 13px/21px var(--mono)">
+              <sc-for list="{{ vars }}" as="ln" hint-placeholder-count="3">
+                <div style="display: flex; white-space: pre"><span style="width: 44px; flex: none; text-align: right; padding-right: 14px; color: var(--faint)">{{ ln.n }}</span><span><sc-for list="{{ ln.t }}" as="tk"><span style="color: {{ tk.c }}">{{ tk.s }}</span></sc-for></span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; min-height: 0; background: var(--sunken)">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 47px">
+            <span style="font: 600 12.5px/1 var(--font)">Response</span>
+            <sc-if value="{{ hasResp }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 99px; background: #e8f4ec; color: #1f6b3f; font: 500 11.5px/1 var(--mono)"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2f9e5c"></span>200 OK</span><span style="font: 400 12px/1 var(--font); color: var(--muted)">218 ms</span></sc-if>
+          </div>
+          <div style="flex: 1; min-height: 0; overflow: auto; padding: 10px 0; font: 400 13px/21px var(--mono)">
+            <sc-if value="{{ running }}"><div style="height: 2px; margin: -10px 0 8px; background: var(--line); overflow: hidden"><div style="width: 40%; height: 100%; background: var(--acc); animation: wzbar 1s ease-in-out infinite"></div></div></sc-if>
+            <sc-if value="{{ idle }}"><div style="height: 100%; display: grid; place-items: center; text-align: center; font-family: var(--font); color: var(--muted); font-size: 13px; padding: 20px">Run the query to see the response here.<br>Status, errors and cost appear below.</div></sc-if>
+            <sc-if value="{{ hasResp }}">
+              <sc-for list="{{ resp }}" as="ln" hint-placeholder-count="20">
+                <div style="display: flex; white-space: pre"><span style="width: 40px; flex: none; text-align: right; padding-right: 12px; color: var(--faint)">{{ ln.n }}</span><span><sc-for list="{{ ln.t }}" as="tk"><span style="color: {{ tk.c }}">{{ tk.s }}</span></sc-for></span></div>
+              </sc-for>
+            </sc-if>
+          </div>
+          <div style="border-top: 1px solid var(--line); background: var(--panel); padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font: 400 11.5px/1.4 var(--font); color: var(--muted)">
+            <sc-for list="{{ statusBar }}" as="sb" hint-placeholder-count="5">
+              <span style="display: inline-flex; gap: 5px; align-items: center"><span>{{ sb.k }}</span><span style="font: 500 11.5px/1 var(--mono); color: {{ sb.c }}">{{ sb.v }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ confirm }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ cancelConfirm }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.35); z-index: 70"></div>
+  <div style="position: fixed; top: 22vh; left: 50%; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); z-index: 71; background: #fff; border-radius: 12px; box-shadow: 0 24px 60px -12px rgba(0,0,0,.3); overflow: hidden; animation: wzin .16s ease">
+    <div style="padding: 20px 22px 18px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="width: 32px; height: 32px; border-radius: 8px; background: #fbeceb; color: #9b231c; display: grid; place-items: center"><i class="icon-triangle-alert" style="font-size: 16px"></i></span><div style="font: 600 16px/1.3 var(--font)">Run mutation on production?</div></div>
+      <div style="font: 400 13.5px/1.55 var(--font); color: var(--muted)"><span style="font-family: var(--mono); color: var(--ink)">OrderRiskAssessmentCreate</span> will write to live data. This can’t be undone from wizdek.</div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #f0c9c5; background: #fdf6f5; border-radius: 8px">
+        <span style="width: 26px; height: 26px; border-radius: 6px; background: {{ store.tint }}; color: {{ store.color }}; display: grid; place-items: center; font: 700 11px/1 var(--font)">{{ store.ini }}</span>
+        <div style="flex: 1"><div style="font: 600 13px/1.3 var(--font)">{{ store.name }}</div><div style="font: 400 12px/1.3 var(--mono); color: var(--muted)">{{ store.domain }}</div></div>
+        <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #9b231c; color: #fff">PROD</span>
+      </div>
+    </div>
+    <div style="padding: 12px 22px; background: var(--sunken); border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px">
+      <button onClick="{{ cancelConfirm }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: #fff; color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button>
+      <button onClick="{{ doRun }}" style="height: 34px; padding: 0 14px; border: 1px solid #a3211a; background: #a3211a; color: #fff; border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Run on Evisu HK</button>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ENV = { PROD: ['#fbeceb', '#9b231c'], STAGING: ['#e9f0fb', '#1f4f99'], DEV: ['#f0f0ed', '#55554f'] };
+const STORES = [
+  ['Evisu HK', 'evisu-hk.myshopify.com', 'PROD', 25, 'Connected · 41 scopes', true],
+  ['Evisu HK Staging', 'evisu-hk-staging.myshopify.com', 'STAGING', 250, 'Connected · 33 scopes', true],
+  ['Evisu JP', 'evisu-jp.myshopify.com', 'PROD', 70, 'Reconnect required', false],
+  ['Hobo Supply Dev', 'hobo-supply-dev.myshopify.com', 'DEV', 170, 'Disconnected', false]
+];
+const C = { kw: 'oklch(0.5 0.19 300)', def: 'oklch(0.48 0.15 255)', field: '#33332f', v: 'oklch(0.52 0.16 30)', type: 'oklch(0.5 0.11 190)', str: 'oklch(0.5 0.13 150)', num: 'oklch(0.52 0.15 255)', p: '#9a9a92', key: 'oklch(0.45 0.15 265)' };
+const Q = `query getOrderByName($query: String!) {
+  orders(first: 1, query: $query) {
+    edges {
+      node {
+        id
+        name
+        email
+        createdAt
+        displayFulfillmentStatus
+        totalPriceSet {
+          shopMoney { amount currencyCode }
+        }
+        customer {
+          displayName
+          email
+        }
+        shippingAddress {
+          city
+          country
+          validationResultSummary
+        }
+        tags
+      }
+    }
+  }
+}`;
+const M = `mutation OrderRiskAssessmentCreate($input: OrderRiskAssessmentCreateInput!) {
+  orderRiskAssessmentCreate(orderRiskAssessmentInput: $input) {
+    orderRiskAssessment {
+      riskLevel
+      facts { description sentiment }
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}`;
+const R = `{
+  "data": {
+    "orders": {
+      "edges": [
+        {
+          "node": {
+            "id": "gid://shopify/Order/6142881",
+            "name": "#1873",
+            "email": "m.chan@example.com",
+            "createdAt": "2026-10-13T08:41:12Z",
+            "displayFulfillmentStatus": "UNFULFILLED",
+            "totalPriceSet": {
+              "shopMoney": { "amount": "1840.00", "currencyCode": "HKD" }
+            },
+            "customer": { "displayName": "Mei Chan" },
+            "shippingAddress": {
+              "city": "Kowloon",
+              "country": "Hong Kong",
+              "validationResultSummary": "NO_ISSUES"
+            },
+            "tags": ["vip", "csv-import"]
+          }
+        }
+      ]
+    }
+  },
+  "extensions": {
+    "cost": { "requestedQueryCost": 14, "actualQueryCost": 9 }
+  }
+}`;
+function tokGql(line) {
+  const out = []; const re = /(\s+)|(\$[A-Za-z_]+)|("[^"]*")|(\b\d+\b)|([{}()\[\]:,!])|([A-Za-z_][A-Za-z0-9_]*)/g; let m, prev = '';
+  while ((m = re.exec(line))) {
+    const s = m[0]; let c = C.field;
+    if (m[1]) c = 'inherit'; else if (m[2]) c = C.v; else if (m[3]) c = C.str; else if (m[4]) c = C.num; else if (m[5]) c = C.p;
+    else if (s === 'query' || s === 'mutation') c = C.kw; else if (prev === 'query' || prev === 'mutation') c = C.def; else if (/^[A-Z]/.test(s)) c = C.type;
+    if (!m[1]) prev = s; out.push({ s, c });
+  }
+  return out;
+}
+function tokJson(line) {
+  const out = []; const re = /(\s+)|("[^"]*")(\s*:)?|(-?\d+(\.\d+)?)|([{}\[\],:])|(true|false|null)/g; let m;
+  while ((m = re.exec(line))) {
+    if (m[1]) out.push({ s: m[1], c: 'inherit' });
+    else if (m[2]) { out.push({ s: m[2], c: m[3] ? C.key : C.str }); if (m[3]) out.push({ s: m[3], c: C.p }); }
+    else if (m[4]) out.push({ s: m[4], c: C.num }); else if (m[6]) out.push({ s: m[6], c: C.p }); else out.push({ s: m[0], c: C.kw });
+  }
+  return out;
+}
+const lines = (src, f) => src.split('\n').map((l, i) => ({ n: i + 1, t: f(l) }));
+
+class Component extends DCLogic {
+  state = { store: 0, storeOpen: false, cost: false, tab: 1, panel: 'saved', st: 'idle', confirm: false };
+  run = () => {
+    const mut = this.state.tab === 0;
+    if (mut && STORES[this.state.store][2] === 'PROD') { this.setState({ confirm: true }); return; }
+    this.doRun();
+  };
+  doRun = () => { this.setState({ st: 'running', confirm: false }); setTimeout(() => this.setState({ st: 'done' }), 900); };
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {}), role = this.props.role || 'Owner';
+    const s = this.state;
+    const mk = (r, i) => ({ name: r[0], domain: r[1], env: r[2], envBg: ENV[r[2]][0], envFg: ENV[r[2]][1], color: `oklch(0.5 0.13 ${r[3]})`, tint: `oklch(0.95 0.035 ${r[3]})`, ini: r[0].split(' ').map(w => w[0]).slice(0, 2).join(''), sub: r[4] });
+    const cur = mk(STORES[s.store]);
+    const isProd = cur.env === 'PROD';
+    const store = { ...cur, bd: isProd ? '#e9b7b2' : 'var(--line2)', bg: isProd ? '#fffafa' : 'var(--panel)' };
+    const stores = STORES.map((r, i) => ({ ...mk(r), active: i === s.store, disabled: !r[5], op: r[5] ? 1 : 0.5, cursor: r[5] ? 'pointer' : 'not-allowed', pick: () => r[5] && this.setState({ store: i, storeOpen: false, st: 'idle' }) }));
+    const railDefs = [['saved', 'bookmark', 'Saved queries'], ['history', 'history', 'History'], ['explorer', 'list-tree', 'Explorer'], ['docs', 'book-open', 'Docs']];
+    const rail = railDefs.map(r => ({ icon: r[1], label: r[2], pick: () => this.setState({ panel: s.panel === r[0] ? null : r[0] }), bg: s.panel === r[0] ? 'var(--panel)' : 'transparent', fg: s.panel === r[0] ? 'var(--ink)' : 'var(--muted)', sh: s.panel === r[0] ? '0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.05)' : 'none' }));
+    const Kq = ['#e9f0fb', '#1f4f99'], Km = ['#fbf1db', '#7a5410'];
+    const savedItems = [
+      { head: true, label: 'Shared in wizloft' },
+      { row: true, k: 'Q', kBg: Kq[0], kFg: Kq[1], label: 'getOrderByName', sub: 'Anh · used 42×', go: () => this.setState({ tab: 1 }), bg: s.tab === 1 ? 'var(--hover)' : 'transparent' },
+      { row: true, k: 'M', kBg: Km[0], kFg: Km[1], label: 'OrderRiskAssessmentCreate', sub: 'Minh · 2 days ago', go: () => this.setState({ tab: 0 }), bg: s.tab === 0 ? 'var(--hover)' : 'transparent' },
+      { row: true, k: 'Q', kBg: Kq[0], kFg: Kq[1], label: 'productsByVendor', sub: 'Linh · last week', go: () => {}, bg: 'transparent' },
+      { row: true, k: 'M', kBg: Km[0], kFg: Km[1], label: 'tagsAdd (bulk)', sub: 'Anh · last week', go: () => {}, bg: 'transparent' },
+      { head: true, label: 'Mine' },
+      { row: true, k: 'Q', kBg: Kq[0], kFg: Kq[1], label: 'shopCapabilities', sub: 'Draft', go: () => {}, bg: 'transparent' }
+    ];
+    const historyItems = [
+      { head: true, label: 'Today' },
+      { row: true, k: 'Q', kBg: Kq[0], kFg: Kq[1], label: 'getOrderByName', sub: 'Evisu HK · 9:31 AM · 200', go: () => {}, bg: 'transparent' },
+      { row: true, k: 'Q', kBg: Kq[0], kFg: Kq[1], label: 'getOrderByName', sub: 'Evisu HK Staging · 9:20 AM · 200', go: () => {}, bg: 'transparent' },
+      { row: true, k: 'M', kBg: Km[0], kFg: Km[1], label: 'OrderRiskAssessmentCreate', sub: 'Evisu HK Staging · 9:12 AM · 1 user error', go: () => {}, bg: 'transparent' }
+    ];
+    const tabs = [['M', 'OrderRiskAssessmentCreate', Km], ['Q', 'getOrderByName', Kq]].map((t, i) => ({ k: t[0], name: t[1], kBg: t[2][0], kFg: t[2][1], pick: () => this.setState({ tab: i, st: 'idle' }), bg: s.tab === i ? 'var(--panel)' : 'transparent', fg: s.tab === i ? 'var(--ink)' : 'var(--muted)', bd: s.tab === i ? 'var(--line)' : 'transparent' }));
+    const mut = s.tab === 0;
+    const running = s.st === 'running', done = s.st === 'done';
+    const runBg = mut && isProd ? '#a3211a' : (mut ? 'oklch(0.55 0.13 70)' : 'var(--acc)');
+    const statusBar = done ? [
+      { k: 'HTTP', v: '200', c: '#1f6b3f' }, { k: 'GraphQL errors', v: '0', c: 'var(--ink)' }, { k: 'User errors', v: '0', c: 'var(--ink)' },
+      { k: 'Cost', v: '14 req · 9 actual', c: 'var(--ink)' }, { k: 'Throttle', v: '1,991 / 2,000', c: 'var(--ink)' }, { k: 'Request', v: '7f3c2a91-e0b4', c: 'var(--muted)' }
+    ] : [{ k: running ? 'Running against' : 'Ready ·', v: store.domain, c: 'var(--ink)' }, { k: 'API', v: '2026-07', c: 'var(--ink)' }];
+    return {
+      noAccess: role === 'Viewer', hasAccess: role !== 'Viewer', goAccess: () => nav('access'), goDash: () => nav('dashboard'),
+      store, stores, storeOpen: s.storeOpen, toggleStore: () => this.setState({ storeOpen: !s.storeOpen }), isProd,
+      scopeNote: 'write_orders · write_products granted',
+      costTrack: s.cost ? 'var(--acc)' : 'var(--line2)', costKnob: s.cost ? '14px' : '2px', toggleCost: () => this.setState({ cost: !s.cost }),
+      rail, panelOpen: !!s.panel && (s.panel === 'saved' || s.panel === 'history'), panelTitle: s.panel === 'history' ? 'History' : 'Saved queries',
+      panelItems: s.panel === 'history' ? historyItems : savedItems, closePanel: () => this.setState({ panel: null }),
+      tabs, code: lines(mut ? M : Q, tokGql),
+      vars: lines(mut ? '{\n  "input": { "orderId": "gid://shopify/Order/6142881", "riskLevel": "HIGH" }\n}' : '{\n  "query": "name:#1873"\n}', tokJson),
+      resp: lines(mut ? '{\n  "data": {\n    "orderRiskAssessmentCreate": {\n      "orderRiskAssessment": { "riskLevel": "HIGH" },\n      "userErrors": []\n    }\n  }\n}' : R, tokJson),
+      run: this.run, doRun: this.doRun, confirm: s.confirm, cancelConfirm: () => this.setState({ confirm: false }),
+      runBg, runLabel: running ? 'Running…' : (mut ? (isProd ? 'Run mutation on PROD' : 'Run mutation') : 'Run query'), runIcon: running ? 'loader-circle' : 'play', runAnim: running ? 'wzspin 1s linear infinite' : 'none',
+      running, idle: s.st === 'idle', hasResp: done, statusBar,
+      saveQuery: () => toast('Query saved', 'Shared with everyone in wizloft.', 'ok')
+    };
+  }
+}
+</script>
+</body>
+</html>

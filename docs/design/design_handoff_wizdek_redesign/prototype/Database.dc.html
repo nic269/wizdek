@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="min-height: 100%">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+<div style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 18px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px">
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Database</h1>
+      <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">PostgreSQL databases wizloft can back up. Open a connection to run and download backups.</p>
+    </div>
+    <sc-if value="{{ canManage }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openAdd }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Add connection</button></sc-if>
+  </header>
+  <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px; font: 400 13px/1.45 var(--font); color: var(--ink2)"><i class="icon-eye" style="font-size: 16px; color: var(--muted)"></i>You can see connections and backup history. Running and downloading backups needs the <strong style="font-weight: 600">Run and download database backups</strong> permission.</div></sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #f0c9c5; background: #fdf3f2; border-radius: 8px; color: #7d1d17"><i class="icon-circle-alert" style="font-size: 17px; margin-top: 1px"></i><div style="flex: 1; font: 400 13.5px/1.5 var(--font)"><strong style="font-weight: 600">Couldn’t load connections.</strong> Backups already running continue in the background.</div><button style="height: 28px; padding: 0 10px; border: 1px solid #e3b0aa; background: #fff; color: #7d1d17; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Retry</button></div></sc-if>
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="border: 1px dashed var(--line2); border-radius: 10px; padding: 56px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+      <div style="width: 44px; height: 44px; border-radius: 11px; background: var(--sunken); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted)"><i class="icon-database" style="font-size: 20px"></i></div>
+      <div style="font: 600 16px/1.3 var(--font)">No database connections</div>
+      <div style="font: 400 13.5px/1.5 var(--font); color: var(--muted); max-width: 420px">Add a PostgreSQL connection to take full backups before a deploy. Backups are restorable with pg_restore.</div>
+      <sc-if value="{{ canManage }}"><button onClick="{{ openAdd }}" style="margin-top: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Add connection</button></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+    <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+      <div style="min-width: 860px">
+        <div style="display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.4fr) 170px 190px 40px; gap: 16px; padding: 0 16px; height: 38px; align-items: center; background: var(--sunken); border-bottom: 1px solid var(--line); font: 500 12px/1 var(--font); color: var(--muted)"><span>Connection</span><span>Database</span><span>Reachability</span><span>Last backup</span><span></span></div>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ skel }}" as="k" hint-placeholder-count="3"><div style="display: flex; gap: 16px; padding: 0 16px; height: 60px; align-items: center; border-bottom: 1px solid var(--line)"><div style="width: 30px; height: 30px; border-radius: 7px; background: #f0f0ed"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 7px"><div style="height: 10px; width: 30%; border-radius: 4px; background: linear-gradient(90deg, #efefec 0, #f7f7f5 50%, #efefec 100%); background-size: 800px 100%; animation: wzshimmer 1.4s linear infinite"></div><div style="height: 9px; width: 45%; border-radius: 4px; background: #f4f4f1"></div></div><div style="width: 80px; height: 20px; border-radius: 99px; background: #f0f0ed"></div></div></sc-for></sc-if>
+        <sc-for list="{{ conns }}" as="c" hint-placeholder-count="3">
+          <div onClick="{{ c.open }}" style="display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.4fr) 170px 190px 40px; gap: 16px; padding: 0 16px; min-height: 64px; align-items: center; border-bottom: 1px solid var(--line); cursor: pointer" style-hover="background: var(--hover)">
+            <div style="display: flex; align-items: center; gap: 11px; min-width: 0"><span style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: oklch(0.95 0.03 240); color: oklch(0.45 0.1 240); display: grid; place-items: center"><i class="icon-database" style="font-size: 15px"></i></span><div style="min-width: 0"><div style="display: flex; align-items: center; gap: 7px"><span style="font: 600 13.5px/1.3 var(--font)">{{ c.name }}</span><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ c.envBg }}; color: {{ c.envFg }}">{{ c.env }}</span></div><div style="font: 400 12px/1.4 var(--font); color: var(--muted)">PostgreSQL {{ c.ver }}</div></div></div>
+            <div style="min-width: 0"><div style="font: 500 13px/1.3 var(--mono)">{{ c.db }}</div><div style="font: 400 12px/1.4 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ c.host }}</div></div>
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ c.rb.bg }}; color: {{ c.rb.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ c.rb.dot }}"></span>{{ c.reach }}</span><span style="font: 400 11.5px/1 var(--font); color: var(--muted)">{{ c.checked }}</span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ c.bb.bg }}; color: {{ c.bb.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ c.bb.dot }}"></span>{{ c.backup }}</span><span style="font: 400 11.5px/1 var(--font); color: var(--muted)">{{ c.backupMeta }}</span></div>
+            <i class="icon-chevron-right" style="font-size: 16px; color: var(--muted)"></i>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+<div style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 22px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 10px">
+      <button onClick="{{ goList }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 0" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>All connections</button>
+      <div style="display: flex; align-items: center; gap: 10px"><h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Evisu production</h1><span style="font: 600 10px/1 var(--mono); letter-spacing: .06em; padding: 4px 6px; border-radius: 3px; background: #fbeceb; color: #9b231c">PROD</span><span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: #e8f4ec; color: #1f6b3f; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2f9e5c"></span>Reachable</span></div>
+      <p style="margin: 0; font: 400 14px/1.5 var(--font); color: var(--muted)">PostgreSQL 17.9 · <span style="font-family: var(--mono); font-size: 13px">oms_v2_production</span></p>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <sc-if value="{{ canManage }}"><button onClick="{{ toggleEdit }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-pencil" style="font-size: 14px"></i>Edit</button></sc-if>
+      <sc-if value="{{ canManage }}"><button onClick="{{ askBackup }}" disabled="{{ backingUp }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer; opacity: {{ bkOp }}"><i class="icon-{{ bkIcon }}" style="font-size: 15px; animation: {{ bkAnim }}"></i>{{ bkLabel }}</button></sc-if>
+    </div>
+  </header>
+
+  <section style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; background: var(--panel)">
+      <sc-for list="{{ facts }}" as="f" hint-placeholder-count="5">
+        <div style="background: var(--panel); padding: 14px 16px; min-width: 0; box-shadow: 1px 0 0 var(--line)"><div style="font: 400 12px/1 var(--font); color: var(--muted); margin-bottom: 8px">{{ f.k }}</div><div style="font: 500 13.5px/1.3 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis" title="{{ f.v }}">{{ f.v }}</div></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); background: var(--sunken); flex-wrap: wrap">
+      <i class="icon-activity" style="font-size: 14px; color: var(--muted)"></i>
+      <span style="font: 400 12.5px/1.4 var(--font); color: var(--muted); flex: 1">{{ checkText }}</span>
+      <button onClick="{{ checkConn }}" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer"><i class="icon-{{ chkIcon }}" style="font-size: 13px; animation: {{ chkAnim }}"></i>Check connection</button>
+    </div>
+  </section>
+
+  <sc-if value="{{ editing }}">
+    <section style="border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: end">
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Name</span><input value="Evisu production" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Database URL <span style="font-weight: 400; color: var(--muted)">· leave blank to keep current</span></span><div style="position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" placeholder="postgres://user:••••@host:5432/db" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"></div></label>
+      <div style="display: flex; gap: 8px"><button onClick="{{ toggleEdit }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button><button onClick="{{ saveEdit }}" style="height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Test &amp; save</button></div>
+    </section>
+  </sc-if>
+
+  <section style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+      <div style="flex: 1; min-width: 240px"><div style="font: 600 16px/1.3 var(--font)">Backups</div><div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Full copies in PostgreSQL custom format, restorable with <span style="font-family: var(--mono); font-size: 12.5px">pg_restore</span>. Files are kept until you delete them.</div></div>
+      <span style="font: 400 12.5px/1 var(--font); color: var(--muted)">{{ bkSummary }}</span>
+    </div>
+    <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+      <div style="min-width: 820px">
+        <div style="display: grid; grid-template-columns: 190px minmax(220px, 1fr) 100px 100px 190px; gap: 16px; padding: 0 16px; height: 38px; align-items: center; background: var(--sunken); border-bottom: 1px solid var(--line); font: 500 12px/1 var(--font); color: var(--muted)"><span>Started</span><span>Status</span><span>Size</span><span>Duration</span><span style="text-align: right">Actions</span></div>
+        <sc-for list="{{ backups }}" as="b" hint-placeholder-count="4">
+          <div style="display: grid; grid-template-columns: 190px minmax(220px, 1fr) 100px 100px 190px; gap: 16px; padding: 0 16px; min-height: 62px; align-items: center; border-bottom: 1px solid var(--line); font: 400 13px/1.3 var(--font); background: {{ b.rowBg }}">
+            <div><div style="font-weight: 500">{{ b.when }}</div><div style="font: 400 12px/1.4 var(--font); color: var(--muted)">by {{ b.by }}</div></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0">
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ b.b.bg }}; color: {{ b.b.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ b.b.dot }}; animation: {{ b.b.anim }}"></span>{{ b.status }}</span>
+              <sc-if value="{{ b.running }}"><div style="width: 100%; max-width: 260px; display: flex; align-items: center; gap: 8px"><div style="flex: 1; height: 5px; border-radius: 99px; background: var(--line); overflow: hidden"><div style="height: 100%; width: {{ b.pct }}; background: #3b7be0; border-radius: 99px; transition: width .4s"></div></div><span style="font: 500 11.5px/1 var(--mono); color: var(--muted)">{{ b.pct }}</span></div></sc-if>
+              <span style="font: 400 12px/1.35 var(--font); color: {{ b.noteColor }}">{{ b.note }}</span>
+            </div>
+            <span style="font-family: var(--mono); font-size: 12.5px">{{ b.size }}</span>
+            <span style="font-family: var(--mono); font-size: 12.5px">{{ b.dur }}</span>
+            <div style="display: flex; justify-content: flex-end; gap: 6px">
+              <sc-if value="{{ b.canDl }}"><button onClick="{{ b.dl }}" style="display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-download" style="font-size: 13px"></i>Download</button></sc-if>
+              <sc-if value="{{ b.canDel }}"><button title="Delete backup" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r); cursor: pointer" style-hover="background: #fdf3f2; color: #9b231c"><i class="icon-trash-2" style="font-size: 14px"></i></button></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <sc-if value="{{ canManage }}">
+    <section style="display: flex; align-items: center; gap: 16px; padding: 14px 16px; border: 1px solid #f0c9c5; border-radius: 10px; flex-wrap: wrap">
+      <div style="flex: 1; min-width: 240px"><div style="font: 600 14px/1.3 var(--font); color: #9b231c">Delete connection</div><div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Removes the stored URL. Existing backup files are deleted too.</div></div>
+      <button style="height: 32px; padding: 0 12px; border: 1px solid #e3b0aa; background: #fff; color: #9b231c; border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer">Delete connection…</button>
+    </section>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ confirm }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ cancel }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.35); z-index: 70"></div>
+  <div style="position: fixed; top: 22vh; left: 50%; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); z-index: 71; background: #fff; border-radius: 12px; box-shadow: 0 24px 60px -12px rgba(0,0,0,.3); overflow: hidden; animation: wzin .16s ease">
+    <div style="padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font: 600 16px/1.3 var(--font)">Back up Evisu production now?</div>
+      <div style="font: 400 13.5px/1.55 var(--font); color: var(--muted)">Runs <span style="font-family: var(--mono); color: var(--ink2)">pg_dump</span> against the production database. Read-only, but it adds load — expect around 3 minutes for 52 MB.</div>
+      <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px"><span style="width: 28px; height: 28px; border-radius: 7px; background: oklch(0.95 0.03 240); color: oklch(0.45 0.1 240); display: grid; place-items: center"><i class="icon-database" style="font-size: 14px"></i></span><div style="flex: 1; min-width: 0"><div style="font: 600 13px/1.3 var(--mono)">oms_v2_production</div><div style="font: 400 11.5px/1.3 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">oms-app-db-instance.cds8houcwc2c.ap-southeast-1.rds.amazonaws.com</div></div><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #fbeceb; color: #9b231c">PROD</span></div>
+      <div style="display: flex; gap: 8px; align-items: center; font: 400 12.5px/1.4 var(--font); color: var(--muted)"><i class="icon-shield-alert" style="font-size: 14px"></i>The file contains production data. Download only to trusted machines.</div>
+    </div>
+    <div style="padding: 12px 22px; background: var(--sunken); border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px"><button onClick="{{ cancel }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: #fff; color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button><button onClick="{{ startBackup }}" style="height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Start backup</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeAdd }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.28); z-index: 50"></div>
+  <aside style="position: fixed; top: 8px; right: 8px; bottom: 8px; width: min(440px, calc(100vw - 16px)); z-index: 51; background: var(--panel); border: 1px solid var(--line); border-radius: var(--rp); box-shadow: 0 24px 60px -16px rgba(0,0,0,.3); display: flex; flex-direction: column; animation: wzslide .2s ease">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center"><div style="flex: 1"><div style="font: 600 16px/1.3 var(--font)">Add a connection</div><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">We test the connection before saving.</div></div><button onClick="{{ closeAdd }}" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); cursor: pointer"><i class="icon-x" style="font-size: 17px"></i></button></div>
+    <div style="flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Name</span><input placeholder="Evisu production" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Database URL</span><div style="position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" placeholder="postgres://user:password@host:5432/db" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"></div><span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Secret. Stored encrypted and never shown again. A read-only user is enough for backups.</span></label>
+    </div>
+    <div style="padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px"><button onClick="{{ closeAdd }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button><button onClick="{{ saveAdd }}" style="height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Test &amp; save</button></div>
+  </aside>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ST = { ok: ['#e8f4ec', '#1f6b3f', '#2f9e5c'], bad: ['#fbeceb', '#9b231c', '#d1453b'], info: ['#e9f0fb', '#1f4f99', '#3b7be0'], idle: ['#f0f0ed', '#55554f', '#a3a39c'] };
+const KIND = { Reachable: 'ok', Completed: 'ok', Unreachable: 'bad', Failed: 'bad', Running: 'info', Queued: 'idle' };
+const badge = (l) => { const [bg, fg, dot] = ST[KIND[l] || 'idle']; return { bg, fg, dot, anim: l === 'Running' || l === 'Queued' ? 'wzpulse 1.4s ease infinite' : 'none' }; };
+const ENV = { PROD: ['#fbeceb', '#9b231c'], STAGING: ['#e9f0fb', '#1f4f99'], DEV: ['#f0f0ed', '#55554f'] };
+
+class Component extends DCLogic {
+  state = { confirm: false, add: false, edit: false, run: null, checking: false, done: false };
+  componentWillUnmount() { clearInterval(this.t); }
+  start = () => {
+    this.setState({ confirm: false, run: 0, done: false });
+    clearInterval(this.t);
+    this.t = setInterval(() => {
+      const r = this.state.run;
+      if (r >= 100) { clearInterval(this.t); this.setState({ run: null, done: true }); (this.props.toast || (() => {}))('Backup completed', 'Evisu production · 52.4 MB · ready to download', 'ok'); return; }
+      this.setState({ run: Math.min(100, r + 9 + Math.round(Math.random() * 8)) });
+    }, 450);
+  };
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {});
+    const route = this.props.route || 'database', role = this.props.role || 'Owner', ds = this.props.dataState || 'live';
+    const s = this.state;
+    const canManage = role === 'Owner';
+    const isLoading = ds === 'loading', isEmpty = ds === 'empty', isError = ds === 'error';
+    let conns = [
+      ['Evisu production', 'PROD', '17.9', 'oms_v2_production', 'oms-app-db-instance.cds8houcwc2c.ap-southeast-1.rds.amazonaws.com', 'Reachable', 'Checked 11:09 AM', 'Completed', 'Today 4:00 PM · 51.8 MB'],
+      ['Evisu staging', 'STAGING', '17.9', 'oms_v2_staging', 'oms-app-db-instance.cds8houcwc2c.ap-southeast-1.rds.amazonaws.com', 'Reachable', 'Checked 11:07 AM', 'Completed', 'Today 11:07 AM · 12.4 MB'],
+      ['Kitsu analytics', 'PROD', '16.4', 'kitsu_dw', 'kitsu-dw.internal.maisonkitsu.com', 'Unreachable', 'Timed out 11:40 PM', 'Failed', 'Yesterday · last good Oct 11']
+    ].map(c => ({ name: c[0], env: c[1], envBg: ENV[c[1]][0], envFg: ENV[c[1]][1], ver: c[2], db: c[3], host: c[4], reach: c[5], rb: badge(c[5]), checked: c[6], backup: c[7], bb: badge(c[7]), backupMeta: c[8], open: () => nav('database/detail') }));
+    if (isLoading || isEmpty || isError) conns = [];
+    const running = s.run !== null;
+    let backups = [
+      { when: 'Oct 14, 4:00 PM', by: 'Anh Nguyen', status: 'Completed', size: '51.8 MB', dur: '3m 1s', note: 'pg_dump 18.6 · custom format' },
+      { when: 'Oct 14, 11:09 AM', by: 'Anh Nguyen', status: 'Completed', size: '37.3 MB', dur: '24s', note: 'pg_dump 18.6 · custom format' },
+      { when: 'Oct 13, 6:30 PM', by: 'Minh Tran', status: 'Failed', size: '—', dur: '1m 12s', note: 'server closed the connection unexpectedly (SSL SYSCALL error: EOF)' },
+      { when: 'Oct 12, 9:15 AM', by: 'Minh Tran', status: 'Completed', size: '36.9 MB', dur: '22s', note: 'pg_dump 18.6 · custom format' }
+    ];
+    if (s.done) backups.unshift({ when: 'Just now', by: 'Anh Nguyen', status: 'Completed', size: '52.4 MB', dur: '2m 58s', note: 'pg_dump 18.6 · custom format', fresh: true });
+    if (running) backups.unshift({ when: 'Just now', by: 'Anh Nguyen', status: 'Running', size: '—', dur: '—', note: 'Dumping tables · public.order_line_items', run: true });
+    backups = backups.map(b => ({ ...b, b: badge(b.status), running: !!b.run, pct: (s.run || 0) + '%', canDl: b.status === 'Completed' && canManage, canDel: b.status !== 'Running' && canManage, noteColor: b.status === 'Failed' ? '#9b231c' : 'var(--muted)', rowBg: b.fresh ? '#f3faf5' : (b.run ? '#f6f9fe' : 'transparent'), dl: () => toast('Download started', `evisu-production-${b.when.replace(/[^0-9a-z]+/gi, '-').toLowerCase()}.dump`, 'ok') }));
+    return {
+      isList: route === 'database', isDetail: route === 'database/detail', canManage, readOnly: !canManage, isLoading, isEmpty, isError, showTable: !isEmpty, conns, skel: [1, 2, 3],
+      goList: () => nav('database'),
+      facts: [{ k: 'Host', v: 'oms-app-db-instance.cds8houcwc2c.ap-southeast-1.rds.amazonaws.com' }, { k: 'Database', v: 'oms_v2_production' }, { k: 'User', v: 'evisu_backup' }, { k: 'Server version', v: 'PostgreSQL 17.9' }, { k: 'Port · SSL', v: '5432 · require' }],
+      checkText: s.checking ? 'Checking connection…' : 'Last checked Oct 14, 11:09 AM · responded in 41 ms', chkIcon: s.checking ? 'loader-circle' : 'refresh-cw', chkAnim: s.checking ? 'wzspin 1s linear infinite' : 'none',
+      checkConn: () => { this.setState({ checking: true }); setTimeout(() => { this.setState({ checking: false }); toast('Connection OK', 'oms_v2_production responded in 38 ms', 'ok'); }, 1100); },
+      editing: s.edit, toggleEdit: () => this.setState({ edit: !s.edit }), saveEdit: () => { this.setState({ edit: false }); toast('Connection updated', 'Tested successfully before saving.', 'ok'); },
+      backingUp: running, bkLabel: running ? `Backing up… ${s.run}%` : 'Back up now', bkIcon: running ? 'loader-circle' : 'hard-drive-download', bkAnim: running ? 'wzspin 1s linear infinite' : 'none', bkOp: running ? 0.75 : 1,
+      askBackup: () => !running && this.setState({ confirm: true }), confirm: s.confirm, cancel: () => this.setState({ confirm: false }), startBackup: () => { this.start(); toast('Backup started', 'You can leave this page — it keeps running.', 'run'); },
+      backups, bkSummary: `${backups.filter(b => b.status === 'Completed').length} files · 178.4 MB stored`,
+      addOpen: s.add, openAdd: () => this.setState({ add: true }), closeAdd: () => this.setState({ add: false }), saveAdd: () => { this.setState({ add: false }); toast('Connection added', 'Reachable · PostgreSQL 17.9', 'ok'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/lucide-static@0.460.0/font/lucide.css">
+<style>html,body{margin:0;height:100%}body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}*{box-sizing:border-box}a{color:inherit;text-decoration:none}a:hover{color:inherit}button{font-family:inherit}input,textarea{font-family:inherit}::selection{background:oklch(0.88 0.06 265)}@keyframes wzspin{to{transform:rotate(360deg)}}@keyframes wzpulse{0%,100%{opacity:1}50%{opacity:.3}}@keyframes wzshimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}@keyframes wzin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes wzslide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}@keyframes wzbar{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}</style>
+</helmet>
+<div style="--font: {{ t.font }}; --mono: 'Geist Mono', ui-monospace, Menlo, monospace; --canvas: {{ t.canvas }}; --panel: #ffffff; --ink: {{ t.ink }}; --ink2: {{ t.ink2 }}; --muted: {{ t.muted }}; --faint: {{ t.faint }}; --line: {{ t.line }}; --line2: {{ t.line2 }}; --sunken: {{ t.sunken }}; --hover: {{ t.hover }}; --acc: {{ t.acc }}; --acc-soft: {{ t.accSoft }}; --acc-ink: {{ t.accInk }}; --primary: {{ t.primary }}; --on-primary: #ffffff; --r: {{ t.r }}; --rp: {{ t.rp }}; --sb-bg: {{ t.sbBg }}; --sb-fg: {{ t.sbFg }}; --sb-muted: {{ t.sbMuted }}; --sb-hover: {{ t.sbHover }}; --sb-act-bg: {{ t.sbActBg }}; --sb-act-fg: {{ t.sbActFg }}; --sb-act-sh: {{ t.sbActSh }}; --sb-line: {{ t.sbLine }}; --sb-field: {{ t.sbField }}; --mark-bg: {{ t.markBg }}; --lbl-font: {{ t.lblFont }}; --lbl-tt: {{ t.lblTt }}; --lbl-ls: {{ t.lblLs }}; --lbl-size: {{ t.lblSize }}; height: 100vh; display: flex; flex-direction: {{ shellDir }}; background: var(--sb-bg); font-family: var(--font); color: var(--ink); font-size: 14px; overflow: hidden">
+
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+  <div style="flex: 1; min-width: 0; overflow: auto; background: var(--panel)">
+    <dc-import name="Auth" nav="{{ nav }}" toast="{{ toast }}" hint-size="100%,100%"></dc-import>
+  </div>
+</sc-if>
+
+<sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ true }}">
+  <aside style="width: {{ sbWidth }}; flex: none; display: flex; flex-direction: column; padding: 14px 10px 12px; gap: 14px; color: var(--sb-fg); transition: width .18s ease; overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 0 4px; min-height: 32px">
+      <div style="width: 28px; height: 28px; flex: none; border-radius: 7px; background: var(--mark-bg); color: #fff; display: grid; place-items: center; font: 700 14px/1 var(--font); letter-spacing: -0.04em">w</div>
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <div style="font: 600 14px/1.1 var(--font); letter-spacing: -0.01em; white-space: nowrap">Wizloft devkit</div>
+          <div style="font: 500 10.5px/1 var(--mono); color: var(--sb-muted); letter-spacing: .02em">wizdek · v2.4</div>
+        </div>
+        <button onClick="{{ toggleCollapse }}" title="Collapse sidebar" style="width: 28px; height: 28px; border: 0; background: transparent; color: var(--sb-muted); border-radius: 6px; cursor: pointer; display: grid; place-items: center" style-hover="background: var(--sb-hover); color: var(--sb-fg)"><i class="icon-panel-left" style="font-size: 16px"></i></button>
+      </sc-if>
+    </div>
+
+    <div style="position: relative">
+      <button onClick="{{ toggleOrg }}" title="Switch organization" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 6px; border: 1px solid var(--sb-line); background: var(--sb-field); color: var(--sb-fg); border-radius: 8px; cursor: pointer; text-align: left">
+        <div style="width: 24px; height: 24px; flex: none; border-radius: 6px; background: oklch(0.9 0.05 60); color: oklch(0.38 0.08 55); display: grid; place-items: center; font: 600 11px/1 var(--font)">WL</div>
+        <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+          <div style="flex: 1; min-width: 0">
+            <div style="font: 600 13px/1.2 var(--font)">{{ org.name }}</div>
+            <div style="font: 400 11.5px/1.2 var(--font); color: var(--sb-muted)">{{ org.meta }}</div>
+          </div>
+          <i class="icon-chevrons-up-down" style="font-size: 14px; color: var(--sb-muted)"></i>
+        </sc-if>
+      </button>
+      <sc-if value="{{ orgOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; top: calc(100% + 6px); left: 0; width: 240px; z-index: 40; background: #fff; color: #1d1d1b; border: 1px solid #e3e2dd; border-radius: 8px; box-shadow: 0 12px 32px -8px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.06); padding: 6px; animation: wzin .14s ease">
+          <div style="font: 500 11px/1 var(--font); color: #77776f; padding: 8px 8px 6px">Organizations</div>
+          <sc-for list="{{ orgs }}" as="o" hint-placeholder-count="2">
+            <button onClick="{{ o.pick }}" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 8px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; text-align: left" style-hover="background: #f3f3f1">
+              <div style="width: 22px; height: 22px; border-radius: 5px; background: {{ o.bg }}; color: {{ o.fg }}; display: grid; place-items: center; font: 600 10px/1 var(--font)">{{ o.ini }}</div>
+              <div style="flex: 1; min-width: 0"><div style="font: 500 13px/1.2 var(--font)">{{ o.name }}</div><div style="font: 400 11.5px/1.2 var(--font); color: #77776f">{{ o.meta }}</div></div>
+              <sc-if value="{{ o.active }}"><i class="icon-check" style="font-size: 14px"></i></sc-if>
+            </button>
+          </sc-for>
+          <div style="height: 1px; background: #ecebe7; margin: 6px 0"></div>
+          <button onClick="{{ createOrg }}" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 8px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; font: 500 13px/1.2 var(--font); color: #1d1d1b" style-hover="background: #f3f3f1"><i class="icon-plus" style="font-size: 15px"></i>Create organization</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <button onClick="{{ openCmd }}" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 1px solid var(--sb-line); background: var(--sb-field); color: var(--sb-muted); border-radius: 7px; cursor: pointer; font: 400 13px/1 var(--font)" style-hover="color: var(--sb-fg)">
+      <i class="icon-search" style="font-size: 15px"></i>
+      <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+        <span style="flex: 1; text-align: left">Search or jump to…</span>
+        <span style="font: 500 10.5px/1 var(--mono); padding: 3px 5px; border: 1px solid var(--sb-line); border-radius: 4px">⌘K</span>
+      </sc-if>
+    </button>
+
+    <nav style="display: flex; flex-direction: column; gap: 14px; flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none">
+      <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 1px">
+          <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+            <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--sb-muted); padding: 4px 8px 7px">{{ g.label }}</div>
+          </sc-if>
+          <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4">
+            <button onClick="{{ n.go }}" title="{{ n.label }}" style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 8px; border: 0; border-radius: 7px; cursor: pointer; text-align: left; font: 500 13.5px/1 var(--font); background: {{ n.bg }}; color: {{ n.fg }}; box-shadow: {{ n.sh }}" style-hover="background: {{ n.hov }}; color: var(--sb-fg)">
+              <i class="icon-{{ n.icon }}" style="font-size: 16px; width: 16px; flex: none; color: {{ n.ic }}"></i>
+              <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+                <span style="flex: 1; white-space: nowrap">{{ n.label }}</span>
+                <sc-if value="{{ n.hasBadge }}">
+                  <span style="display: inline-flex; align-items: center; gap: 5px; font: 500 11px/1 var(--font); color: var(--sb-muted)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ n.dot }}; animation: {{ n.anim }}"></span>{{ n.badge }}</span>
+                </sc-if>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </nav>
+
+    <sc-if value="{{ collapsed }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ toggleCollapse }}" title="Expand sidebar" style="height: 32px; border: 0; background: transparent; color: var(--sb-muted); border-radius: 7px; cursor: pointer; display: grid; place-items: center" style-hover="background: var(--sb-hover)"><i class="icon-panel-left" style="font-size: 16px"></i></button>
+    </sc-if>
+
+    <div style="position: relative">
+      <button onClick="{{ toggleAcct }}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px; border: 0; background: transparent; color: var(--sb-fg); border-radius: 8px; cursor: pointer; text-align: left" style-hover="background: var(--sb-hover)">
+        <div style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: #e9e3dc; color: #5a4636; display: grid; place-items: center; font: 600 11.5px/1 var(--font)">AN</div>
+        <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+          <div style="flex: 1; min-width: 0"><div style="font: 600 13px/1.25 var(--font)">Anh Nguyen</div><div style="font: 400 11.5px/1.25 var(--font); color: var(--sb-muted)">{{ roleLine }}</div></div>
+          <i class="icon-chevrons-up-down" style="font-size: 14px; color: var(--sb-muted)"></i>
+        </sc-if>
+      </button>
+      <sc-if value="{{ acctOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; bottom: calc(100% + 6px); left: 0; width: 230px; z-index: 40; background: #fff; color: #1d1d1b; border: 1px solid #e3e2dd; border-radius: 8px; box-shadow: 0 12px 32px -8px rgba(0,0,0,.18); padding: 6px; animation: wzin .14s ease">
+          <div style="padding: 8px; font: 400 12px/1.3 var(--font); color: #66665f">admin@wizloft.dev</div>
+          <button onClick="{{ goSettings }}" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 8px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; font: 500 13px/1.2 var(--font); color: #1d1d1b" style-hover="background: #f3f3f1"><i class="icon-settings" style="font-size: 15px"></i>Settings</button>
+          <button onClick="{{ signOut }}" style="width: 100%; display: flex; align-items: center; gap: 9px; padding: 7px 8px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; font: 500 13px/1.2 var(--font); color: #1d1d1b" style-hover="background: #f3f3f1"><i class="icon-log-out" style="font-size: 15px"></i>Sign out</button>
+        </div>
+      </sc-if>
+    </div>
+  </aside>
+</sc-if>
+
+<sc-if value="{{ mobileBar }}" hint-placeholder-val="{{ false }}">
+  <header style="flex: none; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px; color: var(--sb-fg)">
+    <button onClick="{{ openSheet }}" style="width: 36px; height: 36px; border: 1px solid var(--sb-line); background: var(--sb-field); color: var(--sb-fg); border-radius: 8px; display: grid; place-items: center; cursor: pointer"><i class="icon-menu" style="font-size: 18px"></i></button>
+    <div style="width: 26px; height: 26px; border-radius: 7px; background: var(--mark-bg); color: #fff; display: grid; place-items: center; font: 700 13px/1 var(--font)">w</div>
+    <div style="font: 600 14px/1 var(--font); flex: 1">{{ pageTitle }}</div>
+    <button onClick="{{ openCmd }}" style="width: 36px; height: 36px; border: 1px solid var(--sb-line); background: var(--sb-field); color: var(--sb-fg); border-radius: 8px; display: grid; place-items: center; cursor: pointer"><i class="icon-search" style="font-size: 17px"></i></button>
+  </header>
+</sc-if>
+
+<sc-if value="{{ showMain }}" hint-placeholder-val="{{ true }}">
+  <main style="flex: 1; min-width: 0; min-height: 0; padding: {{ mainPad }}; display: flex">
+    <div style="flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--sb-line); border-radius: var(--rp); overflow: auto; position: relative">
+      <sc-if value="{{ noOrg }}" hint-placeholder-val="{{ false }}">
+        <div style="min-height: 100%; display: grid; place-items: center; padding: 40px 24px">
+          <div style="max-width: 420px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--sunken); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted)"><i class="icon-building-2" style="font-size: 22px"></i></div>
+            <div style="font: 600 20px/1.2 var(--font); letter-spacing: -0.015em">Create your first organization</div>
+            <div style="font: 400 14px/1.55 var(--font); color: var(--muted); text-wrap: pretty">Stores, flows, saved queries and database connections all belong to an organization. You can invite teammates once it exists.</div>
+            <div style="display: flex; gap: 8px; width: 100%; max-width: 360px; margin-top: 6px">
+              <input placeholder="Organization name, e.g. wizloft" style="flex: 1; height: 36px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)">
+              <button onClick="{{ createOrg }}" style="height: 36px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Create</button>
+            </div>
+            <div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Have an invitation? Open the link from your email to join an existing organization.</div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasOrg }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ r.dashboard }}"><dc-import name="Dashboard" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,900px"></dc-import></sc-if>
+        <sc-if value="{{ r.stores }}"><dc-import name="Stores" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,700px"></dc-import></sc-if>
+        <sc-if value="{{ r.graphql }}"><dc-import name="GraphQL" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,100%"></dc-import></sc-if>
+        <sc-if value="{{ r.flows }}"><dc-import name="Flows" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,100%"></dc-import></sc-if>
+        <sc-if value="{{ r.database }}"><dc-import name="Database" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,700px"></dc-import></sc-if>
+        <sc-if value="{{ r.settings }}"><dc-import name="Settings" nav="{{ nav }}" route="{{ route }}" params="{{ params }}" role="{{ role }}" data-state="{{ dataState }}" toast="{{ toast }}" hint-size="100%,800px"></dc-import></sc-if>
+        <sc-if value="{{ r.tokens }}"><dc-import name="Tokens" nav="{{ nav }}" dir="{{ dir }}" hint-size="100%,1200px"></dc-import></sc-if>
+      </sc-if>
+    </div>
+  </main>
+</sc-if>
+
+<sc-if value="{{ sheet }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeSheet }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.35); z-index: 60"></div>
+  <div style="position: fixed; top: 0; bottom: 0; left: 0; width: 280px; background: var(--sb-bg); color: var(--sb-fg); z-index: 61; padding: 16px 12px; display: flex; flex-direction: column; gap: 14px; animation: wzin .16s ease; box-shadow: 0 0 40px rgba(0,0,0,.2)">
+    <div style="display: flex; align-items: center; gap: 8px"><div style="width: 28px; height: 28px; border-radius: 7px; background: var(--mark-bg); color: #fff; display: grid; place-items: center; font: 700 14px/1 var(--font)">w</div><div style="font: 600 14px/1 var(--font); flex: 1">Wizloft devkit</div><button onClick="{{ closeSheet }}" style="width: 32px; height: 32px; border: 0; background: transparent; color: var(--sb-muted); cursor: pointer"><i class="icon-x" style="font-size: 18px"></i></button></div>
+    <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 1px">
+        <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--sb-muted); padding: 4px 8px 7px">{{ g.label }}</div>
+        <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="4">
+          <button onClick="{{ n.go }}" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 10px; border: 0; border-radius: 8px; cursor: pointer; text-align: left; font: 500 14px/1 var(--font); background: {{ n.bg }}; color: {{ n.fg }}; box-shadow: {{ n.sh }}"><i class="icon-{{ n.icon }}" style="font-size: 17px"></i>{{ n.label }}</button>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+
+<sc-if value="{{ cmd }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeCmd }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.32); z-index: 80"></div>
+  <div style="position: fixed; top: 14vh; left: 50%; transform: translateX(-50%); width: min(560px, calc(100vw - 32px)); z-index: 81; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 24px 60px -12px rgba(0,0,0,.28); overflow: hidden; animation: wzin .14s ease; color: var(--ink)">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--line)">
+      <i class="icon-search" style="font-size: 16px; color: var(--muted)"></i>
+      <input autofocus="{{ true }}" value="{{ q }}" onChange="{{ setQ }}" onKeyDown="{{ cmdKey }}" placeholder="Jump to a page, store, flow or action…" style="flex: 1; height: 50px; border: 0; outline: none; font-size: 15px; color: var(--ink); background: transparent">
+      <span style="font: 500 10.5px/1 var(--mono); color: var(--muted); padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px">esc</span>
+    </div>
+    <div style="max-height: 360px; overflow: auto; padding: 6px">
+      <sc-for list="{{ cmdItems }}" as="c" hint-placeholder-count="6">
+        <sc-if value="{{ c.head }}"><div style="font: 500 11px/1 var(--font); color: var(--muted); padding: 10px 10px 6px">{{ c.label }}</div></sc-if>
+        <sc-if value="{{ c.row }}">
+          <button onClick="{{ c.go }}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 7px; cursor: pointer; text-align: left; background: {{ c.bg }}; color: var(--ink); font: 500 13.5px/1.2 var(--font)" style-hover="background: var(--hover)">
+            <i class="icon-{{ c.icon }}" style="font-size: 16px; color: var(--muted)"></i>
+            <span style="flex: 1">{{ c.label }}</span>
+            <span style="font: 400 12px/1 var(--font); color: var(--muted)">{{ c.hint }}</span>
+          </button>
+        </sc-if>
+      </sc-for>
+      <sc-if value="{{ cmdEmpty }}"><div style="padding: 28px; text-align: center; color: var(--muted); font-size: 13.5px">No matches for “{{ q }}”</div></sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<div style="position: fixed; right: 18px; bottom: 18px; z-index: 90; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none">
+  <sc-for list="{{ toasts }}" as="tt" hint-placeholder-count="0">
+    <div style="pointer-events: auto; min-width: 280px; max-width: 380px; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; background: #1d1d1b; color: #f4f4f2; border-radius: 10px; box-shadow: 0 12px 30px -8px rgba(0,0,0,.35); font: 400 13px/1.45 var(--font); animation: wzslide .2s ease">
+      <i class="icon-{{ tt.icon }}" style="font-size: 16px; margin-top: 1px; color: {{ tt.color }}; animation: {{ tt.anim }}"></i>
+      <div style="flex: 1"><div style="font-weight: 600">{{ tt.title }}</div><div style="color: #b9b9b2">{{ tt.body }}</div></div>
+    </div>
+  </sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;direction&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Paper&quot;,&quot;Console&quot;],&quot;default&quot;:&quot;Paper&quot;,&quot;tsType&quot;:&quot;'Paper'|'Console'&quot;,&quot;section&quot;:&quot;Visual direction&quot;},&quot;role&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Owner&quot;,&quot;Member&quot;,&quot;Viewer&quot;],&quot;default&quot;:&quot;Owner&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Simulate&quot;},&quot;dataState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Live data&quot;,&quot;Empty&quot;,&quot;Loading&quot;,&quot;Error&quot;,&quot;No organization&quot;],&quot;default&quot;:&quot;Live data&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Simulate&quot;}}">
+class Component extends DCLogic {
+  state = {
+    route: localStorage.getItem('wz.route') || 'dashboard',
+    params: JSON.parse(localStorage.getItem('wz.params') || '{}'),
+    collapsed: localStorage.getItem('wz.col') === '1',
+    cmd: false, q: '', sel: 0, toasts: [], orgOpen: false, acctOpen: false, sheet: false,
+    mobile: typeof window !== 'undefined' && window.innerWidth < 820, org: 'wizloft'
+  };
+  componentDidMount() {
+    this.onR = () => this.setState({ mobile: window.innerWidth < 820 });
+    this.onK = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState(s => ({ cmd: !s.cmd, q: '', sel: 0 })); }
+      if (e.key === 'Escape') this.setState({ cmd: false, orgOpen: false, acctOpen: false, sheet: false });
+    };
+    window.addEventListener('resize', this.onR);
+    window.addEventListener('keydown', this.onK);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this.onR); window.removeEventListener('keydown', this.onK); }
+
+  nav = (route, params = {}) => {
+    localStorage.setItem('wz.route', route); localStorage.setItem('wz.params', JSON.stringify(params));
+    this.setState({ route, params, cmd: false, sheet: false, orgOpen: false, acctOpen: false });
+  };
+  toast = (title, body = '', kind = 'ok') => {
+    const id = Math.random();
+    const k = { ok: ['circle-check', '#6fcf97', 'none'], err: ['circle-x', '#ff8a80', 'none'], info: ['info', '#9ec1ff', 'none'], run: ['loader-circle', '#9ec1ff', 'wzspin 1s linear infinite'], warn: ['triangle-alert', '#f2c46d', 'none'] }[kind] || ['info', '#fff', 'none'];
+    this.setState(s => ({ toasts: [...s.toasts, { id, title, body, icon: k[0], color: k[1], anim: k[2] }] }));
+    setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) })), 3800);
+  };
+
+  theme(dir) {
+    if (dir === 'Console') return {
+      font: "'Geist', ui-sans-serif, system-ui, sans-serif", canvas: '#17181b', ink: '#141518', ink2: '#33353b', muted: '#5f6168', faint: '#8b8d94', line: '#e7e8eb', line2: '#d6d8dd', sunken: '#f7f7f8', hover: '#f2f3f5',
+      acc: 'oklch(0.53 0.2 292)', accSoft: 'oklch(0.95 0.03 292)', accInk: 'oklch(0.45 0.2 292)', primary: 'oklch(0.5 0.2 292)', r: '5px', rp: '10px',
+      sbBg: '#16171a', sbFg: '#ececef', sbMuted: '#9a9ca5', sbHover: '#222328', sbActBg: '#2a2b31', sbActFg: '#ffffff', sbActSh: 'inset 0 0 0 1px #34353c', sbLine: '#2a2b30', sbField: '#1d1e22', markBg: 'oklch(0.53 0.2 292)',
+      lblFont: "'Geist Mono', ui-monospace, monospace", lblTt: 'uppercase', lblLs: '0.07em', lblSize: '10.5px'
+    };
+    return {
+      font: "'Albert Sans', ui-sans-serif, system-ui, sans-serif", canvas: '#f3f3f1', ink: '#1d1d1b', ink2: '#3a3a37', muted: '#66665f', faint: '#93938b', line: '#e9e8e4', line2: '#d9d8d3', sunken: '#f8f8f6', hover: '#f3f3f0',
+      acc: 'oklch(0.5 0.16 265)', accSoft: 'oklch(0.955 0.025 265)', accInk: 'oklch(0.43 0.16 265)', primary: '#1d1d1b', r: '6px', rp: '12px',
+      sbBg: '#f3f3f1', sbFg: '#1d1d1b', sbMuted: '#6c6c65', sbHover: '#e9e9e5', sbActBg: '#ffffff', sbActFg: '#1d1d1b', sbActSh: '0 0 0 1px #e3e2dd, 0 1px 2px rgba(0,0,0,.05)', sbLine: '#e3e2dd', sbField: '#fbfbfa', markBg: '#1d1d1b',
+      lblFont: "'Albert Sans', ui-sans-serif, sans-serif", lblTt: 'none', lblLs: '0', lblSize: '11.5px'
+    };
+  }
+
+  group(route) {
+    if (route.startsWith('stores')) return 'stores';
+    if (['flows', 'flow', 'runs', 'trace'].includes(route)) return 'flows';
+    if (route.startsWith('database')) return 'database';
+    if (route === 'members') return 'members';
+    if (route === 'access') return 'access';
+    return route;
+  }
+
+  renderVals() {
+    const dir = this.props.direction ?? 'Paper';
+    const role = this.props.role ?? 'Owner';
+    const dsMap = { 'Live data': 'live', 'Empty': 'empty', 'Loading': 'loading', 'Error': 'error', 'No organization': 'noorg' };
+    const dataState = dsMap[this.props.dataState ?? 'Live data'] || 'live';
+    const t = this.theme(dir);
+    const s = this.state;
+    const g = this.group(s.route);
+    const expanded = !s.collapsed;
+    const mk = (id, label, icon, badge, dot, anim) => {
+      const a = g === id;
+      return { id, label, icon, go: () => this.nav(id), hasBadge: !!badge, badge, dot, anim: anim || 'none',
+        bg: a ? 'var(--sb-act-bg)' : 'transparent', fg: a ? 'var(--sb-act-fg)' : 'var(--sb-fg)', sh: a ? 'var(--sb-act-sh)' : 'none',
+        hov: a ? 'var(--sb-act-bg)' : 'var(--sb-hover)', ic: a ? 'var(--sb-act-fg)' : 'var(--sb-muted)' };
+    };
+    const navGroups = [
+      { label: 'Workspace', items: [mk('dashboard', 'Dashboard', 'layout-grid'), mk('stores', 'Stores', 'store', '1', '#d39a1c'), mk('graphql', 'GraphQL', 'braces'), mk('flows', 'Flows', 'workflow', '1 running', '#3b7be0', 'wzpulse 1.6s ease infinite'), mk('database', 'Database', 'database')] },
+      { label: 'Organization', items: [mk('settings', 'Settings', 'settings'), mk('members', 'Members', 'users'), mk('access', 'Access', 'shield')] },
+      { label: 'Prototype', items: [mk('tokens', 'Design language', 'palette'), mk('auth', 'Auth screens', 'log-in')] }
+    ];
+    const titles = { dashboard: 'Dashboard', stores: 'Stores', graphql: 'GraphQL', flows: 'Flows', database: 'Database', settings: 'Settings', members: 'Members', access: 'Access', tokens: 'Design language' };
+
+    const cmdAll = [
+      { head: true, label: 'Pages' },
+      ...navGroups.flatMap(gr => gr.items).map(n => ({ row: true, label: n.label, icon: n.icon, hint: 'Page', go: () => this.nav(n.id) })),
+      { head: true, label: 'Actions' },
+      { row: true, label: 'Connect a store', icon: 'plus', hint: 'Stores', go: () => this.nav('stores/new') },
+      { row: true, label: 'New GraphQL query', icon: 'braces', hint: 'Console', go: () => this.nav('graphql') },
+      { row: true, label: 'Open flow: Tag high-value CSV orders', icon: 'workflow', hint: 'Flow', go: () => this.nav('flow') },
+      { row: true, label: 'Back up Evisu production', icon: 'hard-drive-download', hint: 'Database', go: () => this.nav('database/detail') },
+      { row: true, label: 'Invite a member', icon: 'user-plus', hint: 'Members', go: () => this.nav('members') }
+    ];
+    const q = s.q.trim().toLowerCase();
+    let cmdItems = q ? cmdAll.filter(c => c.row && c.label.toLowerCase().includes(q)) : cmdAll;
+    let ri = 0;
+    cmdItems = cmdItems.map(c => c.row ? { ...c, bg: (ri++ === s.sel) ? 'var(--hover)' : 'transparent' } : c);
+    const rows = cmdItems.filter(c => c.row);
+
+    const isAuth = s.route === 'auth';
+    const mobile = s.mobile;
+    const orgs = [
+      { name: 'wizloft', meta: '5 stores · 4 members', ini: 'WL', bg: 'oklch(0.9 0.05 60)', fg: 'oklch(0.38 0.08 55)' },
+      { name: 'evisu-internal', meta: '2 stores · 2 members', ini: 'EI', bg: 'oklch(0.9 0.04 200)', fg: 'oklch(0.38 0.07 210)' }
+    ].map(o => ({ ...o, active: o.name === s.org, pick: () => { this.setState({ org: o.name, orgOpen: false }); this.toast('Switched organization', `Now working in ${o.name}`, 'info'); } }));
+
+    return {
+      t, dir, role, dataState, route: s.route, params: s.params, nav: this.nav, toast: this.toast,
+      isAuth, showSidebar: !isAuth && !mobile, mobileBar: !isAuth && mobile, showMain: !isAuth,
+      shellDir: mobile ? 'column' : 'row', mainPad: mobile ? '0 8px 8px' : '8px 8px 8px 0',
+      sbWidth: expanded ? '244px' : '60px', expanded, collapsed: s.collapsed,
+      toggleCollapse: () => { localStorage.setItem('wz.col', s.collapsed ? '0' : '1'); this.setState({ collapsed: !s.collapsed }); },
+      org: orgs.find(o => o.active) || orgs[0], orgs, orgOpen: s.orgOpen, acctOpen: s.acctOpen,
+      toggleOrg: () => this.setState({ orgOpen: !s.orgOpen, acctOpen: false }),
+      toggleAcct: () => this.setState({ acctOpen: !s.acctOpen, orgOpen: false }),
+      createOrg: () => { this.setState({ orgOpen: false }); this.toast('Organization created', 'You are its Owner.', 'ok'); },
+      goSettings: () => this.nav('settings'), signOut: () => this.nav('auth'),
+      roleLine: `${role} · wizloft`,
+      navGroups, pageTitle: titles[g] || 'wizdek',
+      noOrg: dataState === 'noorg' && g !== 'tokens', hasOrg: !(dataState === 'noorg' && g !== 'tokens'),
+      r: { dashboard: g === 'dashboard', stores: g === 'stores', graphql: g === 'graphql', flows: g === 'flows', database: g === 'database', settings: ['settings', 'members', 'access'].includes(g), tokens: g === 'tokens' },
+      sheet: s.sheet, openSheet: () => this.setState({ sheet: true }), closeSheet: () => this.setState({ sheet: false }),
+      cmd: s.cmd, q: s.q, cmdItems, cmdEmpty: rows.length === 0,
+      openCmd: () => this.setState({ cmd: true, q: '', sel: 0 }), closeCmd: () => this.setState({ cmd: false }),
+      setQ: (e) => this.setState({ q: e.target.value, sel: 0 }),
+      cmdKey: (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ sel: Math.min(rows.length - 1, s.sel + 1) }); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ sel: Math.max(0, s.sel - 1) }); }
+        if (e.key === 'Enter' && rows[s.sel]) rows[s.sel].go();
+      },
+      toasts: s.toasts
+    };
+  }
+}
+</script>
+</body>
+</html>

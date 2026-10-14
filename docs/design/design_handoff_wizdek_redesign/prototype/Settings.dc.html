@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--line)">
+    <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+      <div style="flex: 1; min-width: 240px">
+        <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">{{ title }}</h1>
+        <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">{{ desc }}</p>
+      </div>
+    </div>
+    <nav style="display: flex; gap: 2px">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3">
+        <button onClick="{{ t.go }}" style="display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border: 0; border-bottom: 2px solid {{ t.bd }}; background: transparent; color: {{ t.fg }}; font: 500 13.5px/1 var(--font); cursor: pointer; margin-bottom: -1px" style-hover="color: var(--ink)"><i class="icon-{{ t.icon }}" style="font-size: 15px"></i>{{ t.label }}</button>
+      </sc-for>
+    </nav>
+  </header>
+
+  <sc-if value="{{ isGeneral }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 18px; max-width: 860px">
+      <section style="display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 24px; padding-bottom: 22px; border-bottom: 1px solid var(--line)">
+        <div><div style="font: 600 14px/1.3 var(--font)">Your profile</div><div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Shown to teammates on runs, saved queries and the audit log.</div></div>
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 44px; height: 44px; border-radius: 50%; background: #e9e3dc; color: #5a4636; display: grid; place-items: center; font: 600 15px/1 var(--font)">AN</div><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Initials are generated from your name.</div></div>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Name</span><input value="Anh Nguyen" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink); max-width: 420px" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Email</span><div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r); font-size: 13.5px; color: var(--muted); background: var(--sunken); max-width: 420px">admin@wizloft.dev<span style="margin-left: auto; display: inline-flex; gap: 4px; align-items: center; font: 500 11.5px/1 var(--font); color: #1f6b3f"><i class="icon-badge-check" style="font-size: 13px"></i>Verified</span></div></label>
+        </div>
+      </section>
+      <section style="display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 24px; padding-bottom: 22px; border-bottom: 1px solid var(--line)">
+        <div><div style="font: 600 14px/1.3 var(--font)">Organization</div><div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Everything in wizdek belongs to an organization.</div></div>
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Organization name</span><input value="wizloft" readOnly="{{ readOnly }}" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink); max-width: 420px; background: {{ fieldBg }}"></label>
+          <sc-if value="{{ readOnly }}"><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted); display: flex; gap: 6px; align-items: center"><i class="icon-lock" style="font-size: 13px"></i>Only Owners can rename the organization.</div></sc-if>
+        </div>
+      </section>
+      <div style="display: flex; gap: 8px"><button onClick="{{ save }}" style="height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Save changes</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isMembers }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 22px">
+      <sc-if value="{{ canInvite }}">
+        <section style="border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--sunken)">
+          <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><div style="font: 600 14px/1.3 var(--font)">Invite people to wizloft</div><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Invitations grant the Member role and expire after 7 days. Change roles under Access.</div></div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <div style="flex: 1; min-width: 240px; position: relative"><i class="icon-mail" style="position: absolute; left: 10px; top: 10px; font-size: 15px; color: var(--muted)"></i><input value="{{ email }}" onChange="{{ setEmail }}" placeholder="name@company.com" style="width: 100%; height: 36px; padding: 0 10px 0 32px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink); background: #fff" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></div>
+            <button onClick="{{ invite }}" style="display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-send" style="font-size: 14px"></i>Send invite</button>
+          </div>
+        </section>
+      </sc-if>
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: baseline; gap: 8px"><div style="font: 600 15px/1.3 var(--font)">Members</div><span style="font: 500 12px/1 var(--mono); color: var(--muted)">4</span></div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+          <div style="min-width: 680px">
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+              <div style="display: grid; grid-template-columns: minmax(240px, 1fr) 110px 140px 140px; gap: 16px; padding: 12px 16px; align-items: center; border-bottom: 1px solid var(--line)">
+                <div style="display: flex; align-items: center; gap: 11px"><span style="width: 32px; height: 32px; border-radius: 50%; background: {{ m.bg }}; color: {{ m.fg }}; display: grid; place-items: center; font: 600 12px/1 var(--font)">{{ m.ini }}</span><div><div style="font: 600 13.5px/1.3 var(--font)">{{ m.name }}<sc-if value="{{ m.you }}"><span style="font-weight: 400; color: var(--muted)"> · you</span></sc-if></div><div style="font: 400 12px/1.3 var(--font); color: var(--muted)">{{ m.email }}</div></div></div>
+                <span style="justify-self: start; font: 500 12px/1 var(--font); padding: 5px 8px; border-radius: 99px; border: 1px solid var(--line2); color: var(--ink2)">{{ m.role }}</span>
+                <span style="font: 400 12.5px/1.3 var(--font); color: var(--muted)">Joined {{ m.joined }}</span>
+                <span style="font: 400 12.5px/1.3 var(--font); color: var(--muted); display: flex; align-items: center; gap: 6px"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ m.dot }}"></span>{{ m.active }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: baseline; gap: 8px"><div style="font: 600 15px/1.3 var(--font)">Invitations</div><span style="font: 500 12px/1 var(--mono); color: var(--muted)">{{ invCount }}</span></div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+          <div style="min-width: 680px">
+            <sc-for list="{{ invites }}" as="iv" hint-placeholder-count="3">
+              <div style="display: grid; grid-template-columns: minmax(240px, 1fr) 120px 170px 90px; gap: 16px; padding: 12px 16px; align-items: center; border-bottom: 1px solid var(--line); opacity: {{ iv.op }}">
+                <div><div style="font: 500 13.5px/1.3 var(--font)">{{ iv.email }}</div><div style="font: 400 12px/1.3 var(--font); color: var(--muted)">Invited by {{ iv.by }} · {{ iv.when }}</div></div>
+                <span style="justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ iv.b.bg }}; color: {{ iv.b.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ iv.b.dot }}"></span>{{ iv.status }}</span>
+                <span style="font: 400 12.5px/1.3 var(--font); color: var(--muted)">{{ iv.exp }}</span>
+                <div style="display: flex; justify-content: flex-end"><sc-if value="{{ iv.canRevoke }}"><button onClick="{{ iv.revoke }}" style="height: 28px; padding: 0 10px; border: 0; background: transparent; color: #9b231c; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer" style-hover="background: #fdf3f2">Revoke</button></sc-if></div>
+              </div>
+            </sc-for>
+            <button style="width: 100%; height: 40px; border: 0; background: transparent; color: var(--muted); font: 500 12.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover); color: var(--ink)">Load more</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isAccess }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 26px">
+      <section style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 18px; align-items: start">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted); padding: 0 4px 6px">Roles</div>
+          <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5">
+            <button onClick="{{ r.pick }}" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid {{ r.bd }}; background: {{ r.bg }}; box-shadow: {{ r.sh }}; border-radius: 8px; cursor: pointer; text-align: left; color: var(--ink)">
+              <span style="width: 26px; height: 26px; border-radius: 7px; background: {{ r.tint }}; color: {{ r.color }}; display: grid; place-items: center"><i class="icon-{{ r.icon }}" style="font-size: 13px"></i></span>
+              <span style="flex: 1"><span style="display: block; font: 600 13.5px/1.25 var(--font)">{{ r.name }}</span><span style="display: block; font: 400 12px/1.3 var(--font); color: var(--muted)">{{ r.meta }}</span></span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ canManageRoles }}"><button onClick="{{ newRole }}" style="display: flex; align-items: center; justify-content: center; gap: 7px; height: 36px; border: 1px dashed var(--line2); background: transparent; color: var(--ink2); border-radius: 8px; font: 500 13px/1 var(--font); cursor: pointer; margin-top: 4px" style-hover="background: var(--hover)"><i class="icon-plus" style="font-size: 14px"></i>Create custom role</button></sc-if>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap">
+            <div style="flex: 1; min-width: 200px"><div style="display: flex; align-items: center; gap: 8px"><span style="font: 600 15px/1.3 var(--font)">{{ role.name }}</span><sc-if value="{{ role.system }}"><span style="font: 500 11px/1 var(--font); padding: 4px 6px; border-radius: 4px; background: var(--sunken); border: 1px solid var(--line); color: var(--muted)">Built-in</span></sc-if></div><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">{{ role.desc }}</div></div>
+            <span style="font: 500 12.5px/1 var(--mono); color: var(--muted)">{{ role.count }}</span>
+            <sc-if value="{{ role.editable }}"><button onClick="{{ saveRole }}" style="height: 32px; padding: 0 12px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer">Save role</button></sc-if>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))">
+            <sc-for list="{{ perms }}" as="pg" hint-placeholder-count="8">
+              <div style="padding: 14px 16px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 9px">
+                <div style="display: flex; align-items: center; gap: 7px"><i class="icon-{{ pg.icon }}" style="font-size: 14px; color: var(--muted)"></i><span style="font: 600 13px/1 var(--font); flex: 1">{{ pg.group }}</span><span style="font: 500 11px/1 var(--mono); color: var(--muted)">{{ pg.on }}</span></div>
+                <sc-for list="{{ pg.items }}" as="pm">
+                  <button onClick="{{ pm.toggle }}" style="display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: transparent; cursor: {{ pm.cursor }}; text-align: left; color: var(--ink)">
+                    <span style="width: 16px; height: 16px; flex: none; border-radius: 4px; display: grid; place-items: center; background: {{ pm.boxBg }}; border: 1.5px solid {{ pm.boxBd }}; color: #fff"><i class="icon-check" style="font-size: 11px; opacity: {{ pm.chk }}"></i></span>
+                    <span style="flex: 1; font: 400 13px/1.3 var(--font)">{{ pm.label }}</span>
+                    <span style="font: 400 11px/1 var(--mono); color: var(--faint)">{{ pm.key }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font: 600 15px/1.3 var(--font)">Role assignments</div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+          <div style="min-width: 560px">
+            <sc-for list="{{ assign }}" as="a" hint-placeholder-count="4">
+              <div style="display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--line)">
+                <span style="width: 30px; height: 30px; border-radius: 50%; background: {{ a.bg }}; color: {{ a.fg }}; display: grid; place-items: center; font: 600 11.5px/1 var(--font)">{{ a.ini }}</span>
+                <div style="flex: 1"><div style="font: 600 13.5px/1.3 var(--font)">{{ a.name }}</div><div style="font: 400 12px/1.3 var(--font); color: var(--muted)">{{ a.email }}</div></div>
+                <button disabled="{{ a.locked }}" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 150px; height: 32px; padding: 0 10px; border: 1px solid var(--line2); background: {{ a.selBg }}; border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer; color: var(--ink)">{{ a.role }}<i class="icon-{{ a.selIcon }}" style="font-size: 13px; color: var(--muted)"></i></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"><div style="font: 600 15px/1.3 var(--font); flex: 1">Audit log</div>
+          <div style="display: inline-flex; padding: 3px; background: var(--sunken); border: 1px solid var(--line); border-radius: calc(var(--r) + 2px); gap: 2px">
+            <sc-for list="{{ auditFilters }}" as="af" hint-placeholder-count="5"><button onClick="{{ af.pick }}" style="height: 26px; padding: 0 10px; border: 0; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer; background: {{ af.bg }}; color: {{ af.fg }}; box-shadow: {{ af.sh }}">{{ af.label }}</button></sc-for>
+          </div>
+        </div>
+        <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+          <div style="min-width: 680px">
+            <sc-for list="{{ audit }}" as="ev" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 140px 28px minmax(0, 1fr) 160px; gap: 12px; padding: 10px 16px; align-items: center; border-bottom: 1px solid var(--line)">
+                <span style="font: 400 12px/1.3 var(--mono); color: var(--muted)">{{ ev.when }}</span>
+                <span style="width: 26px; height: 26px; border-radius: 7px; background: var(--sunken); border: 1px solid var(--line); color: var(--ink2); display: grid; place-items: center"><i class="icon-{{ ev.icon }}" style="font-size: 13px"></i></span>
+                <span style="font: 400 13px/1.4 var(--font)"><strong style="font-weight: 600">{{ ev.who }}</strong> {{ ev.what }} <span style="font-family: var(--mono); font-size: 12px; color: var(--ink2)">{{ ev.obj }}</span></span>
+                <span style="font: 400 11.5px/1 var(--mono); color: var(--faint); text-align: right">{{ ev.event }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PERMS = [
+  ['Organization', 'building-2', [['Read organization', 'organization:read'], ['Update organization', 'organization:update']]],
+  ['Members', 'users', [['Read members', 'members:read'], ['Invite members', 'members:invite'], ['Manage members', 'members:manage']]],
+  ['Roles & audit', 'shield', [['Read roles', 'roles:read'], ['Manage roles', 'roles:manage'], ['Read audit log', 'audit:read']]],
+  ['Shopify stores', 'store', [['View stores', 'stores:read'], ['Manage stores', 'stores:manage']]],
+  ['GraphQL', 'braces', [['Run queries', 'graphql:query'], ['Run mutations', 'graphql:mutate']]],
+  ['Flows', 'workflow', [['View flows and runs', 'flows:read'], ['Create and edit flows', 'flows:manage'], ['Run flows', 'flows:run']]],
+  ['Databases', 'database', [['View connections', 'databases:read'], ['Manage connections', 'databases:manage'], ['Run and download backups', 'databases:backup']]]
+];
+const ALL = PERMS.flatMap(g => g[2].map(p => p[1]));
+const ROLE_DEFS = {
+  Owner: { icon: 'crown', hue: 60, desc: 'Full access, including billing-level organization changes.', perms: ALL, n: 1, system: true },
+  Admin: { icon: 'shield-check', hue: 265, desc: 'Everything except deleting the organization.', perms: ALL, n: 1, system: true },
+  Member: { icon: 'user', hue: 160, desc: 'Day-to-day developer work: query stores and run flows.', perms: ['organization:read', 'members:read', 'roles:read', 'stores:read', 'graphql:query', 'graphql:mutate', 'flows:read', 'flows:run'], n: 1, system: true },
+  Viewer: { icon: 'eye', hue: 230, desc: 'Read-only. Can’t open the GraphQL console.', perms: ['organization:read', 'members:read', 'roles:read', 'audit:read', 'stores:read', 'flows:read'], n: 1, system: true },
+  'Support (custom)': { icon: 'life-buoy', hue: 330, desc: 'Custom role for the support team.', perms: ['organization:read', 'stores:read', 'graphql:query', 'flows:read', 'flows:run'], n: 0, system: false }
+};
+const PEOPLE = [['Anh Nguyen', 'admin@wizloft.dev', 'Owner', 'AN', 60, 'Mar 2025', 'Active now', '#2f9e5c'], ['Minh Tran', 'minh@wizloft.dev', 'Admin', 'MT', 200, 'Apr 2025', '2 hours ago', '#a3a39c'], ['Linh Pham', 'linh@wizloft.dev', 'Member', 'LP', 330, 'Jul 2025', 'Yesterday', '#a3a39c'], ['Kai Ito', 'kai@evisu.com', 'Viewer', 'KI', 150, 'Sep 2026', 'Oct 10', '#a3a39c']];
+
+class Component extends DCLogic {
+  state = { role: 'Member', custom: ROLE_DEFS['Support (custom)'].perms.slice(), email: '', revoked: [], af: 'All' };
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {});
+    const route = this.props.route || 'settings', who = this.props.role || 'Owner';
+    const s = this.state;
+    const isOwner = who === 'Owner';
+    const tabs = [['settings', 'General', 'settings'], ['members', 'Members', 'users'], ['access', 'Access', 'shield']].map(t => ({ label: t[1], icon: t[2], go: () => nav(t[0]), bd: route === t[0] ? 'var(--ink)' : 'transparent', fg: route === t[0] ? 'var(--ink)' : 'var(--muted)' }));
+    const heads = { settings: ['Settings', 'Your profile and wizloft’s organization details.'], members: ['Members', 'Invite collaborators and manage pending invitations.'], access: ['Access', 'Roles, permissions, role assignments and the audit log for wizloft.'] };
+    const ppl = (p) => ({ name: p[0], email: p[1], role: p[2], ini: p[3], bg: `oklch(0.92 0.04 ${p[4]})`, fg: `oklch(0.38 0.08 ${p[4]})`, joined: p[5], active: p[6], dot: p[7], you: p[0] === 'Anh Nguyen' });
+    const IV = { Pending: ['#e9f0fb', '#1f4f99', '#3b7be0'], Accepted: ['#e8f4ec', '#1f6b3f', '#2f9e5c'], Expired: ['#f0f0ed', '#55554f', '#a3a39c'], Revoked: ['#f0f0ed', '#55554f', '#a3a39c'] };
+    const invites = [['dev@maisonkitsu.com', 'Anh Nguyen', '2 days ago', 'Pending', 'Expires in 5 days'], ['ops@evisu.com', 'Minh Tran', 'Oct 13', 'Pending', 'Expires in 6 days'], ['kai@evisu.com', 'Anh Nguyen', 'Sep 28', 'Accepted', 'Joined Sep 29'], ['old@agency.io', 'Minh Tran', 'Sep 1', 'Expired', 'Expired Sep 8']].map(v => {
+      const st = s.revoked.includes(v[0]) ? 'Revoked' : v[3];
+      return { email: v[0], by: v[1], when: v[2], status: st, exp: st === 'Revoked' ? 'Revoked just now' : v[4], b: { bg: IV[st][0], fg: IV[st][1], dot: IV[st][2] }, canRevoke: st === 'Pending' && isOwner, op: st === 'Pending' ? 1 : 0.7, revoke: () => { this.setState({ revoked: [...s.revoked, v[0]] }); toast('Invitation revoked', v[0], 'warn'); } };
+    });
+    const rd = ROLE_DEFS[s.role];
+    const editable = !rd.system && isOwner;
+    const have = new Set(rd.system ? rd.perms : s.custom);
+    const roles = Object.keys(ROLE_DEFS).map(k => { const d = ROLE_DEFS[k]; const a = k === s.role; return { name: k, icon: d.icon, meta: `${d.n} member${d.n === 1 ? '' : 's'} · ${(d.system ? d.perms : s.custom).length} permissions`, tint: `oklch(0.95 0.035 ${d.hue})`, color: `oklch(0.48 0.12 ${d.hue})`, pick: () => this.setState({ role: k }), bd: a ? 'var(--acc)' : 'var(--line)', bg: a ? 'var(--panel)' : 'transparent', sh: a ? '0 0 0 3px var(--acc-soft)' : 'none' }; });
+    const perms = PERMS.map(g => ({ group: g[0], icon: g[1], on: `${g[2].filter(p => have.has(p[1])).length}/${g[2].length}`, items: g[2].map(p => { const on = have.has(p[1]); return { label: p[0], key: p[1], chk: on ? 1 : 0, boxBg: on ? (editable ? 'var(--acc)' : 'var(--ink2)') : '#fff', boxBd: on ? (editable ? 'var(--acc)' : 'var(--ink2)') : 'var(--line2)', cursor: editable ? 'pointer' : 'default', toggle: () => { if (!editable) return; this.setState(st => ({ custom: st.custom.includes(p[1]) ? st.custom.filter(x => x !== p[1]) : [...st.custom, p[1]] })); } }; }) }));
+    const AU = [
+      ['Oct 14 16:00', 'hard-drive-download', 'Anh Nguyen', 'started a backup of', 'Evisu production', 'database.backup', 'Database'],
+      ['Oct 14 09:25', 'play', 'Anh Nguyen', 'ran flow', 'Tag high-value CSV orders on evisu-hk', 'flow.run', 'Flows'],
+      ['Oct 14 09:20', 'save', 'Anh Nguyen', 'saved version 7 of', 'Tag high-value CSV orders', 'flow.version', 'Flows'],
+      ['Oct 13 17:02', 'user-cog', 'Minh Tran', 'changed Kai Ito’s role to', 'Viewer', 'member.role', 'Members'],
+      ['Oct 13 11:48', 'store', 'Minh Tran', 'connected store', 'evisu-hk-staging.myshopify.com', 'store.connect', 'Stores'],
+      ['Oct 12 03:02', 'key-round', 'System', 'marked reconnect required for', 'evisu-jp.myshopify.com', 'store.health', 'Stores']
+    ];
+    const audit = AU.filter(a => s.af === 'All' || a[6] === s.af).map(a => ({ when: a[0], icon: a[1], who: a[2], what: a[3], obj: a[4], event: a[5] }));
+    const auditFilters = ['All', 'Stores', 'Flows', 'Database', 'Members'].map(f => ({ label: f, pick: () => this.setState({ af: f }), bg: s.af === f ? 'var(--panel)' : 'transparent', fg: s.af === f ? 'var(--ink)' : 'var(--muted)', sh: s.af === f ? '0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line)' : 'none' }));
+    const assign = PEOPLE.map(p => { const o = ppl(p); const locked = !isOwner || o.you; return { ...o, locked, selBg: locked ? 'var(--sunken)' : '#fff', selIcon: locked ? 'lock' : 'chevron-down' }; });
+    return {
+      title: heads[route] ? heads[route][0] : 'Settings', desc: heads[route] ? heads[route][1] : '', tabs,
+      isGeneral: route === 'settings', isMembers: route === 'members', isAccess: route === 'access',
+      readOnly: !isOwner, fieldBg: isOwner ? '#fff' : 'var(--sunken)', save: () => toast('Settings saved', '', 'ok'),
+      canInvite: who !== 'Viewer', email: s.email, setEmail: (e) => this.setState({ email: e.target.value }),
+      invite: () => { toast('Invitation sent', (s.email || 'member@example.com') + ' · expires in 7 days', 'ok'); this.setState({ email: '' }); },
+      members: PEOPLE.map(ppl), invites, invCount: invites.filter(i => i.status === 'Pending').length + ' pending',
+      roles, role: { name: s.role, desc: rd.desc, system: rd.system, count: `${rd.n} member${rd.n === 1 ? '' : 's'}`, editable }, perms, canManageRoles: isOwner,
+      newRole: () => this.setState({ role: 'Support (custom)' }), saveRole: () => toast('Role saved', `Support · ${s.custom.length} permissions`, 'ok'),
+      assign, audit, auditFilters
+    };
+  }
+}
+</script>
+</body>
+</html>

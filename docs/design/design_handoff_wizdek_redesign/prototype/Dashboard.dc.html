@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 22px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px">
+      <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted); margin-bottom: 8px">Wednesday, Oct 14</div>
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Good evening, Anh</h1>
+      <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">wizloft has 5 stores, 4 active flows and 3 database connections. 4 things need your attention.</p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button onClick="{{ goQuery }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-braces" style="font-size: 15px"></i>New query</button>
+      <button onClick="{{ goFlow }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-workflow" style="font-size: 15px"></i>New flow</button>
+      <sc-if value="{{ canManage }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goConnect }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Connect store</button>
+      </sc-if>
+    </div>
+  </header>
+
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #f0c9c5; background: #fdf3f2; border-radius: 8px; color: #7d1d17">
+      <i class="icon-circle-alert" style="font-size: 17px; margin-top: 1px"></i>
+      <div style="flex: 1; font: 400 13.5px/1.5 var(--font)"><strong style="font-weight: 600">Couldn’t load the overview.</strong> The API returned 503 while fetching run history. Store and backup data may be out of date.</div>
+      <button onClick="{{ retry }}" style="height: 28px; padding: 0 10px; border: 1px solid #e3b0aa; background: #fff; color: #7d1d17; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Retry</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showOnboard }}" hint-placeholder-val="{{ true }}">
+    <section style="border: 1px solid var(--line); border-radius: 10px; background: linear-gradient(180deg, var(--sunken), var(--panel) 70%); padding: 18px 20px 20px">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px">
+        <div style="flex: 1; min-width: 220px">
+          <div style="font: 600 15px/1.3 var(--font)">Get wizloft ready</div>
+          <div style="font: 400 13px/1.45 var(--font); color: var(--muted)">{{ onboardText }}</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <div style="width: 140px; height: 6px; border-radius: 99px; background: var(--line); overflow: hidden"><div style="height: 100%; width: {{ onboardPct }}; background: var(--acc); border-radius: 99px"></div></div>
+          <span style="font: 500 12px/1 var(--mono); color: var(--muted)">{{ onboardCount }}</span>
+          <button onClick="{{ dismiss }}" title="Dismiss" style="width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer" style-hover="background: var(--hover)"><i class="icon-x" style="font-size: 15px"></i></button>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px">
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid {{ st.border }}; background: {{ st.bg }}; border-radius: 8px; min-height: 112px">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span style="width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: {{ st.dotBg }}; color: {{ st.dotFg }}; border: {{ st.dotBorder }}; font: 600 11px/1 var(--font)"><i class="icon-{{ st.icon }}" style="font-size: 12px"></i></span>
+              <span style="font: 500 11px/1 var(--mono); color: var(--muted)">STEP {{ st.n }}</span>
+            </div>
+            <div style="font: 600 13.5px/1.3 var(--font); color: {{ st.titleColor }}; text-decoration: {{ st.strike }}">{{ st.title }}</div>
+            <div style="font: 400 12.5px/1.4 var(--font); color: var(--muted); flex: 1">{{ st.desc }}</div>
+            <sc-if value="{{ st.todo }}">
+              <button onClick="{{ st.go }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid {{ st.btnBorder }}; background: {{ st.btnBg }}; color: {{ st.btnFg }}; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">{{ st.cta }}<i class="icon-arrow-right" style="font-size: 13px"></i></button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; align-items: start">
+    <section style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden; grid-column: span 1">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line)">
+        <i class="icon-bell-dot" style="font-size: 16px; color: var(--muted)"></i>
+        <div style="flex: 1; font: 600 14px/1.2 var(--font)">Needs attention</div>
+        <span style="font: 500 12px/1 var(--font); color: var(--muted)">{{ attnCount }}</span>
+      </div>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 14px">
+          <sc-for list="{{ skel4 }}" as="k" hint-placeholder-count="4"><div style="display: flex; gap: 12px; align-items: center"><div style="width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(90deg, #f0f0ed 0, #f7f7f5 50%, #f0f0ed 100%); background-size: 800px 100%; animation: wzshimmer 1.4s linear infinite"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div style="height: 10px; width: 60%; border-radius: 4px; background: #efefec"></div><div style="height: 9px; width: 85%; border-radius: 4px; background: #f4f4f1"></div></div></div></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ attnEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 36px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #e8f4ec; color: #1f6b3f; display: grid; place-items: center"><i class="icon-check" style="font-size: 18px"></i></div>
+          <div style="font: 600 14px/1.3 var(--font)">All clear</div>
+          <div style="font: 400 13px/1.45 var(--font); color: var(--muted); max-width: 300px">Store health, failed runs, unknown items and backups will surface here.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showData }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <sc-for list="{{ attention }}" as="a" hint-placeholder-count="4">
+            <button onClick="{{ a.go }}" style="width: 100%; display: flex; gap: 12px; align-items: flex-start; padding: 13px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; color: var(--ink)" style-hover="background: var(--hover)">
+              <span style="width: 28px; height: 28px; flex: none; border-radius: 7px; display: grid; place-items: center; background: {{ a.bg }}; color: {{ a.fg }}"><i class="icon-{{ a.icon }}" style="font-size: 15px"></i></span>
+              <div style="flex: 1; min-width: 0">
+                <div style="font: 600 13.5px/1.35 var(--font)">{{ a.title }}</div>
+                <div style="font: 400 12.5px/1.45 var(--font); color: var(--muted); text-wrap: pretty">{{ a.desc }}</div>
+              </div>
+              <span style="flex: none; font: 500 12.5px/28px var(--font); color: var(--acc-ink); white-space: nowrap">{{ a.cta }} →</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line)">
+        <i class="icon-store" style="font-size: 16px; color: var(--muted)"></i>
+        <div style="flex: 1; font: 600 14px/1.2 var(--font)">Store health</div>
+        <button onClick="{{ goStores }}" style="border: 0; background: transparent; color: var(--acc-ink); font: 500 12.5px/1 var(--font); cursor: pointer">All stores</button>
+      </div>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 16px"><sc-for list="{{ skel4 }}" as="k" hint-placeholder-count="4"><div style="display: flex; gap: 10px; align-items: center"><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div style="height: 10px; width: 45%; border-radius: 4px; background: #efefec"></div><div style="height: 9px; width: 65%; border-radius: 4px; background: #f4f4f1"></div></div><div style="width: 80px; height: 20px; border-radius: 99px; background: #f0f0ed"></div></div></sc-for></div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 36px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div style="width: 40px; height: 40px; border-radius: 10px; border: 1px dashed var(--line2); color: var(--muted); display: grid; place-items: center"><i class="icon-store" style="font-size: 18px"></i></div>
+          <div style="font: 600 14px/1.3 var(--font)">No stores connected</div>
+          <div style="font: 400 13px/1.45 var(--font); color: var(--muted); max-width: 300px">Connect a store with an access token, app credentials or OAuth to start querying.</div>
+          <sc-if value="{{ canManage }}"><button onClick="{{ goConnect }}" style="margin-top: 6px; height: 32px; padding: 0 13px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer">Connect store</button></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showData }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <sc-for list="{{ stores }}" as="s" hint-placeholder-count="5">
+            <button onClick="{{ s.go }}" style="width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; color: var(--ink)" style-hover="background: var(--hover)">
+              <span style="width: 8px; height: 8px; border-radius: 2px; background: {{ s.color }}; flex: none"></span>
+              <div style="flex: 1; min-width: 0">
+                <div style="display: flex; align-items: center; gap: 7px"><span style="font: 600 13.5px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ s.name }}</span><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ s.envBg }}; color: {{ s.envFg }}">{{ s.env }}</span></div>
+                <div style="font: 400 12px/1.4 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ s.domain }}</div>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ s.b.bg }}; color: {{ s.b.fg }}; font: 500 12px/1 var(--font); white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ s.b.dot }}"></span>{{ s.status }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 18px; align-items: start">
+    <section style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line)">
+        <i class="icon-activity" style="font-size: 16px; color: var(--muted)"></i>
+        <div style="flex: 1; font: 600 14px/1.2 var(--font)">Recent flow runs</div>
+        <button onClick="{{ goFlows }}" style="border: 0; background: transparent; color: var(--acc-ink); font: 500 12.5px/1 var(--font); cursor: pointer">All flows</button>
+      </div>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding: 32px 20px; text-align: center; font: 400 13px/1.45 var(--font); color: var(--muted)">No runs yet. Runs appear here once a flow is run against a store.</div></sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 16px"><sc-for list="{{ skel4 }}" as="k" hint-placeholder-count="4"><div style="height: 12px; border-radius: 4px; background: #f0f0ed"></div></sc-for></div></sc-if>
+      <sc-if value="{{ showData }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <sc-for list="{{ runs }}" as="r" hint-placeholder-count="4">
+            <button onClick="{{ r.go }}" style="width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 120px; gap: 6px 14px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; color: var(--ink)" style-hover="background: var(--hover)">
+              <div style="min-width: 0; display: flex; align-items: center; gap: 8px">
+                <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ r.b.bg }}; color: {{ r.b.fg }}; font: 500 12px/1 var(--font); white-space: nowrap; flex: none"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ r.b.dot }}; animation: {{ r.b.anim }}"></span>{{ r.status }}</span>
+                <span style="font: 600 13.5px/1.3 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ r.flow }}</span>
+              </div>
+              <div style="font: 400 12px/22px var(--font); color: var(--muted); text-align: right">{{ r.when }}</div>
+              <div style="font: 400 12px/1.3 var(--font); color: var(--muted); display: flex; gap: 6px; align-items: center"><span style="width: 6px; height: 6px; border-radius: 2px; background: {{ r.storeColor }}"></span>{{ r.store }} · {{ r.items }}</div>
+              <div style="display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--line); align-self: center">
+                <div style="width: {{ r.okW }}; background: #2f9e5c"></div><div style="width: {{ r.badW }}; background: #d1453b"></div><div style="width: {{ r.unkW }}; background: #e8590c"></div><div style="width: {{ r.runW }}; background: #3b7be0"></div>
+              </div>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line)">
+        <i class="icon-hard-drive" style="font-size: 16px; color: var(--muted)"></i>
+        <div style="flex: 1; font: 600 14px/1.2 var(--font)">Recent backups</div>
+        <button onClick="{{ goDb }}" style="border: 0; background: transparent; color: var(--acc-ink); font: 500 12.5px/1 var(--font); cursor: pointer">All connections</button>
+      </div>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding: 32px 20px; text-align: center; font: 400 13px/1.45 var(--font); color: var(--muted)">No database connections yet.</div></sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 16px"><sc-for list="{{ skel4 }}" as="k" hint-placeholder-count="4"><div style="height: 12px; border-radius: 4px; background: #f0f0ed"></div></sc-for></div></sc-if>
+      <sc-if value="{{ showData }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <sc-for list="{{ backups }}" as="k" hint-placeholder-count="4">
+            <button onClick="{{ goDbDetail }}" style="width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; color: var(--ink)" style-hover="background: var(--hover)">
+              <div style="flex: 1; min-width: 0">
+                <div style="font: 600 13.5px/1.3 var(--font)">{{ k.conn }}</div>
+                <div style="font: 400 12px/1.4 var(--font); color: var(--muted)">{{ k.meta }}</div>
+              </div>
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ k.b.bg }}; color: {{ k.b.fg }}; font: 500 12px/1 var(--font); white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ k.b.dot }}; animation: {{ k.b.anim }}"></span>{{ k.status }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ST = { ok: ['#e8f4ec', '#1f6b3f', '#2f9e5c'], warn: ['#fbf1db', '#7a5410', '#d39a1c'], bad: ['#fbeceb', '#9b231c', '#d1453b'], info: ['#e9f0fb', '#1f4f99', '#3b7be0'], idle: ['#f0f0ed', '#55554f', '#a3a39c'], unk: ['#e8590c', '#ffffff', '#ffffff'] };
+const KIND = { Connected: 'ok', Succeeded: 'ok', Completed: 'ok', Reachable: 'ok', Pending: 'info', Running: 'info', Queued: 'idle', 'Reconnect required': 'warn', 'Partially failed': 'warn', Failed: 'bad', Unreachable: 'bad', Disconnected: 'idle', Canceled: 'idle' };
+const badge = (l) => { const k = KIND[l] || 'idle'; const [bg, fg, dot] = ST[k]; return { bg, fg, dot, anim: l === 'Running' ? 'wzpulse 1.4s ease infinite' : 'none' }; };
+const ENV = { PROD: ['#fbeceb', '#9b231c'], STAGING: ['#e9f0fb', '#1f4f99'], DEV: ['#f0f0ed', '#55554f'] };
+
+class Component extends DCLogic {
+  state = { dismissed: false };
+  renderVals() {
+    const nav = this.props.nav || (() => {});
+    const toast = this.props.toast || (() => {});
+    const role = this.props.role || 'Owner';
+    const ds = this.props.dataState || 'live';
+    const canManage = role === 'Owner';
+    const isEmpty = ds === 'empty', isLoading = ds === 'loading';
+    const done = isEmpty ? 1 : 3;
+    const stepDefs = [
+      ['Create an organization', 'Everything you connect belongs to wizloft.', 'Create', 'settings'],
+      ['Register an app or paste a token', 'Add a Shopify app from the Dev Dashboard, or use a custom-app token.', 'Add app', 'stores/apps'],
+      ['Connect your first store', 'Pick a method — we’ll help you choose the right one.', 'Connect store', 'stores/new'],
+      ['Run your first query', 'Open the GraphQL console against a connected store.', 'Open console', 'graphql'],
+      ['Build a flow', 'Automate per-item work: parse a CSV, find orders, add tags.', 'New flow', 'flow']
+    ];
+    const steps = stepDefs.map((d, i) => {
+      const isDone = i < done, isNext = i === done;
+      return { n: i + 1, title: d[0], desc: d[1], cta: d[2], go: () => nav(d[3]), todo: !isDone,
+        icon: isDone ? 'check' : (isNext ? 'arrow-right' : 'circle'),
+        dotBg: isDone ? 'var(--acc)' : 'transparent', dotFg: isDone ? '#fff' : (isNext ? 'var(--acc-ink)' : 'var(--faint)'), dotBorder: isDone ? '0' : (isNext ? '1.5px solid var(--acc)' : '1.5px dashed var(--line2)'),
+        bg: isNext ? 'var(--panel)' : 'transparent', border: isNext ? 'var(--acc)' : 'var(--line)',
+        titleColor: isDone ? 'var(--muted)' : 'var(--ink)', strike: 'none',
+        btnBg: isNext ? 'var(--primary)' : 'var(--panel)', btnFg: isNext ? 'var(--on-primary)' : 'var(--ink)', btnBorder: isNext ? 'var(--primary)' : 'var(--line2)' };
+    });
+    const storeColors = ['oklch(0.62 0.15 25)', 'oklch(0.62 0.13 250)', 'oklch(0.66 0.13 70)', 'oklch(0.58 0.14 300)', 'oklch(0.6 0.1 170)'];
+    const stores = [
+      ['Evisu HK', 'evisu-hk.myshopify.com', 'PROD', 'Connected'],
+      ['Evisu HK Staging', 'evisu-hk-staging.myshopify.com', 'STAGING', 'Connected'],
+      ['Evisu JP', 'evisu-jp.myshopify.com', 'PROD', 'Reconnect required'],
+      ['Maison Kitsu US', 'maison-kitsu.myshopify.com', 'PROD', 'Pending'],
+      ['Hobo Supply Dev', 'hobo-supply-dev.myshopify.com', 'DEV', 'Disconnected']
+    ].map((s, i) => ({ name: s[0], domain: s[1], env: s[2], envBg: ENV[s[2]][0], envFg: ENV[s[2]][1], status: s[3], b: badge(s[3]), color: storeColors[i], go: () => nav('stores', { store: i }) }));
+    const runs = [
+      ['Running', 'Nightly untag stale drafts', 'Evisu HK', 0, '312 / 540 items', '2 min ago', [55, 0, 0, 45]],
+      ['Partially failed', 'Tag high-value CSV orders', 'Evisu HK', 0, '240 items · 9 failed · 3 unknown', '9:25 AM', [95, 3.75, 1.25, 0]],
+      ['Succeeded', 'Sync risk assessments', 'Evisu HK Staging', 1, '18 items', '8:02 AM', [100, 0, 0, 0]],
+      ['Failed', 'Sync risk assessments', 'Evisu JP', 2, '0 items · auth error', 'Yesterday', [0, 100, 0, 0]]
+    ].map(r => ({ status: r[0], b: badge(r[0]), flow: r[1], store: r[2], storeColor: storeColors[r[3]], items: r[4], when: r[5], okW: r[6][0] + '%', badW: r[6][1] + '%', unkW: r[6][2] + '%', runW: r[6][3] + '%', go: () => nav('trace') }));
+    const backups = [
+      ['Evisu production', 'Running · started 1 min ago · oms_v2_production', 'Running'],
+      ['Evisu production', '51.8 MB · 3m 1s · Today 4:00 PM', 'Completed'],
+      ['Evisu staging', '12.4 MB · 24s · Today 11:07 AM', 'Completed'],
+      ['Kitsu analytics', 'Host unreachable · Yesterday 11:40 PM', 'Failed']
+    ].map(b => ({ conn: b[0], meta: b[1], status: b[2], b: badge(b[2]) }));
+    const attention = [
+      { icon: 'circle-help', bg: '#e8590c', fg: '#fff', title: '3 items in an unknown state', desc: 'Tag high-value CSV orders · run #128 on Evisu HK (production). Tags may or may not have been applied — check these orders in Shopify.', cta: 'Review', go: () => nav('trace') },
+      { icon: 'key-round', bg: '#fbf1db', fg: '#7a5410', title: 'Evisu JP needs to be reconnected', desc: 'The offline token expired on Oct 12. Flows targeting this store will fail until it’s reconnected.', cta: 'Reconnect', go: () => nav('stores', { store: 2 }) },
+      { icon: 'database', bg: '#fbeceb', fg: '#9b231c', title: 'Kitsu analytics is unreachable', desc: 'Last night’s backup failed: connection timed out after 30s. Last good backup is 3 days old.', cta: 'Open', go: () => nav('database') },
+      { icon: 'webhook', bg: '#f0f0ed', fg: '#55554f', title: 'Webhook secret missing on Evisu HK Staging', desc: 'Webhook-triggered flows can’t verify payloads from this store.', cta: 'Add secret', go: () => nav('stores', { store: 1 }) }
+    ];
+    return {
+      canManage, isEmpty, isLoading, isError: ds === 'error', showData: !isEmpty && !isLoading,
+      attnEmpty: isEmpty, attnCount: isEmpty ? '0' : '4 open',
+      showOnboard: !this.state.dismissed, dismiss: () => { this.setState({ dismissed: true }); toast('Checklist hidden', 'Find it again under Settings.', 'info'); },
+      onboardPct: (done / 5 * 100) + '%', onboardCount: `${done}/5`,
+      onboardText: isEmpty ? 'Connect a store to start querying and automating.' : 'Two steps left. Run a query to confirm your store connection end-to-end.',
+      steps, stores, runs, backups, attention, skel4: [1, 2, 3, 4],
+      goQuery: () => nav('graphql'), goFlow: () => nav('flow'), goConnect: () => nav('stores/new'), goStores: () => nav('stores'), goFlows: () => nav('flows'), goDb: () => nav('database'), goDbDetail: () => nav('database/detail'),
+      retry: () => toast('Retrying…', 'Fetching overview', 'run')
+    };
+  }
+}
+</script>
+</body>
+</html>

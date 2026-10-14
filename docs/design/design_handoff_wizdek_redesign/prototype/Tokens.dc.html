@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="padding: 28px 32px 64px; display: flex; flex-direction: column; gap: 34px; max-width: 1240px; margin: 0 auto">
+  <header style="padding-bottom: 18px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+    <div style="flex: 1; min-width: 260px">
+      <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted); margin-bottom: 8px">wizdek · visual language</div>
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Design language</h1>
+      <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted); max-width: 680px; text-wrap: pretty">Two directions share one token set. <strong style="font-weight: 600; color: var(--ink)">Paper</strong> evolves today’s light shell with a restrained indigo accent. <strong style="font-weight: 600; color: var(--ink)">Console</strong> puts the navigation on a dark rail, uses Geist and mono labels, and makes violet the primary. Switch with the Tweaks panel — every screen follows.</p>
+    </div>
+    <span style="display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 99px; background: var(--acc-soft); color: var(--acc-ink); font: 600 12.5px/1 var(--font)"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--acc)"></span>Showing: {{ dirName }}</span>
+  </header>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+    <sc-for list="{{ principles }}" as="p" hint-placeholder-count="4">
+      <div style="padding: 16px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 8px"><i class="icon-{{ p.icon }}" style="font-size: 18px; color: var(--acc-ink)"></i><div style="font: 600 14px/1.3 var(--font)">{{ p.t }}</div><div style="font: 400 13px/1.5 var(--font); color: var(--muted)">{{ p.d }}</div></div>
+    </sc-for>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font: 600 16px/1.3 var(--font)">Neutrals &amp; accent</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px">
+      <sc-for list="{{ swatches }}" as="w" hint-placeholder-count="12">
+        <div style="border: 1px solid var(--line); border-radius: 9px; overflow: hidden">
+          <div style="height: 56px; background: var({{ w.v }}); border-bottom: 1px solid var(--line)"></div>
+          <div style="padding: 9px 10px; display: flex; flex-direction: column; gap: 3px"><span style="font: 600 12px/1.2 var(--mono)">{{ w.v }}</span><span style="font: 400 11.5px/1.3 var(--font); color: var(--muted)">{{ w.use }}</span><span style="font: 400 10.5px/1.3 var(--mono); color: var(--faint)">{{ w.a }} · {{ w.b }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font: 600 16px/1.3 var(--font)">Status — one badge system</div>
+      <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+        <sc-for list="{{ statuses }}" as="s" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 90px 1fr; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line); align-items: start">
+            <div><div style="font: 600 12.5px/1.3 var(--font)">{{ s.name }}</div><div style="font: 400 10.5px/1.4 var(--mono); color: var(--faint)">{{ s.hex }}</div></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px">
+              <sc-for list="{{ s.labels }}" as="l"><span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ s.bg }}; color: {{ s.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ s.dot }}"></span>{{ l }}</span></sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font: 400 12.5px/1.5 var(--font); color: var(--muted)">Dot + label, never colour alone. <strong style="font-weight: 600; color: var(--ink2)">Unknown</strong> is the only solid badge: it means a human must check the store.</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font: 600 16px/1.3 var(--font)">Flow categories</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px"><span style="width: 30px; height: 30px; border-radius: 8px; background: {{ c.tint }}; color: {{ c.color }}; display: grid; place-items: center"><i class="icon-{{ c.icon }}" style="font-size: 15px"></i></span><div><div style="font: 600 13px/1.2 var(--font)">{{ c.name }}</div><div style="font: 400 10.5px/1.4 var(--mono); color: var(--faint)">oklch(.5 .14 {{ c.h }})</div></div></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="font: 600 16px/1.3 var(--font)">Environment tags — risk at a glance</div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+          <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #fbeceb; color: #9b231c">PROD</span>
+          <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #e9f0fb; color: #1f4f99">STAGING</span>
+          <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #f0f0ed; color: #55554f">DEV</span>
+          <span style="font: 400 12.5px/1.5 var(--font); color: var(--muted)">Shown next to every store or database name. Production also turns writes red and asks for confirmation.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font: 600 16px/1.3 var(--font)">Type scale · <span style="font-weight: 400; color: var(--muted)">{{ fontName }} + Geist Mono</span></div>
+      <div style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Page · 24/600</span><span style="font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Connect a store</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Section · 16/600</span><span style="font: 600 16px/1.3 var(--font)">Backups</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Card · 14/600</span><span style="font: 600 14px/1.3 var(--font)">Needs attention</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Body · 14/400</span><span style="font: 400 14px/1.5 var(--font); color: var(--muted)">Shopify stores connected to wizloft.</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Table · 13.5/400</span><span style="font: 400 13.5px/1.4 var(--font)">Evisu HK Staging · Access token</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line)"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Label</span><span style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted)">Workspace</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px; padding: 12px 14px"><span style="width: 110px; flex: none; font: 400 11px/1.3 var(--mono); color: var(--faint)">Mono · 12.5</span><span style="font: 400 12.5px/1.4 var(--mono)">evisu-hk.myshopify.com</span></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <div style="font: 600 16px/1.3 var(--font)">Shape, space, elevation</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px">
+        <div style="padding: 14px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start"><div style="width: 44px; height: 30px; border: 1.5px solid var(--ink2); border-radius: var(--r)"></div><div style="font: 600 12px/1.2 var(--font)">Control</div><div style="font: 400 11px/1.3 var(--mono); color: var(--faint)">--r · 6 / 5px</div></div>
+        <div style="padding: 14px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start"><div style="width: 44px; height: 30px; border: 1.5px solid var(--ink2); border-radius: 10px"></div><div style="font: 600 12px/1.2 var(--font)">Card</div><div style="font: 400 11px/1.3 var(--mono); color: var(--faint)">10px</div></div>
+        <div style="padding: 14px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start"><div style="width: 44px; height: 30px; border: 1.5px solid var(--ink2); border-radius: var(--rp)"></div><div style="font: 600 12px/1.2 var(--font)">Panel</div><div style="font: 400 11px/1.3 var(--mono); color: var(--faint)">--rp · 12 / 10px</div></div>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 10px">
+        <sc-for list="{{ spaces }}" as="sp" hint-placeholder-count="7"><div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: {{ sp.px }}; height: {{ sp.px }}; background: var(--acc-soft); border: 1px solid var(--acc)"></div><span style="font: 400 10.5px/1 var(--mono); color: var(--muted)">{{ sp.n }}</span></div></sc-for>
+        <span style="margin-left: auto; font: 400 12px/1.4 var(--font); color: var(--muted); max-width: 160px">4px base. Rows 54–62px. Page padding 28/32.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 18px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--sunken)">
+        <div style="height: 54px; background: #fff; border: 1px solid var(--line); border-radius: 8px; display: grid; place-items: center; font: 500 11.5px/1 var(--font); color: var(--muted)">Flat · hairline</div>
+        <div style="height: 54px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.05); display: grid; place-items: center; font: 500 11.5px/1 var(--font); color: var(--muted)">Node · 1</div>
+        <div style="height: 54px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.2); display: grid; place-items: center; font: 500 11.5px/1 var(--font); color: var(--muted)">Popover · 2</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font: 600 16px/1.3 var(--font)">Controls</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 16px">
+      <div style="padding: 18px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 14px">
+        <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted)">Buttons · one primary per view</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <button style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Connect store</button>
+          <button style="height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Secondary</button>
+          <button style="height: 34px; padding: 0 12px; border: 0; background: transparent; color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Ghost</button>
+          <button style="height: 34px; padding: 0 12px; border: 1px solid #e3b0aa; background: #fff; color: #9b231c; border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Disconnect…</button>
+          <button style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid #a3211a; background: #a3211a; color: #fff; border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-play" style="font-size: 13px"></i>Run on PROD</button>
+        </div>
+        <div style="font: 400 12.5px/1.5 var(--font); color: var(--muted)">Red fill is reserved for actions that write to production after confirmation.</div>
+      </div>
+      <div style="padding: 18px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 12px">
+        <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted)">Fields</div>
+        <input placeholder="Default" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)">
+        <input value="Focused" style="height: 34px; padding: 0 10px; border: 1px solid var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)">
+        <div style="display: flex; flex-direction: column; gap: 5px"><div style="position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" value="shpat_secret" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"></div><span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Secret · write-only, lock icon + helper always</span></div>
+        <div style="display: flex; flex-direction: column; gap: 5px"><input placeholder="Tags" style="height: 34px; padding: 0 10px; border: 1px solid #e8c77c; box-shadow: 0 0 0 3px #fdf3dc; border-radius: var(--r); font-size: 13.5px; outline: none"><span style="font: 400 12px/1.4 var(--font); color: #9b231c">At least one tag is required.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font: 600 16px/1.3 var(--font)">CSS tokens</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px">
+      <pre style="margin: 0; padding: 16px; border-radius: 10px; background: #1d1d1b; color: #e9e9e4; font: 400 12px/1.65 var(--mono); overflow: auto">{{ cssA }}</pre>
+      <pre style="margin: 0; padding: 16px; border-radius: 10px; background: #16171a; color: #e9e9e4; font: 400 12px/1.65 var(--mono); overflow: auto">{{ cssB }}</pre>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const dir = this.props.dir || 'Paper';
+    const sw = [
+      ['--canvas', 'Shell canvas', '#f3f3f1', '#17181b'], ['--panel', 'Content panel', '#ffffff', '#ffffff'], ['--sunken', 'Table head, wells', '#f8f8f6', '#f7f7f8'], ['--hover', 'Row hover', '#f3f3f0', '#f2f3f5'],
+      ['--line', 'Hairlines', '#e9e8e4', '#e7e8eb'], ['--line2', 'Control borders', '#d9d8d3', '#d6d8dd'], ['--faint', 'Placeholder, meta', '#93938b', '#8b8d94'], ['--muted', 'Secondary text', '#66665f', '#5f6168'],
+      ['--ink', 'Text, primary', '#1d1d1b', '#141518'], ['--acc', 'Accent · focus', 'oklch(.5 .16 265)', 'oklch(.53 .2 292)'], ['--acc-soft', 'Selection, focus ring', 'oklch(.955 .025 265)', 'oklch(.95 .03 292)'], ['--primary', 'Primary button', '#1d1d1b', 'oklch(.5 .2 292)']
+    ].map(w => ({ v: w[0], use: w[1], a: w[2], b: w[3] }));
+    const statuses = [
+      ['Success', '#2f9e5c', ['#e8f4ec', '#1f6b3f', '#2f9e5c'], ['Connected', 'Succeeded', 'Completed', 'Reachable', 'Active']],
+      ['Warning', '#d39a1c', ['#fbf1db', '#7a5410', '#d39a1c'], ['Reconnect required', 'Partially failed']],
+      ['Danger', '#d1453b', ['#fbeceb', '#9b231c', '#d1453b'], ['Failed', 'Unreachable']],
+      ['In progress', '#3b7be0', ['#e9f0fb', '#1f4f99', '#3b7be0'], ['Running', 'Pending', 'In progress']],
+      ['Neutral', '#a3a39c', ['#f0f0ed', '#55554f', '#a3a39c'], ['Queued', 'Draft', 'Skipped', 'Canceled', 'Disconnected']],
+      ['Unknown', '#e8590c', ['#e8590c', '#ffffff', '#ffffff'], ['Unknown']]
+    ].map(s => ({ name: s[0], hex: s[1], bg: s[2][0], fg: s[2][1], dot: s[2][2], labels: s[3] }));
+    const cats = [['Trigger', 300, 'play'], ['Data', 230, 'file-spreadsheet'], ['Logic', 75, 'split'], ['Action', 160, 'tag']].map(c => ({ name: c[0], h: c[1], icon: c[2], color: `oklch(0.5 0.14 ${c[1]})`, tint: `oklch(0.95 0.035 ${c[1]})` }));
+    const cssA = `/* Paper — light shell, indigo accent */
+:root {
+  --font-sans: "Albert Sans", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --background: #f3f3f1;      /* shell canvas */
+  --card: #ffffff;            /* content panel */
+  --foreground: #1d1d1b;
+  --muted-foreground: #66665f;
+  --border: #e9e8e4;  --input: #d9d8d3;
+  --primary: #1d1d1b; --primary-foreground: #fff;
+  --accent: oklch(0.5 0.16 265);
+  --ring: oklch(0.955 0.025 265);
+  --destructive: #a3211a;
+  --success: #2f9e5c; --warning: #d39a1c;
+  --info: #3b7be0;    --unknown: #e8590c;
+  --radius: 6px; --radius-panel: 12px;
+}`;
+    const cssB = `/* Console — dark rail, violet primary */
+:root {
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --background: #17181b;
+  --card: #ffffff;
+  --foreground: #141518;
+  --muted-foreground: #5f6168;
+  --border: #e7e8eb;  --input: #d6d8dd;
+  --primary: oklch(0.5 0.2 292);
+  --accent: oklch(0.53 0.2 292);
+  --ring: oklch(0.95 0.03 292);
+  --sidebar: #16171a; --sidebar-foreground: #ececef;
+  --sidebar-accent: #2a2b31;
+  --label-font: var(--font-mono); /* uppercase, 0.07em */
+  --radius: 5px; --radius-panel: 10px;
+}`;
+    return {
+      dirName: dir, fontName: dir === 'Console' ? 'Geist' : 'Albert Sans', swatches: sw, statuses, cats, cssA, cssB,
+      spaces: [4, 8, 12, 16, 20, 24, 32].map(n => ({ n, px: n + 'px' })),
+      principles: [
+        { icon: 'circle-dot', t: 'Colour means state', d: 'Neutral by default. Colour appears for status, flow categories, environment and the single accent for focus and selection.' },
+        { icon: 'crosshair', t: 'The target is always visible', d: 'Every write names the store or database it touches, with its environment tag. Production writes go red and ask first.' },
+        { icon: 'list-checks', t: 'Every state is designed', d: 'Loading skeletons, empty states with one next step, inline errors with retry, and read-only views that explain the missing permission.' },
+        { icon: 'lock', t: 'Secrets say so', d: 'Write-only fields carry a lock and the same sentence: stored encrypted, never shown again.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

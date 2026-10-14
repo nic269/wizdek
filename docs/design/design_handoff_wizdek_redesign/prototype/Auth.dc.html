@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); background: var(--panel); color: var(--ink); font-family: var(--font)">
+  <div style="display: flex; flex-direction: column; padding: 22px 28px; min-height: 100vh">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <div style="width: 28px; height: 28px; border-radius: 7px; background: var(--mark-bg); color: #fff; display: grid; place-items: center; font: 700 14px/1 var(--font)">w</div>
+      <span style="font: 600 14.5px/1 var(--font); letter-spacing: -0.01em; flex: 1">Wizloft devkit</span>
+      <button onClick="{{ backToApp }}" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px dashed var(--line2); background: transparent; color: var(--muted); border-radius: 99px; font: 500 12px/1 var(--font); cursor: pointer"><i class="icon-arrow-left" style="font-size: 12px"></i>Prototype: back to app</button>
+    </div>
+    <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 14px; padding: 4px; border: 1px dashed var(--line2); border-radius: 10px; align-self: flex-start">
+      <sc-for list="{{ screens }}" as="sc" hint-placeholder-count="6"><button onClick="{{ sc.pick }}" style="height: 26px; padding: 0 9px; border: 0; border-radius: 6px; background: {{ sc.bg }}; color: {{ sc.fg }}; font: 500 12px/1 var(--font); cursor: pointer">{{ sc.label }}</button></sc-for>
+    </div>
+
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 0">
+      <div style="width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 22px; animation: wzin .2s ease">
+        <sc-if value="{{ sSignin }}">
+          <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Sign in</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Welcome back. Pick up where your team left off.</p></div>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Email</span><input value="admin@wizloft.dev" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="display: flex; font: 500 13px/1 var(--font)"><span style="flex: 1">Password</span><a onClick="{{ goForgot }}" style="font-weight: 500; color: var(--acc-ink); cursor: pointer">Forgot password?</a></span><input type="password" value="password123" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+            <sc-if value="{{ err }}"><div style="display: flex; gap: 8px; padding: 9px 11px; border: 1px solid #f0c9c5; background: #fdf3f2; border-radius: var(--r); color: #7d1d17; font: 400 13px/1.45 var(--font)"><i class="icon-circle-alert" style="font-size: 15px; margin-top: 1px"></i>That email and password don’t match. Try again or reset your password.</div></sc-if>
+            <button onClick="{{ signIn }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{ busy }}"><i class="icon-loader-circle" style="font-size: 15px; animation: wzspin 1s linear infinite"></i></sc-if>Sign in</button>
+            <button onClick="{{ showErr }}" style="border: 0; background: transparent; color: var(--faint); font: 400 11.5px/1 var(--font); cursor: pointer; align-self: center">Prototype: show error state</button>
+          </div>
+          <div style="font: 400 13.5px/1.5 var(--font); color: var(--muted)">New to wizdek? <a onClick="{{ goSignup }}" style="color: var(--acc-ink); font-weight: 500; cursor: pointer">Create an account</a></div>
+        </sc-if>
+
+        <sc-if value="{{ sSignup }}">
+          <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Create your account</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Then create an organization and connect your first store.</p></div>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Name</span><input placeholder="Anh Nguyen" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Work email</span><input placeholder="you@company.com" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Password</span><input type="password" value="correct-horse" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)"><span style="display: flex; gap: 4px; margin-top: 2px"><span style="flex: 1; height: 3px; border-radius: 99px; background: #2f9e5c"></span><span style="flex: 1; height: 3px; border-radius: 99px; background: #2f9e5c"></span><span style="flex: 1; height: 3px; border-radius: 99px; background: #2f9e5c"></span><span style="flex: 1; height: 3px; border-radius: 99px; background: var(--line)"></span></span><span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Strong · at least 12 characters</span></label>
+            <button onClick="{{ goVerify }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Create account</button>
+          </div>
+          <div style="font: 400 13.5px/1.5 var(--font); color: var(--muted)">Already have an account? <a onClick="{{ goSignin }}" style="color: var(--acc-ink); font-weight: 500; cursor: pointer">Sign in</a></div>
+        </sc-if>
+
+        <sc-if value="{{ sForgot }}">
+          <sc-if value="{{ sentNot }}">
+            <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Reset your password</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Enter your email and we’ll send a link to choose a new password.</p></div>
+            <div style="display: flex; flex-direction: column; gap: 14px">
+              <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Email</span><input value="admin@wizloft.dev" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)"></label>
+              <button onClick="{{ send }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Send reset link</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ sent }}">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--acc-soft); color: var(--acc-ink); display: grid; place-items: center"><i class="icon-mail-check" style="font-size: 20px"></i></div>
+            <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Check your email</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">If an account exists for <strong style="font-weight: 600; color: var(--ink)">admin@wizloft.dev</strong>, a reset link is on its way. It expires in 1 hour.</p></div>
+            <button onClick="{{ resend }}" style="height: 38px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Resend link</button>
+          </sc-if>
+          <a onClick="{{ goSignin }}" style="display: inline-flex; gap: 6px; align-items: center; font: 500 13.5px/1 var(--font); color: var(--muted); cursor: pointer"><i class="icon-arrow-left" style="font-size: 14px"></i>Back to sign in</a>
+        </sc-if>
+
+        <sc-if value="{{ sReset }}">
+          <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Choose a new password</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">For admin@wizloft.dev. You’ll be signed out on other devices.</p></div>
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">New password</span><input type="password" placeholder="At least 12 characters" style="height: 38px; padding: 0 11px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 14px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+            <button onClick="{{ goSignin }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Update password</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sVerify }}">
+          <div style="display: inline-flex; padding: 3px; background: var(--sunken); border: 1px dashed var(--line2); border-radius: 8px; gap: 2px; align-self: flex-start"><button onClick="{{ vOk }}" style="height: 24px; padding: 0 9px; border: 0; border-radius: 5px; background: {{ vOkBg }}; font: 500 11.5px/1 var(--font); cursor: pointer; color: var(--ink)">Verified</button><button onClick="{{ vBad }}" style="height: 24px; padding: 0 9px; border: 0; border-radius: 5px; background: {{ vBadBg }}; font: 500 11.5px/1 var(--font); cursor: pointer; color: var(--ink)">Link expired</button></div>
+          <sc-if value="{{ verified }}">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #e8f4ec; color: #1f6b3f; display: grid; place-items: center"><i class="icon-badge-check" style="font-size: 21px"></i></div>
+            <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Email verified</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">You’re all set. Next, create an organization or accept an invitation.</p></div>
+            <button onClick="{{ backToApp }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Continue to wizdek</button>
+          </sc-if>
+          <sc-if value="{{ expired }}">
+            <div style="width: 44px; height: 44px; border-radius: 12px; background: #fbf1db; color: #7a5410; display: grid; place-items: center"><i class="icon-clock-alert" style="font-size: 21px"></i></div>
+            <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">This link has expired</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Verification links last 24 hours. Send a fresh one to admin@wizloft.dev.</p></div>
+            <button onClick="{{ resend }}" style="height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Send a new link</button>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ sInvite }}">
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 44px; height: 44px; border-radius: 11px; background: oklch(0.9 0.05 60); color: oklch(0.38 0.08 55); display: grid; place-items: center; font: 600 16px/1 var(--font)">WL</div><div style="font: 400 13px/1.4 var(--font); color: var(--muted)">Invitation from<br><strong style="font-weight: 600; color: var(--ink)">Minh Tran</strong></div></div>
+          <div><h1 style="margin: 0; font: 600 26px/1.15 var(--font); letter-spacing: -0.02em">Join wizloft on wizdek</h1><p style="margin: 8px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">You’ll join as a <strong style="font-weight: 600; color: var(--ink)">Member</strong>: query stores and run flows across 5 connected Shopify stores.</p></div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunken); font: 400 13px/1.4 var(--font)"><i class="icon-mail" style="font-size: 15px; color: var(--muted)"></i><span style="flex: 1">Signed in as <strong style="font-weight: 600">ops@evisu.com</strong></span><a style="color: var(--acc-ink); font-weight: 500; cursor: pointer">Switch</a></div>
+          <div style="display: flex; gap: 8px"><button onClick="{{ accept }}" style="flex: 1; height: 38px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Accept invitation</button><button style="height: 38px; padding: 0 14px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 14px/1 var(--font); cursor: pointer">Decline</button></div>
+          <div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Expires Oct 20, 2026.</div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="font: 400 12px/1.4 var(--font); color: var(--faint)">© 2026 Wizloft · Internal developer tool</div>
+  </div>
+
+  <div style="background: var(--sb-bg); color: var(--sb-fg); border-left: 1px solid var(--sb-line); padding: 48px; display: flex; flex-direction: column; justify-content: center; gap: 30px; overflow: hidden">
+    <div style="max-width: 460px">
+      <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--sb-muted); margin-bottom: 14px">For teams running many Shopify stores</div>
+      <div style="font: 600 30px/1.15 var(--font); letter-spacing: -0.025em; text-wrap: pretty">Query any store, automate per-item work, and see exactly what happened.</div>
+    </div>
+    <div style="max-width: 460px; background: #fff; color: #1d1d1b; border-radius: 12px; border: 1px solid var(--sb-line); box-shadow: 0 30px 60px -30px rgba(0,0,0,.35); overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #ecebe7"><span style="font: 600 13px/1 var(--font); flex: 1">Run #128 · Tag high-value orders</span><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #fbeceb; color: #9b231c">PROD</span></div>
+      <sc-for list="{{ demo }}" as="d" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #f1f0ec">
+          <span style="width: 24px; height: 24px; border-radius: 6px; background: {{ d.tint }}; color: {{ d.color }}; display: grid; place-items: center"><i class="icon-{{ d.icon }}" style="font-size: 12px"></i></span>
+          <span style="flex: 1; font: 500 12.5px/1.2 var(--font)">{{ d.name }}</span>
+          <sc-for list="{{ d.chips }}" as="c"><span style="font: 600 10.5px/1 var(--font); padding: 4px 6px; border-radius: 99px; background: {{ c.bg }}; color: {{ c.fg }}">{{ c.t }}</span></sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'signin', sent: false, verified: true, err: false, busy: false };
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {});
+    const s = this.state;
+    const go = (screen) => () => this.setState({ screen, sent: false, err: false });
+    const screens = [['signin', 'Sign in'], ['signup', 'Sign up'], ['forgot', 'Forgot password'], ['reset', 'Reset password'], ['verify', 'Verify email'], ['invite', 'Invitation']].map(x => ({ label: x[1], pick: go(x[0]), bg: s.screen === x[0] ? 'var(--ink)' : 'transparent', fg: s.screen === x[0] ? '#fff' : 'var(--muted)' }));
+    const c = (t, bg, fg) => ({ t, bg, fg });
+    const demo = [
+      { name: 'Parse CSV', icon: 'file-spreadsheet', tint: 'oklch(0.95 0.035 230)', color: 'oklch(0.5 0.14 230)', chips: [c('240 ✓', '#e8f4ec', '#1f6b3f')] },
+      { name: 'Find order', icon: 'package-search', tint: 'oklch(0.95 0.035 160)', color: 'oklch(0.5 0.14 160)', chips: [c('236 ✓', '#e8f4ec', '#1f6b3f'), c('4 ✗', '#fbeceb', '#9b231c')] },
+      { name: 'If total > 1000', icon: 'split', tint: 'oklch(0.95 0.035 75)', color: 'oklch(0.5 0.14 75)', chips: [c('61 true', '#e9f0fb', '#1f4f99')] },
+      { name: 'Add tags', icon: 'tag', tint: 'oklch(0.95 0.035 160)', color: 'oklch(0.5 0.14 160)', chips: [c('53 ✓', '#e8f4ec', '#1f6b3f'), c('5 ✗', '#fbeceb', '#9b231c'), c('3 ?', '#e8590c', '#fff')] }
+    ];
+    return {
+      screens, demo, backToApp: () => nav('dashboard'),
+      sSignin: s.screen === 'signin', sSignup: s.screen === 'signup', sForgot: s.screen === 'forgot', sReset: s.screen === 'reset', sVerify: s.screen === 'verify', sInvite: s.screen === 'invite',
+      goForgot: go('forgot'), goSignup: go('signup'), goSignin: go('signin'), goVerify: go('verify'),
+      err: s.err, showErr: () => this.setState({ err: !s.err }), busy: s.busy,
+      signIn: () => { this.setState({ busy: true, err: false }); setTimeout(() => { this.setState({ busy: false }); nav('dashboard'); }, 900); },
+      sent: s.sent, sentNot: !s.sent, send: () => this.setState({ sent: true }), resend: () => toast('Link sent', 'Check admin@wizloft.dev', 'ok'),
+      verified: s.verified, expired: !s.verified, vOk: () => this.setState({ verified: true }), vBad: () => this.setState({ verified: false }), vOkBg: s.verified ? '#fff' : 'transparent', vBadBg: s.verified ? 'transparent' : '#fff',
+      accept: () => { nav('dashboard'); toast('Welcome to wizloft', 'You joined as a Member.', 'ok'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

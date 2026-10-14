@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="min-height: 100%">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+<div style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 18px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px">
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Flows</h1>
+      <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Automations that run against a connected store, one item at a time, with a full per-step trace.</p>
+    </div>
+    <sc-if value="{{ canEdit }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 8px">
+        <input value="{{ newName }}" onChange="{{ setNewName }}" placeholder="Name for a new flow" style="width: 240px; height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)">
+        <button onClick="{{ createFlow }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Create flow</button>
+      </div>
+    </sc-if>
+  </header>
+  <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px; font: 400 13px/1.45 var(--font); color: var(--ink2)"><i class="icon-eye" style="font-size: 16px; color: var(--muted)"></i><span>{{ readOnlyText }}</span></div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #f0c9c5; background: #fdf3f2; border-radius: 8px; color: #7d1d17"><i class="icon-circle-alert" style="font-size: 17px; margin-top: 1px"></i><div style="flex: 1; font: 400 13.5px/1.5 var(--font)"><strong style="font-weight: 600">Couldn’t load flows.</strong> Running flows are not affected.</div><button style="height: 28px; padding: 0 10px; border: 1px solid #e3b0aa; background: #fff; color: #7d1d17; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Retry</button></div>
+  </sc-if>
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="border: 1px dashed var(--line2); border-radius: 10px; padding: 56px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+      <div style="display: flex; gap: 6px; margin-bottom: 4px"><span style="width: 30px; height: 30px; border-radius: 8px; background: oklch(0.95 0.035 300); color: oklch(0.5 0.14 300); display: grid; place-items: center"><i class="icon-play" style="font-size: 14px"></i></span><span style="width: 30px; height: 30px; border-radius: 8px; background: oklch(0.95 0.035 230); color: oklch(0.5 0.14 230); display: grid; place-items: center"><i class="icon-file-spreadsheet" style="font-size: 14px"></i></span><span style="width: 30px; height: 30px; border-radius: 8px; background: oklch(0.95 0.035 160); color: oklch(0.5 0.14 160); display: grid; place-items: center"><i class="icon-tag" style="font-size: 14px"></i></span></div>
+      <div style="font: 600 16px/1.3 var(--font)">No flows yet</div>
+      <div style="font: 400 13.5px/1.5 var(--font); color: var(--muted); max-width: 440px">Chain a trigger, data steps and Shopify actions — like tagging every order from a CSV whose total is over 1,000.</div>
+      <sc-if value="{{ canEdit }}"><button onClick="{{ openBuilder }}" style="margin-top: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Create your first flow</button></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+    <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+      <div style="min-width: 860px">
+        <div style="display: grid; grid-template-columns: minmax(260px, 2fr) 110px minmax(220px, 1.4fr) 140px 90px; gap: 16px; padding: 0 16px; height: 38px; align-items: center; background: var(--sunken); border-bottom: 1px solid var(--line); font: 500 12px/1 var(--font); color: var(--muted)"><span>Flow</span><span>Status</span><span>Last run</span><span>Updated</span><span></span></div>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ skel }}" as="k" hint-placeholder-count="4"><div style="display: flex; gap: 16px; padding: 0 16px; height: 60px; align-items: center; border-bottom: 1px solid var(--line)"><div style="width: 30px; height: 30px; border-radius: 7px; background: #f0f0ed"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 7px"><div style="height: 10px; width: 30%; border-radius: 4px; background: linear-gradient(90deg, #efefec 0, #f7f7f5 50%, #efefec 100%); background-size: 800px 100%; animation: wzshimmer 1.4s linear infinite"></div><div style="height: 9px; width: 45%; border-radius: 4px; background: #f4f4f1"></div></div><div style="width: 80px; height: 20px; border-radius: 99px; background: #f0f0ed"></div></div></sc-for></sc-if>
+        <sc-for list="{{ flows }}" as="f" hint-placeholder-count="5">
+          <div onClick="{{ f.open }}" style="display: grid; grid-template-columns: minmax(260px, 2fr) 110px minmax(220px, 1.4fr) 140px 90px; gap: 16px; padding: 0 16px; min-height: 62px; align-items: center; border-bottom: 1px solid var(--line); cursor: pointer; opacity: {{ f.op }}" style-hover="background: var(--hover)">
+            <div style="display: flex; align-items: center; gap: 11px; min-width: 0">
+              <span style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: oklch(0.95 0.035 300); color: oklch(0.5 0.14 300); display: grid; place-items: center"><i class="icon-{{ f.tIcon }}" style="font-size: 14px"></i></span>
+              <div style="min-width: 0"><div style="font: 600 13.5px/1.3 var(--font)">{{ f.name }}</div><div style="font: 400 12px/1.4 var(--font); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.trigger }} · {{ f.steps }} steps · v{{ f.v }}</div></div>
+            </div>
+            <span style="justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ f.sb.bg }}; color: {{ f.sb.fg }}; border: 1px solid {{ f.sb.bd }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ f.sb.dot }}"></span>{{ f.status }}</span>
+            <div style="display: flex; align-items: center; gap: 8px; min-width: 0">
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ f.rb.bg }}; color: {{ f.rb.fg }}; font: 500 12px/1 var(--font); white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ f.rb.dot }}; animation: {{ f.rb.anim }}"></span>{{ f.run }}</span>
+              <span style="font: 400 12px/1.3 var(--font); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ f.runMeta }}</span>
+            </div>
+            <span style="font: 400 12.5px/1.3 var(--font); color: var(--muted)">{{ f.updated }}</span>
+            <div style="display: flex; justify-content: flex-end; gap: 2px">
+              <button onClick="{{ f.runs }}" title="Runs" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r); cursor: pointer" style-hover="background: var(--line); color: var(--ink)"><i class="icon-history" style="font-size: 15px"></i></button>
+              <button title="More" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r); cursor: pointer" style-hover="background: var(--line); color: var(--ink)"><i class="icon-ellipsis" style="font-size: 15px"></i></button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ showArchToggle }}"><button onClick="{{ toggleArch }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font: 500 12.5px/1 var(--font); cursor: pointer; padding: 4px 0"><i class="icon-archive" style="font-size: 14px"></i>{{ archLabel }}</button></sc-if>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isBuilder }}" hint-placeholder-val="{{ false }}">
+<div style="height: calc(100vh - 18px); min-height: 640px; display: flex; flex-direction: column">
+  <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap">
+    <button onClick="{{ goList }}" style="display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 6px 4px" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>Flows</button>
+    <span style="color: var(--line2)">/</span>
+    <span style="font: 600 15px/1 var(--font); letter-spacing: -0.01em">Tag high-value CSV orders</span>
+    <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: #e8f4ec; color: #1f6b3f; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2f9e5c"></span>Active</span>
+    <sc-if value="{{ readOnly }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; border: 1px solid var(--line2); color: var(--ink2); font: 500 12px/1 var(--font)"><i class="icon-lock" style="font-size: 11px"></i>Read-only</span></sc-if>
+    <button onClick="{{ toggleVersions }}" style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r); font: 400 12.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover); color: var(--ink)"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ saveDot }}"></span>{{ saveText }}<i class="icon-chevron-down" style="font-size: 12px"></i></button>
+    <div style="flex: 1"></div>
+    <button onClick="{{ toggleValidate }}" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 0; background: {{ valBg }}; color: var(--ink); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-list-checks" style="font-size: 15px"></i>Validate<sc-if value="{{ hasIssues }}"><span style="min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #fbf1db; color: #7a5410; font: 600 11px/18px var(--font); text-align: center">{{ issueCount }}</span></sc-if></button>
+    <button onClick="{{ goRuns }}" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px; border: 0; background: transparent; color: var(--ink); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-history" style="font-size: 15px"></i>Runs</button>
+    <div style="width: 1px; height: 20px; background: var(--line)"></div>
+    <sc-if value="{{ canEdit }}"><button onClick="{{ save }}" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: {{ saveFg }}; border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)">Save<span style="font: 500 10.5px/1 var(--mono); color: var(--muted)">⌘S</span></button></sc-if>
+    <sc-if value="{{ canRun }}"><button onClick="{{ openRun }}" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer"><i class="icon-play" style="font-size: 13px"></i>Run…</button></sc-if>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: flex; position: relative">
+    <sc-if value="{{ canEdit }}">
+    <div style="width: 236px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0">
+      <div style="padding: 12px"><div style="position: relative"><i class="icon-search" style="position: absolute; left: 9px; top: 9px; font-size: 14px; color: var(--muted)"></i><input value="{{ palQ }}" onChange="{{ setPalQ }}" placeholder="Add a step…" style="width: 100%; height: 32px; padding: 0 8px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></div></div>
+      <div style="flex: 1; overflow: auto; padding: 0 8px 12px">
+        <sc-for list="{{ palette }}" as="pg" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 7px; padding: 12px 6px 6px"><span style="width: 6px; height: 6px; border-radius: 2px; background: {{ pg.color }}"></span><span style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted)">{{ pg.label }}</span></div>
+          <sc-for list="{{ pg.items }}" as="pi" hint-placeholder-count="3">
+            <button onClick="{{ pi.add }}" title="{{ pi.desc }}" style="width: 100%; display: flex; align-items: flex-start; gap: 9px; padding: 7px 6px; border: 0; background: transparent; border-radius: 7px; cursor: grab; text-align: left; color: var(--ink)" style-hover="background: var(--hover)">
+              <span style="width: 26px; height: 26px; flex: none; border-radius: 6px; background: {{ pg.tint }}; color: {{ pg.color }}; display: grid; place-items: center"><i class="icon-{{ pi.icon }}" style="font-size: 13px"></i></span>
+              <span style="flex: 1; min-width: 0"><span style="display: block; font: 500 13px/1.25 var(--font)">{{ pi.name }}</span><span style="display: block; font: 400 11.5px/1.35 var(--font); color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{ pi.desc }}</span></span>
+            </button>
+          </sc-for>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <div style="flex: 1; min-width: 0; position: relative; overflow: auto; background-color: var(--sunken); background-image: radial-gradient(circle, var(--line2) 1px, transparent 1.2px); background-size: 18px 18px">
+      <div style="position: relative; width: 1400px; height: 640px; transform: scale({{ zoom }}); transform-origin: 0 0">
+        {{ edgesSvg }}
+        <sc-for list="{{ edgeLabels }}" as="el" hint-placeholder-count="0">
+          <span style="position: absolute; left: {{ el.x }}px; top: {{ el.y }}px; transform: translate(-50%, -50%); font: 500 11px/1 var(--mono); padding: 3px 6px; border-radius: 99px; background: #fff; border: 1px solid {{ el.bd }}; color: {{ el.c }}; white-space: nowrap">{{ el.t }}</span>
+        </sc-for>
+        <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="5">
+          <div onPointerDown="{{ n.down }}" style="position: absolute; left: {{ n.x }}px; top: {{ n.y }}px; width: 216px; background: #fff; border: 1px solid {{ n.bd }}; box-shadow: {{ n.sh }}; border-radius: 10px; cursor: {{ n.cursor }}; user-select: none; touch-action: none">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px">
+              <span style="width: 30px; height: 30px; flex: none; border-radius: 8px; background: {{ n.tint }}; color: {{ n.color }}; display: grid; place-items: center"><i class="icon-{{ n.icon }}" style="font-size: 15px"></i></span>
+              <div style="min-width: 0; flex: 1"><div style="font: 600 9.5px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: {{ n.color }}; margin-bottom: 4px">{{ n.cat }}</div><div style="font: 600 13.5px/1.2 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ n.title }}</div></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-top: 1px solid var(--line); background: {{ n.footBg }}; border-radius: 0 0 9px 9px; font: 400 11.5px/1.3 var(--font); color: {{ n.footFg }}; min-height: 30px">
+              <i class="icon-{{ n.footIcon }}" style="font-size: 12px"></i><span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ n.foot }}</span>
+            </div>
+            <sc-if value="{{ n.hasIn }}"><span style="position: absolute; left: -6px; top: 36px; width: 11px; height: 11px; border-radius: 50%; background: #fff; border: 2px solid {{ n.handle }}"></span></sc-if>
+            <sc-for list="{{ n.outs }}" as="o"><span style="position: absolute; right: -6px; top: {{ o.y }}px; width: 11px; height: 11px; border-radius: 50%; background: {{ n.handle }}; border: 2px solid #fff; box-shadow: 0 0 0 1px {{ n.handle }}"></span><sc-if value="{{ o.label }}"><span style="position: absolute; left: 226px; top: {{ o.ly }}px; font: 500 10.5px/1 var(--mono); color: var(--muted)">{{ o.label }}</span></sc-if></sc-for>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="position: sticky; left: 12px; bottom: 12px; width: 0; height: 0">
+        <div style="position: absolute; bottom: 0; left: 0; display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.06); overflow: hidden">
+          <button onClick="{{ zoomIn }}" style="width: 32px; height: 30px; border: 0; background: transparent; cursor: pointer; color: var(--ink2)"><i class="icon-plus" style="font-size: 15px"></i></button>
+          <button onClick="{{ zoomOut }}" style="width: 32px; height: 30px; border: 0; border-top: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--ink2)"><i class="icon-minus" style="font-size: 15px"></i></button>
+          <button onClick="{{ zoomFit }}" style="width: 32px; height: 30px; border: 0; border-top: 1px solid var(--line); background: transparent; cursor: pointer; color: var(--ink2)"><i class="icon-scan" style="font-size: 14px"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ showValidate }}">
+      <div style="position: absolute; left: {{ valLeft }}; bottom: 14px; width: 330px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.2); z-index: 5; animation: wzin .15s ease; overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--line)"><i class="icon-{{ valIcon }}" style="font-size: 15px; color: {{ valColor }}"></i><span style="font: 600 13px/1 var(--font); flex: 1">{{ valTitle }}</span><button onClick="{{ toggleValidate }}" style="width: 24px; height: 24px; border: 0; background: transparent; color: var(--muted); cursor: pointer"><i class="icon-x" style="font-size: 14px"></i></button></div>
+        <sc-for list="{{ issues }}" as="is" hint-placeholder-count="1">
+          <button onClick="{{ is.go }}" style="width: 100%; display: flex; gap: 10px; align-items: flex-start; padding: 11px 14px; border: 0; background: transparent; text-align: left; cursor: pointer; color: var(--ink)" style-hover="background: var(--hover)"><span style="width: 22px; height: 22px; flex: none; border-radius: 6px; background: oklch(0.95 0.035 160); color: oklch(0.5 0.14 160); display: grid; place-items: center"><i class="icon-tag" style="font-size: 11px"></i></span><span style="flex: 1"><span style="display: block; font: 600 12.5px/1.3 var(--font)">{{ is.node }}</span><span style="display: block; font: 400 12.5px/1.4 var(--font); color: var(--muted)">{{ is.msg }}</span></span><i class="icon-arrow-right" style="font-size: 13px; color: var(--muted); margin-top: 4px"></i></button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showVersions }}">
+      <div style="position: absolute; left: 260px; top: 6px; width: 300px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.2); z-index: 6; animation: wzin .15s ease; padding: 6px">
+        <div style="font: 500 11.5px/1 var(--font); color: var(--muted); padding: 8px 8px 6px">Version history · each save is a version</div>
+        <sc-for list="{{ versions }}" as="vv" hint-placeholder-count="4">
+          <div style="display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 6px; background: {{ vv.bg }}"><span style="font: 600 11.5px/1 var(--mono); width: 26px; color: var(--ink2)">v{{ vv.v }}</span><span style="flex: 1"><span style="display: block; font: 500 12.5px/1.3 var(--font)">{{ vv.who }}</span><span style="display: block; font: 400 11.5px/1.3 var(--font); color: var(--muted)">{{ vv.when }}</span></span><span style="font: 500 11px/1 var(--font); color: var(--muted)">{{ vv.tag }}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="width: 330px; flex: none; border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--panel)">
+      <sc-if value="{{ noSel }}">
+        <div style="padding: 24px 20px; display: flex; flex-direction: column; gap: 12px; color: var(--muted); font: 400 13px/1.55 var(--font)">
+          <div style="font: 600 14px/1.3 var(--font); color: var(--ink)">Nothing selected</div>
+          <div>Select a step to configure it. Add steps from the palette, and connect them by dragging from one handle to another.</div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px; font-size: 12.5px"><span style="display: flex; gap: 8px; align-items: center"><span style="font: 500 10.5px/1 var(--mono); padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px">⌘S</span>Save a new version</span><span style="display: flex; gap: 8px; align-items: center"><span style="font: 500 10.5px/1 var(--mono); padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px">⌫</span>Delete selected step</span></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasSel }}">
+        <div style="padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: center">
+          <span style="width: 32px; height: 32px; flex: none; border-radius: 8px; background: {{ sel.tint }}; color: {{ sel.color }}; display: grid; place-items: center"><i class="icon-{{ sel.icon }}" style="font-size: 16px"></i></span>
+          <div style="flex: 1; min-width: 0"><div style="font: 600 14.5px/1.25 var(--font)">{{ sel.title }}</div><div style="font: 400 12px/1.3 var(--font); color: var(--muted)">{{ sel.desc }}</div></div>
+          <button onClick="{{ deselect }}" style="width: 28px; height: 28px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer" style-hover="background: var(--hover)"><i class="icon-x" style="font-size: 15px"></i></button>
+        </div>
+        <div style="flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 12.5px/1 var(--font)">Step name</span><input value="{{ sel.title }}" readOnly="{{ readOnly }}" style="height: 32px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13px; outline: none; color: var(--ink); background: {{ fieldBg }}"></label>
+          <sc-if value="{{ selTag }}">
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 12.5px/1 var(--font)">Resource</span>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); padding: 3px; background: var(--sunken); border: 1px solid var(--line); border-radius: calc(var(--r) + 2px); gap: 2px">
+                <span style="height: 26px; display: grid; place-items: center; border-radius: var(--r); background: #fff; box-shadow: 0 0 0 1px var(--line); font: 500 12px/1 var(--font)">Order</span><span style="height: 26px; display: grid; place-items: center; font: 500 12px/1 var(--font); color: var(--muted)">Customer</span><span style="height: 26px; display: grid; place-items: center; font: 500 12px/1 var(--font); color: var(--muted)">Product</span><span style="height: 26px; display: grid; place-items: center; font: 500 12px/1 var(--font); color: var(--muted)">Draft</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 12.5px/1 var(--font)">Order ID</span>
+              <div style="display: flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line2); border-radius: var(--r); background: {{ fieldBg }}"><span style="font: 500 12px/1 var(--mono); padding: 4px 6px; border-radius: 4px; background: var(--acc-soft); color: var(--acc-ink)">{{ tplOrder }}</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 12.5px/1 var(--font)">Tags <span style="color: #9b231c">*</span></span>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 34px; padding: 4px 8px; border: 1px solid {{ tagBd }}; box-shadow: {{ tagSh }}; border-radius: var(--r); background: {{ fieldBg }}">
+                <sc-for list="{{ tags }}" as="tg"><span style="display: inline-flex; gap: 5px; align-items: center; font: 500 12px/1 var(--font); padding: 4px 6px; border-radius: 4px; background: var(--sunken); border: 1px solid var(--line)">{{ tg }}<i class="icon-x" style="font-size: 10px; color: var(--muted)"></i></span></sc-for>
+                <input onKeyDown="{{ tagKey }}" readOnly="{{ readOnly }}" placeholder="{{ tagPh }}" style="flex: 1; min-width: 90px; border: 0; outline: none; font-size: 13px; background: transparent; color: var(--ink)">
+              </div>
+              <sc-if value="{{ tagMissing }}"><span style="font: 400 12px/1.4 var(--font); color: #9b231c">At least one tag is required. Press Enter to add.</span></sc-if>
+              <span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Tags already on the order are left unchanged.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ selIf }}">
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 12.5px/1 var(--font)">Condition</span>
+              <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunken)">
+                <div style="display: flex; align-items: center; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line2); border-radius: var(--r); background: #fff"><span style="font: 500 12px/1 var(--mono); padding: 4px 6px; border-radius: 4px; background: var(--acc-soft); color: var(--acc-ink)">{{ tplTotal }}</span></div>
+                <div style="display: flex; gap: 6px"><div style="flex: 1; display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 8px; border: 1px solid var(--line2); border-radius: var(--r); background: #fff; font-size: 13px">is greater than<i class="icon-chevron-down" style="font-size: 13px; color: var(--muted)"></i></div><input value="1000" style="width: 90px; height: 32px; padding: 0 8px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none"></div>
+              </div>
+              <span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Matching items go to <strong style="font-weight: 600; color: var(--ink2)">true</strong>, the rest to <strong style="font-weight: 600; color: var(--ink2)">false</strong>.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ selOther }}">
+            <div style="padding: 12px; border: 1px solid var(--line); border-radius: 8px; font: 400 12.5px/1.5 var(--font); color: var(--muted); background: var(--sunken)">{{ sel.help }}</div>
+          </sc-if>
+          <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line)">
+            <div style="display: flex; align-items: center; gap: 6px"><span style="font: 500 12.5px/1 var(--font); flex: 1">Fields from previous steps</span><span style="font: 400 11.5px/1 var(--font); color: var(--muted)">click to copy</span></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px">
+              <sc-for list="{{ fields }}" as="fd" hint-placeholder-count="6"><button onClick="{{ fd.copy }}" style="font: 500 11.5px/1 var(--mono); padding: 5px 7px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); cursor: pointer" style-hover="border-color: var(--acc); color: var(--acc-ink)">{{ fd.t }}</button></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ runDlg }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeRun }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.35); z-index: 70"></div>
+  <div style="position: fixed; top: 10vh; left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 32px)); z-index: 71; background: #fff; border-radius: 12px; box-shadow: 0 24px 60px -12px rgba(0,0,0,.3); overflow: hidden; animation: wzin .16s ease">
+    <div style="padding: 18px 22px; border-bottom: 1px solid var(--line)"><div style="font: 600 16px/1.3 var(--font)">Run “Tag high-value CSV orders”</div><div style="font: 400 13px/1.45 var(--font); color: var(--muted)">Version 7 · manual trigger</div></div>
+    <div style="padding: 18px 22px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 500 13px/1 var(--font)">Store</span>
+        <sc-for list="{{ runStores }}" as="rs" hint-placeholder-count="2">
+          <button onClick="{{ rs.pick }}" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid {{ rs.bd }}; box-shadow: {{ rs.sh }}; background: #fff; border-radius: 8px; cursor: pointer; text-align: left; color: var(--ink)">
+            <span style="width: 16px; height: 16px; border-radius: 50%; border: {{ rs.radio }}"></span>
+            <span style="flex: 1"><span style="display: block; font: 600 13px/1.3 var(--font)">{{ rs.name }}</span><span style="display: block; font: 400 12px/1.3 var(--mono); color: var(--muted)">{{ rs.domain }}</span></span>
+            <span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ rs.envBg }}; color: {{ rs.envFg }}">{{ rs.env }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 500 13px/1 var(--font)">CSV file <span style="font-weight: 400; color: var(--muted)">· trigger input</span></span>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px dashed var(--line2); border-radius: 8px; background: var(--sunken)"><span style="width: 32px; height: 32px; border-radius: 7px; background: oklch(0.95 0.035 230); color: oklch(0.5 0.14 230); display: grid; place-items: center"><i class="icon-file-spreadsheet" style="font-size: 16px"></i></span><span style="flex: 1"><span style="display: block; font: 500 13px/1.3 var(--font)">orders-oct14.csv</span><span style="display: block; font: 400 12px/1.3 var(--font); color: var(--muted)">240 rows · columns Order, Total, Email</span></span><button style="height: 28px; padding: 0 10px; border: 1px solid var(--line2); background: #fff; border-radius: var(--r); font: 500 12px/1 var(--font); cursor: pointer; color: var(--ink)">Replace</button></div>
+      </div>
+      <div style="display: flex; gap: 10px; padding: 12px 14px; border: 1px solid {{ riskBd }}; background: {{ riskBg }}; border-radius: 8px; color: {{ riskFg }}">
+        <i class="icon-{{ riskIcon }}" style="font-size: 16px; margin-top: 1px"></i>
+        <div style="font: 400 13px/1.5 var(--font)"><strong style="font-weight: 600">{{ riskTitle }}</strong> Add tags writes to orders on <span style="font-family: var(--mono)">{{ runStore.domain }}</span>. Up to 240 items may be changed.</div>
+      </div>
+    </div>
+    <div style="padding: 12px 22px; background: var(--sunken); border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px">
+      <button onClick="{{ closeRun }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: #fff; color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button>
+      <button onClick="{{ startRun }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid {{ runBtnBg }}; background: {{ runBtnBg }}; color: #fff; border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-play" style="font-size: 13px"></i>Run on {{ runStore.name }}</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRuns }}" hint-placeholder-val="{{ false }}">
+<div style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 18px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <button onClick="{{ goBuilder }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 0" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>Tag high-value CSV orders</button>
+    <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Runs</h1>
+  </header>
+  <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+    <div style="min-width: 900px">
+      <div style="display: grid; grid-template-columns: 70px 150px minmax(170px, 1fr) 150px 120px 90px minmax(200px, 1.2fr); gap: 16px; padding: 0 16px; height: 38px; align-items: center; background: var(--sunken); border-bottom: 1px solid var(--line); font: 500 12px/1 var(--font); color: var(--muted)"><span>Run</span><span>Status</span><span>Store</span><span>Started</span><span>Started by</span><span>Duration</span><span>Items</span></div>
+      <sc-for list="{{ runs }}" as="r" hint-placeholder-count="5">
+        <div onClick="{{ goTrace }}" style="display: grid; grid-template-columns: 70px 150px minmax(170px, 1fr) 150px 120px 90px minmax(200px, 1.2fr); gap: 16px; padding: 0 16px; height: 54px; align-items: center; border-bottom: 1px solid var(--line); cursor: pointer; font: 400 13px/1.3 var(--font)" style-hover="background: var(--hover)">
+          <span style="font: 500 12.5px/1 var(--mono); color: var(--ink2)">#{{ r.id }}</span>
+          <span style="justify-self: start; display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ r.b.bg }}; color: {{ r.b.fg }}; font: 500 12px/1 var(--font); white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ r.b.dot }}; animation: {{ r.b.anim }}"></span>{{ r.status }}</span>
+          <span style="display: flex; align-items: center; gap: 7px">{{ r.store }}<span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ r.envBg }}; color: {{ r.envFg }}">{{ r.env }}</span></span>
+          <span style="color: var(--muted)">{{ r.started }}</span><span>{{ r.by }}</span><span style="font-family: var(--mono); font-size: 12.5px">{{ r.dur }}</span>
+          <div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; display: flex; height: 6px; border-radius: 99px; overflow: hidden; background: var(--line)"><div style="width: {{ r.okW }}; background: #2f9e5c"></div><div style="width: {{ r.badW }}; background: #d1453b"></div><div style="width: {{ r.unkW }}; background: #e8590c"></div></div><span style="font: 500 12px/1 var(--mono); color: var(--muted); white-space: nowrap">{{ r.items }}</span></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTrace }}" hint-placeholder-val="{{ false }}">
+<div style="height: calc(100vh - 18px); min-height: 640px; display: flex; flex-direction: column">
+  <div style="padding: 16px 20px 14px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+      <button onClick="{{ goRuns }}" style="display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 0" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>Runs</button>
+      <span style="color: var(--line2)">/</span>
+      <h1 style="margin: 0; font: 600 19px/1.2 var(--font); letter-spacing: -0.015em">Run #128</h1>
+      <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: #fbf1db; color: #7a5410; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: #d39a1c"></span>Partially failed</span>
+      <div style="flex: 1"></div>
+      <div style="display: inline-flex; padding: 3px; background: var(--sunken); border: 1px solid var(--line); border-radius: calc(var(--r) + 2px); gap: 2px">
+        <sc-for list="{{ views }}" as="vw" hint-placeholder-count="2"><button onClick="{{ vw.pick }}" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 0; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer; background: {{ vw.bg }}; color: {{ vw.fg }}; box-shadow: {{ vw.sh }}"><i class="icon-{{ vw.icon }}" style="font-size: 14px"></i>{{ vw.label }}</button></sc-for>
+      </div>
+      <button onClick="{{ goBuilder }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer">Open flow</button>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font: 400 12.5px/1.4 var(--font); color: var(--muted); align-items: center">
+      <span style="color: var(--ink2); font-weight: 500">Tag high-value CSV orders · v7</span>
+      <span style="display: inline-flex; gap: 6px; align-items: center">on <strong style="font-weight: 600; color: var(--ink)">Evisu HK</strong><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: #fbeceb; color: #9b231c">PROD</span></span>
+      <span>Started by Anh Nguyen · Oct 14, 9:25 AM</span><span>Duration <span style="font-family: var(--mono); color: var(--ink2)">2m 14s</span></span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px">
+      <sc-for list="{{ summary }}" as="sm" hint-placeholder-count="4">
+        <button onClick="{{ sm.pick }}" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid {{ sm.bd }}; background: {{ sm.bg }}; border-radius: 8px; cursor: pointer; text-align: left; color: {{ sm.fg }}">
+          <i class="icon-{{ sm.icon }}" style="font-size: 17px"></i>
+          <span style="flex: 1"><span style="display: block; font: 600 19px/1.1 var(--font); letter-spacing: -0.01em">{{ sm.n }}</span><span style="display: block; font: 500 12px/1.3 var(--font); opacity: .85">{{ sm.label }}</span></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 38%)">
+    <div style="min-width: 0; min-height: 0; overflow: auto; border-right: 1px solid var(--line)">
+      <sc-if value="{{ vTimeline }}">
+        <div style="padding: 18px 22px 30px; display: flex; flex-direction: column">
+          <sc-for list="{{ tsteps }}" as="ts" hint-placeholder-count="5">
+            <div style="display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 14px">
+              <div style="display: flex; flex-direction: column; align-items: center">
+                <span style="width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; background: {{ ts.dotBg }}; color: {{ ts.dotFg }}; border: 2px solid #fff; box-shadow: 0 0 0 1px {{ ts.dotRing }}"><i class="icon-{{ ts.dotIcon }}" style="font-size: 13px"></i></span>
+                <span style="flex: 1; width: 2px; background: var(--line); min-height: 14px; display: {{ ts.line }}"></span>
+              </div>
+              <button onClick="{{ ts.pick }}" style="margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid {{ ts.bd }}; box-shadow: {{ ts.sh }}; background: #fff; border-radius: 10px; cursor: pointer; text-align: left; color: var(--ink)">
+                <div style="display: flex; align-items: center; gap: 10px; width: 100%">
+                  <span style="width: 26px; height: 26px; flex: none; border-radius: 7px; background: {{ ts.tint }}; color: {{ ts.color }}; display: grid; place-items: center"><i class="icon-{{ ts.icon }}" style="font-size: 13px"></i></span>
+                  <span style="flex: 1; min-width: 0"><span style="display: block; font: 600 13.5px/1.25 var(--font)">{{ ts.name }}</span><span style="display: block; font: 400 12px/1.35 var(--font); color: var(--muted)">{{ ts.note }}</span></span>
+                  <span style="font: 500 12px/1 var(--mono); color: var(--muted)">{{ ts.dur }}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%">
+                  <span style="font: 500 11.5px/1 var(--mono); color: var(--muted); margin-right: 4px">{{ ts.inText }}</span>
+                  <sc-for list="{{ ts.chips }}" as="ch"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ ch.bg }}; color: {{ ch.fg }}; font: 600 11.5px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ ch.dot }}"></span>{{ ch.t }}</span></sc-for>
+                </div>
+                <div style="display: flex; height: 5px; width: 100%; border-radius: 99px; overflow: hidden; background: var(--line)"><sc-for list="{{ ts.bar }}" as="bw"><div style="width: {{ bw.w }}; background: {{ bw.c }}"></div></sc-for></div>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ vCanvas }}">
+        <div style="position: relative; width: 1380px; height: 520px; background-color: var(--sunken); background-image: radial-gradient(circle, var(--line2) 1px, transparent 1.2px); background-size: 18px 18px; min-height: 100%">
+          {{ traceSvg }}
+          <sc-for list="{{ traceLabels }}" as="el" hint-placeholder-count="0">
+            <span style="position: absolute; left: {{ el.x }}px; top: {{ el.y }}px; transform: translate(-50%, -50%); font: 600 11px/1 var(--mono); padding: 4px 7px; border-radius: 99px; background: #fff; border: 1px solid {{ el.bd }}; color: {{ el.c }}; white-space: nowrap">{{ el.t }}</span>
+          </sc-for>
+          <sc-for list="{{ traceNodes }}" as="n" hint-placeholder-count="5">
+            <div onClick="{{ n.pick }}" style="position: absolute; left: {{ n.x }}px; top: {{ n.y }}px; width: 216px; background: #fff; border: 1px solid {{ n.bd }}; box-shadow: {{ n.sh }}; border-radius: 10px; cursor: pointer">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px"><span style="width: 30px; height: 30px; flex: none; border-radius: 8px; background: {{ n.tint }}; color: {{ n.color }}; display: grid; place-items: center"><i class="icon-{{ n.icon }}" style="font-size: 15px"></i></span><div style="min-width: 0; flex: 1"><div style="font: 600 9.5px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: {{ n.color }}; margin-bottom: 4px">{{ n.cat }}</div><div style="font: 600 13.5px/1.2 var(--font)">{{ n.title }}</div></div><i class="icon-{{ n.stIcon }}" style="font-size: 16px; color: {{ n.stColor }}"></i></div>
+              <div style="display: flex; gap: 4px; padding: 7px 10px; border-top: 1px solid var(--line); flex-wrap: wrap">
+                <sc-for list="{{ n.chips }}" as="ch"><span style="display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 99px; background: {{ ch.bg }}; color: {{ ch.fg }}; font: 600 11px/1 var(--font)">{{ ch.t }}</span></sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; flex-direction: column; min-height: 0">
+      <div style="padding: 12px 14px 10px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px"><span style="font: 600 13.5px/1 var(--font); flex: 1">Items</span><span style="font: 400 12px/1 var(--font); color: var(--muted)">{{ itemScope }}</span></div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap">
+          <sc-for list="{{ itemFilters }}" as="itf" hint-placeholder-count="4"><button onClick="{{ itf.pick }}" style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border: 1px solid {{ itf.bd }}; background: {{ itf.bg }}; color: {{ itf.fg }}; border-radius: 99px; font: 500 12px/1 var(--font); cursor: pointer">{{ itf.label }}<span style="font: 500 11px/1 var(--mono); opacity: .75">{{ itf.n }}</span></button></sc-for>
+        </div>
+      </div>
+      <div style="flex: 0 1 auto; max-height: 40%; overflow: auto; border-bottom: 1px solid var(--line)">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="6">
+          <button onClick="{{ it.pick }}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--line); background: {{ it.bg }}; cursor: pointer; text-align: left; color: var(--ink)" style-hover="background: var(--hover)">
+            <span style="font: 500 11.5px/1 var(--mono); color: var(--faint); width: 34px">{{ it.row }}</span>
+            <span style="font: 500 13px/1.2 var(--mono); flex: 1">{{ it.order }}</span>
+            <span style="font: 400 12px/1.2 var(--font); color: var(--muted)">{{ it.step }}</span>
+            <span style="display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 99px; background: {{ it.b.bg }}; color: {{ it.b.fg }}; font: 600 11px/1 var(--font)">{{ it.status }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px"><span style="font: 600 14px/1 var(--mono)">{{ cur.order }}</span><span style="font: 400 12px/1 var(--font); color: var(--muted)">row {{ cur.row }}</span><div style="flex: 1"></div><span style="display: inline-flex; align-items: center; gap: 6px; font: 500 12.5px/1 var(--font); color: var(--acc-ink)">Open in Shopify<i class="icon-external-link" style="font-size: 13px"></i></span></div>
+        <sc-if value="{{ cur.isUnknown }}">
+          <div style="display: flex; gap: 10px; padding: 12px; border-radius: 8px; background: #fff4ec; border: 1px solid #f6c7a7; color: #8a3507">
+            <i class="icon-circle-help" style="font-size: 16px; margin-top: 1px"></i>
+            <div style="font: 400 12.5px/1.5 var(--font)"><strong style="font-weight: 600">Needs a human check.</strong> {{ cur.error }} Look at this order in Shopify before running it again — re-running may tag it twice.</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ cur.isFailed }}">
+          <div style="display: flex; gap: 10px; padding: 12px; border-radius: 8px; background: #fdf3f2; border: 1px solid #f0c9c5; color: #7d1d17"><i class="icon-circle-x" style="font-size: 16px; margin-top: 1px"></i><div style="font: 400 12.5px/1.5 var(--font)"><strong style="font-weight: 600">{{ cur.step }} failed.</strong> {{ cur.error }}</div></div>
+        </sc-if>
+        <div style="display: flex; gap: 2px; border-bottom: 1px solid var(--line)">
+          <sc-for list="{{ ioTabs }}" as="io"><button onClick="{{ io.pick }}" style="height: 30px; padding: 0 10px; border: 0; border-bottom: 2px solid {{ io.bd }}; background: transparent; color: {{ io.fg }}; font: 500 12.5px/1 var(--font); cursor: pointer; margin-bottom: -1px">{{ io.label }}</button></sc-for>
+        </div>
+        <pre style="margin: 0; padding: 12px; border-radius: 8px; background: var(--sunken); border: 1px solid var(--line); font: 400 12px/1.6 var(--mono); color: var(--ink2); white-space: pre-wrap; overflow: auto">{{ ioText }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ST = { ok: ['#e8f4ec', '#1f6b3f', '#2f9e5c'], warn: ['#fbf1db', '#7a5410', '#d39a1c'], bad: ['#fbeceb', '#9b231c', '#d1453b'], info: ['#e9f0fb', '#1f4f99', '#3b7be0'], idle: ['#f0f0ed', '#55554f', '#a3a39c'], unk: ['#e8590c', '#ffffff', '#ffffff'] };
+const KIND = { Succeeded: 'ok', Running: 'info', Queued: 'idle', 'Partially failed': 'warn', Failed: 'bad', Canceled: 'idle', Unknown: 'unk', 'In progress': 'info', Pending: 'idle', Skipped: 'idle', Never: 'idle' };
+const badge = (l) => { const [bg, fg, dot] = ST[KIND[l] || 'idle']; return { bg, fg, dot, anim: l === 'Running' ? 'wzpulse 1.4s ease infinite' : 'none' }; };
+const CAT = { trigger: [300, 'Trigger'], data: [230, 'Data'], logic: [75, 'Logic'], action: [160, 'Action'] };
+const col = (c) => `oklch(0.5 0.14 ${CAT[c][0]})`, tin = (c) => `oklch(0.95 0.035 ${CAT[c][0]})`;
+const ENV = { PROD: ['#fbeceb', '#9b231c'], STAGING: ['#e9f0fb', '#1f4f99'] };
+const NODE_DEFS = {
+  trigger: { cat: 'trigger', icon: 'play', title: 'Manual trigger', desc: 'Starts when someone runs it', foot: 'Input: CSV file', help: 'Asks the person running the flow for a CSV file. Configure inputs on the Run dialog.' },
+  csv: { cat: 'data', icon: 'file-spreadsheet', title: 'Parse CSV', desc: 'One item per row', foot: 'Header row · comma', help: 'Reads the uploaded file and emits one item per row. Column names become $json fields.' },
+  find: { cat: 'action', icon: 'package-search', title: 'Find order', desc: 'Looks up an order by name', foot: 'name = {{ $json.Order }}', help: 'Looks the order up in the store and adds it to the item as `order`. Items with no match fail.' },
+  if: { cat: 'logic', icon: 'split', title: 'If', desc: 'Routes items to true or false', foot: 'order.totalPrice > 1000' },
+  tag: { cat: 'action', icon: 'tag', title: 'Add tags', desc: 'Adds tags to a Shopify resource', foot: 'Tags required' }
+};
+const W = 216;
+const outY = (id) => id === 'if' ? [{ y: 22, ly: 18, label: 'true' }, { y: 52, ly: 48, label: 'false' }] : [{ y: 36 }];
+const EDGES = [['trigger', 0, 'csv'], ['csv', 0, 'find'], ['find', 0, 'if'], ['if', 0, 'tag']];
+const path = (x1, y1, x2, y2) => { const dx = Math.max(50, (x2 - x1) / 2); return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`; };
+const ITEMS = [
+  [1, '#1873', 'Add tags', 'Succeeded'], [2, '#1874', 'If → false', 'Succeeded'], [17, '#1889', 'Find order', 'Failed', 'No order matches name:#18B9 — check the CSV value.'],
+  [23, '#1895', 'Add tags', 'Unknown', 'The tagsAdd request timed out after 30s; Shopify may have applied the tags.'], [31, '#1903', 'Add tags', 'Failed', 'Throttled (429) after 3 retries.'],
+  [32, '#1904', 'Add tags', 'Unknown', 'Connection reset after the request was sent; Shopify may have applied the tags.'], [40, '#1912', 'Add tags', 'Succeeded'],
+  [58, '#1930', 'Find order', 'Failed', 'No order matches name:#193O.'], [61, '#1933', 'Add tags', 'Unknown', 'The tagsAdd request timed out after 30s; Shopify may have applied the tags.'],
+  [77, '#1949', 'Add tags', 'Failed', 'Order is archived and can’t be edited.'], [90, '#1962', 'If → false', 'Succeeded'], [104, '#1976', 'Add tags', 'Succeeded']
+];
+
+class Component extends DCLogic {
+  state = {
+    pos: { trigger: { x: 40, y: 200 }, csv: { x: 310, y: 200 }, find: { x: 580, y: 200 }, if: { x: 850, y: 200 }, tag: { x: 1120, y: 110 } },
+    sel: 'tag', tags: [], dirty: true, validate: false, versions: false, zoom: 1, palQ: '', run: false, runStore: 0,
+    view: 'timeline', step: null, filter: 'all', item: 23, io: 'error', newName: '', arch: false
+  };
+  componentDidMount() {
+    this.mv = (e) => { const d = this.drag; if (!d) return; const dx = (e.clientX - d.sx) / this.state.zoom, dy = (e.clientY - d.sy) / this.state.zoom; if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true; if (d.moved) this.setState(s => ({ pos: { ...s.pos, [d.id]: { x: Math.max(0, d.ox + dx), y: Math.max(0, d.oy + dy) } }, dirty: true })); };
+    this.up = () => { const d = this.drag; if (d && !d.moved) this.setState({ sel: d.id }); this.drag = null; };
+    this.key = (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 's' && this.props.route === 'flow') { e.preventDefault(); this.save(); } };
+    window.addEventListener('pointermove', this.mv); window.addEventListener('pointerup', this.up); window.addEventListener('keydown', this.key);
+  }
+  componentWillUnmount() { window.removeEventListener('pointermove', this.mv); window.removeEventListener('pointerup', this.up); window.removeEventListener('keydown', this.key); }
+  save = () => { if (!this.state.dirty) return; this.setState({ dirty: false }); (this.props.toast || (() => {}))('Saved as version 8', this.state.tags.length ? 'Flow is valid.' : 'Saved with 1 validation issue.', this.state.tags.length ? 'ok' : 'warn'); };
+
+  buildSvg(pos, edgeStyle) {
+    const h = React.createElement;
+    const paths = EDGES.map(([a, oi, b], i) => {
+      const pa = pos[a], pb = pos[b]; const x1 = pa.x + W, y1 = pa.y + outY(a)[oi].y + 5, x2 = pb.x, y2 = pb.y + 41;
+      const st = edgeStyle(i);
+      return h('path', { key: i, d: path(x1, y1, x2, y2), fill: 'none', stroke: st.c, strokeWidth: st.w, strokeDasharray: st.dash || 'none', strokeLinecap: 'round' });
+    });
+    const pi = pos.if; const fx = pi.x + W, fy = pi.y + 57;
+    paths.push(h('path', { key: 'f', d: `M${fx},${fy} C${fx + 60},${fy} ${fx + 60},${fy + 70} ${fx + 120},${fy + 70}`, fill: 'none', stroke: edgeStyle('f').c, strokeWidth: 1.5, strokeDasharray: '4 4' }));
+    return h('svg', { width: 1400, height: 640, style: { position: 'absolute', left: 0, top: 0, pointerEvents: 'none', overflow: 'visible' } }, paths);
+  }
+
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {});
+    const route = this.props.route || 'flows', role = this.props.role || 'Owner', ds = this.props.dataState || 'live';
+    const s = this.state;
+    const canEdit = role === 'Owner', canRun = role !== 'Viewer', readOnly = !canEdit;
+    const isLoading = ds === 'loading', isEmpty = ds === 'empty', isError = ds === 'error';
+
+    // list
+    const FL = [
+      ['Tag high-value CSV orders', 'Manual · CSV', 'play', 5, 7, 'Active', 'Partially failed', 'Evisu HK · 9:25 AM', 'Today, 9:41 AM'],
+      ['Nightly untag stale drafts', 'Schedule · 02:00 HKT', 'calendar-clock', 4, 3, 'Active', 'Running', 'Evisu HK · started 2m ago', 'Oct 9'],
+      ['Sync risk assessments', 'Webhook · orders/create', 'webhook', 3, 12, 'Active', 'Succeeded', 'Evisu HK Staging · 8:02 AM', 'Oct 11'],
+      ['test', 'Manual', 'play', 2, 3, 'Draft', 'Succeeded', 'Evisu HK Staging · 9:25 AM', 'Today, 9:25 AM'],
+      ['Old fulfillment hold', 'Webhook · fulfillments/create', 'webhook', 3, 5, 'Archived', 'Never', 'Never run', 'Aug 2']
+    ];
+    const SB = { Active: ['#e8f4ec', '#1f6b3f', '#2f9e5c', 'transparent'], Draft: ['#ffffff', '#55554f', '#a3a39c', 'var(--line2)'], Archived: ['#f0f0ed', '#77776f', '#c4c4bd', 'transparent'] };
+    let flows = FL.filter(f => s.arch || f[5] !== 'Archived').map(f => ({ name: f[0], trigger: f[1], tIcon: f[2], steps: f[3], v: f[4], status: f[5], sb: { bg: SB[f[5]][0], fg: SB[f[5]][1], dot: SB[f[5]][2], bd: SB[f[5]][3] }, run: f[6] === 'Never' ? 'No runs' : f[6], rb: badge(f[6]), runMeta: f[7], updated: f[8], op: f[5] === 'Archived' ? 0.6 : 1, open: () => nav('flow'), runs: (e) => { e.stopPropagation(); nav('runs'); } }));
+    if (isLoading || isEmpty || isError) flows = [];
+
+    // builder
+    const pal = [
+      ['trigger', 'Triggers', [['Manual trigger', 'play', 'Starts when someone runs it, with the inputs they provide.'], ['Shopify webhook', 'webhook', 'Starts when the store sends a webhook; its payload is the item.'], ['Schedule', 'calendar-clock', 'Starts on a schedule. The item holds the scheduled time.']]],
+      ['data', 'Data', [['Parse CSV', 'file-spreadsheet', 'Reads an uploaded CSV and emits one item per row.'], ['Set fields', 'pencil-line', 'Adds, renames and removes fields on each item.']]],
+      ['logic', 'Logic', [['If', 'split', 'Sends each item down the true or false branch.'], ['Filter', 'filter', 'Keeps items that match and drops the rest.'], ['Switch', 'git-fork', 'Routes each item to the first case its value equals.']]],
+      ['action', 'Shopify actions', [['Find order', 'package-search', 'Looks an order up and adds it to the item as `order`.'], ['Add tags', 'tag', 'Adds tags to an order, customer, product or draft order.'], ['Remove tags', 'tag', 'Removes tags from a resource.'], ['GraphQL request', 'braces', 'Runs any Admin GraphQL query or mutation per item.']]]
+    ];
+    const pq = s.palQ.trim().toLowerCase();
+    const palette = pal.map(g => ({ label: g[1], color: col(g[0]), tint: tin(g[0]), items: g[2].filter(i => !pq || i[0].toLowerCase().includes(pq)).map(i => ({ name: i[0], icon: i[1], desc: i[2], add: () => toast(`${i[0]} added`, 'Drop it on the canvas and connect a handle.', 'info') })) })).filter(g => g.items.length);
+    const tagOk = s.tags.length > 0;
+    const nodes = Object.keys(NODE_DEFS).map(id => {
+      const d = NODE_DEFS[id]; const p = s.pos[id]; const sel = s.sel === id && route === 'flow';
+      const bad = id === 'tag' && !tagOk;
+      let foot = d.foot, footIcon = 'circle-check', footFg = 'var(--muted)', footBg = 'transparent';
+      if (id === 'tag') { if (bad) { foot = 'Tags required'; footIcon = 'triangle-alert'; footFg = '#7a5410'; footBg = '#fdf7e8'; } else { foot = s.tags.join(', '); } }
+      if (id === 'find') foot = 'name = {{ $json.Order }}';
+      return { id, x: p.x, y: p.y, title: d.title, cat: CAT[d.cat][1], icon: d.icon, color: col(d.cat), tint: tin(d.cat), foot, footIcon, footFg, footBg,
+        bd: sel ? 'var(--acc)' : (bad ? '#e8c77c' : 'var(--line2)'), sh: sel ? '0 0 0 3px var(--acc-soft), 0 6px 18px -6px rgba(0,0,0,.15)' : '0 1px 2px rgba(0,0,0,.05)', cursor: readOnly ? 'pointer' : 'grab',
+        hasIn: id !== 'trigger', outs: id === 'tag' ? [{ y: 36 }] : outY(id), handle: col(d.cat),
+        down: (e) => { if (readOnly) { this.setState({ sel: id }); return; } this.drag = { id, sx: e.clientX, sy: e.clientY, ox: p.x, oy: p.y, moved: false }; } };
+    });
+    const edgesSvg = this.buildSvg(s.pos, () => ({ c: '#b9b8b1', w: 1.5 }));
+    const sd = NODE_DEFS[s.sel] || null;
+    const sel = sd ? { title: sd.title, desc: sd.desc, icon: sd.icon, color: col(sd.cat), tint: tin(sd.cat), help: sd.help } : {};
+    const issues = tagOk ? [] : [{ node: 'Add tags', msg: 'Tags is required. Add at least one tag.', go: () => this.setState({ sel: 'tag' }) }];
+    const fields = ['{{ $json.Order }}', '{{ $json.Total }}', '{{ $json.Email }}', '{{ $json.order.id }}', '{{ $json.order.name }}', '{{ $json.order.totalPrice }}'].map(t => ({ t, copy: () => toast('Copied', t, 'ok') }));
+    const runStoreDefs = [['Evisu HK Staging', 'evisu-hk-staging.myshopify.com', 'STAGING'], ['Evisu HK', 'evisu-hk.myshopify.com', 'PROD']];
+    const runStores = runStoreDefs.map((r, i) => ({ name: r[0], domain: r[1], env: r[2], envBg: ENV[r[2]][0], envFg: ENV[r[2]][1], pick: () => this.setState({ runStore: i }), bd: s.runStore === i ? (r[2] === 'PROD' ? '#d98f87' : 'var(--acc)') : 'var(--line)', sh: s.runStore === i ? (r[2] === 'PROD' ? '0 0 0 3px #fbeceb' : '0 0 0 3px var(--acc-soft)') : 'none', radio: s.runStore === i ? '5px solid ' + (r[2] === 'PROD' ? '#a3211a' : 'var(--acc)') : '1.5px solid var(--line2)' }));
+    const rsProd = runStoreDefs[s.runStore][2] === 'PROD';
+    const versions = [[8, 'Unsaved changes', 'Moved steps · edited Add tags', 'draft'], [7, 'Anh Nguyen', 'Today, 9:20 AM', 'current'], [6, 'Minh Tran', 'Oct 12, 4:51 PM', ''], [5, 'Anh Nguyen', 'Oct 10, 11:02 AM', '']].map(v => ({ v: v[0], who: v[1], when: v[2], tag: v[3], bg: v[3] === 'current' ? 'var(--hover)' : 'transparent' }));
+
+    // runs
+    const runs = [
+      [128, 'Partially failed', 'Evisu HK', 'PROD', 'Today, 9:25 AM', 'Anh Nguyen', '2m 14s', [95, 3.75, 1.25], '240 · 9 ✗ · 3 ?'],
+      [127, 'Succeeded', 'Evisu HK Staging', 'STAGING', 'Today, 9:02 AM', 'Anh Nguyen', '1m 51s', [100, 0, 0], '240'],
+      [126, 'Failed', 'Evisu HK Staging', 'STAGING', 'Oct 13, 5:40 PM', 'Minh Tran', '3s', [0, 100, 0], '0 · CSV invalid'],
+      [125, 'Canceled', 'Evisu HK', 'PROD', 'Oct 12, 2:15 PM', 'Minh Tran', '41s', [60, 0, 0], '88 / 150'],
+      [124, 'Succeeded', 'Evisu HK', 'PROD', 'Oct 10, 11:30 AM', 'Anh Nguyen', '58s', [100, 0, 0], '96']
+    ].map(r => ({ id: r[0], status: r[1], b: badge(r[1]), store: r[2], env: r[3], envBg: ENV[r[3]][0], envFg: ENV[r[3]][1], started: r[4], by: r[5], dur: r[6], okW: r[7][0] + '%', badW: r[7][1] + '%', unkW: r[7][2] + '%', items: r[8] }));
+
+    // trace
+    const chip = (t, k) => { const [bg, fg, dot] = ST[k]; return { t, bg, fg, dot }; };
+    const TS = [
+      ['trigger', 'Manual trigger', 'orders-oct14.csv uploaded by Anh', '0.1s', '1 in', [chip('1 succeeded', 'ok')], [[100, '#2f9e5c']], 'ok'],
+      ['csv', 'Parse CSV', '1 file → 240 items', '0.4s', '1 in → 240 out', [chip('240 succeeded', 'ok')], [[100, '#2f9e5c']], 'ok'],
+      ['find', 'Find order', 'name = {{ $json.Order }}', '38.2s', '240 in', [chip('236 succeeded', 'ok'), chip('4 failed', 'bad')], [[98.3, '#2f9e5c'], [1.7, '#d1453b']], 'warn'],
+      ['if', 'If · order.totalPrice > 1000', 'Routes by order total', '0.2s', '236 in', [chip('61 → true', 'info'), chip('175 → false', 'idle')], [[25.8, '#3b7be0'], [74.2, '#c4c4bd']], 'ok'],
+      ['tag', 'Add tags · vip, high-value', 'Writes to orders on evisu-hk', '1m 35s', '61 in', [chip('53 succeeded', 'ok'), chip('5 failed', 'bad'), chip('3 unknown', 'unk')], [[86.9, '#2f9e5c'], [8.2, '#d1453b'], [4.9, '#e8590c']], 'unk']
+    ];
+    const tsteps = TS.map((t, i) => {
+      const a = s.step === t[0];
+      const dot = { ok: ['#2f9e5c', '#fff', '#2f9e5c', 'check'], warn: ['#d1453b', '#fff', '#d1453b', 'x'], unk: ['#e8590c', '#fff', '#e8590c', 'circle-help'] }[t[7]];
+      return { name: t[1], note: t[2], dur: t[3], inText: t[4], chips: t[5], bar: t[6].map(b => ({ w: b[0] + '%', c: b[1] })), icon: NODE_DEFS[t[0]].icon, color: col(NODE_DEFS[t[0]].cat), tint: tin(NODE_DEFS[t[0]].cat),
+        dotBg: dot[0], dotFg: dot[1], dotRing: dot[2], dotIcon: dot[3], line: i < TS.length - 1 ? 'block' : 'none',
+        bd: a ? 'var(--acc)' : (t[7] === 'unk' ? '#f6c7a7' : 'var(--line)'), sh: a ? '0 0 0 3px var(--acc-soft)' : 'none', pick: () => this.setState({ step: a ? null : t[0], filter: 'all' }) };
+    });
+    const trNodes = TS.map(t => {
+      const id = t[0]; const d = NODE_DEFS[id]; const p = s.pos[id]; const a = s.step === id;
+      const st = { ok: ['circle-check', '#2f9e5c'], warn: ['circle-x', '#d1453b'], unk: ['circle-help', '#e8590c'] }[t[7]];
+      return { x: p.x, y: p.y, title: d.title, cat: CAT[d.cat][1], icon: d.icon, color: col(d.cat), tint: tin(d.cat), stIcon: st[0], stColor: st[1], chips: t[5].map(c => ({ t: c.t.replace(' succeeded', ' ✓').replace(' failed', ' ✗').replace(' unknown', ' ?'), bg: c.bg, fg: c.fg })),
+        bd: a ? 'var(--acc)' : (t[7] === 'unk' ? '#e8590c' : t[7] === 'warn' ? '#e3a19b' : 'var(--line2)'), sh: a ? '0 0 0 3px var(--acc-soft)' : (t[7] === 'unk' ? '0 0 0 3px #ffe8d9' : '0 1px 2px rgba(0,0,0,.05)'), pick: () => this.setState({ step: a ? null : id }) };
+    });
+    const ecounts = ['1', '240', '236', '61 true'];
+    const traceSvg = this.buildSvg(s.pos, (i) => i === 'f' ? { c: '#b9b8b1' } : { c: i === 3 ? '#3b7be0' : '#7fbf98', w: 2 });
+    const traceLabels = EDGES.map(([a, oi, b], i) => { const pa = s.pos[a], pb = s.pos[b]; return { x: (pa.x + W + pb.x) / 2, y: (pa.y + outY(a)[oi].y + 5 + pb.y + 41) / 2, t: ecounts[i], c: i === 3 ? '#1f4f99' : '#1f6b3f', bd: i === 3 ? '#bcd0f0' : '#bfe0cb' }; });
+    traceLabels.push({ x: s.pos.if.x + W + 150, y: s.pos.if.y + 127, t: '175 false · end', c: '#55554f', bd: 'var(--line2)' });
+
+    const stepName = { find: 'Find order', tag: 'Add tags', if: 'If', csv: 'Parse CSV', trigger: 'Manual trigger' };
+    let its = ITEMS.map(i => ({ row: i[0], order: i[1], step: i[2], status: i[3], error: i[4] || '' }));
+    if (s.step) its = its.filter(i => i.step.startsWith(stepName[s.step]) || (s.step === 'if' && i.step.startsWith('If')));
+    const counts = { all: s.step ? its.length : 240, Failed: its.filter(i => i.status === 'Failed').length, Unknown: its.filter(i => i.status === 'Unknown').length, Succeeded: s.step ? its.filter(i => i.status === 'Succeeded').length : 228 };
+    if (!s.step) { counts.Failed = 9; counts.Unknown = 3; }
+    const fdefs = [['all', 'All', counts.all, null], ['Unknown', 'Unknown', counts.Unknown, 'unk'], ['Failed', 'Failed', counts.Failed, 'bad'], ['Succeeded', 'Succeeded', counts.Succeeded, 'ok']];
+    const itemFilters = fdefs.map(f => { const a = s.filter === f[0]; const st = f[3] ? ST[f[3]] : null; return { label: f[1], n: f[2], pick: () => this.setState({ filter: f[0] }), bg: a ? (st ? st[0] : 'var(--ink)') : 'var(--panel)', fg: a ? (st ? st[1] : '#fff') : 'var(--ink2)', bd: a ? (st ? st[2] : 'var(--ink)') : 'var(--line2)' }; });
+    if (s.filter !== 'all') its = its.filter(i => i.status === s.filter);
+    const items = its.map(i => ({ ...i, b: badge(i.status), bg: i.row === s.item ? 'var(--acc-soft)' : 'transparent', pick: () => this.setState({ item: i.row, io: i.error ? 'error' : 'output' }) }));
+    const c0 = ITEMS.find(i => i[0] === s.item) || ITEMS[0];
+    const cur = { row: c0[0], order: c0[1], step: c0[2], status: c0[3], error: c0[4] || '', isUnknown: c0[3] === 'Unknown', isFailed: c0[3] === 'Failed' };
+    const input = { Order: c0[1], Total: '1,240.00', Email: 'customer@example.com' };
+    const ioMap = {
+      input: JSON.stringify({ json: input }, null, 2),
+      output: cur.status === 'Succeeded' ? JSON.stringify({ json: { ...input, order: { id: 'gid://shopify/Order/61' + c0[0], name: c0[1], totalPrice: '1240.00' }, tagsAdded: ['vip', 'high-value'] } }, null, 2) : '// No output — the item did not complete this step.',
+      error: cur.error ? JSON.stringify({ step: cur.step, status: cur.status, message: cur.error, attempt: 3, requestId: '9b1e-44c2-a07f' }, null, 2) : '// No error.'
+    };
+    const ioTabs = [['input', 'Input'], ['output', 'Output'], ['error', 'Error']].map(t => ({ label: t[1], pick: () => this.setState({ io: t[0] }), bd: s.io === t[0] ? 'var(--ink)' : 'transparent', fg: s.io === t[0] ? 'var(--ink)' : 'var(--muted)' }));
+    const sumDefs = [['all', 240, 'items processed', 'layers', 'var(--line)', 'var(--panel)', 'var(--ink)'], ['Succeeded', 228, 'succeeded', 'circle-check', '#cfe7d7', '#f3faf5', '#1f6b3f'], ['Failed', 9, 'failed · see errors', 'circle-x', '#f0c9c5', '#fdf5f4', '#9b231c'], ['Unknown', 3, 'unknown · check in Shopify', 'circle-help', '#e8590c', '#e8590c', '#ffffff']];
+    const summary = sumDefs.map(d => ({ n: d[1], label: d[2], icon: d[3], bd: d[4], bg: d[5], fg: d[6], pick: () => this.setState({ filter: d[0], step: null }) }));
+    const views = [['timeline', 'Timeline', 'list-tree'], ['canvas', 'On canvas', 'workflow']].map(v => ({ label: v[1], icon: v[2], pick: () => this.setState({ view: v[0] }), bg: s.view === v[0] ? 'var(--panel)' : 'transparent', fg: s.view === v[0] ? 'var(--ink)' : 'var(--muted)', sh: s.view === v[0] ? '0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line)' : 'none' }));
+
+    return {
+      isList: route === 'flows', isBuilder: route === 'flow', isRuns: route === 'runs', isTrace: route === 'trace',
+      canEdit, canRun, readOnly, readOnlyText: role === 'Viewer' ? 'You can view flows and their runs, but not edit or run them.' : 'You can run flows, but only Owners and Admins can create or edit them.',
+      isLoading, isEmpty, isError, showTable: !isEmpty, flows, skel: [1, 2, 3, 4], showArchToggle: !isEmpty && !isLoading && !isError, archLabel: s.arch ? 'Hide archived' : 'Show archived (1)', toggleArch: () => this.setState({ arch: !s.arch }),
+      newName: s.newName, setNewName: (e) => this.setState({ newName: e.target.value }), createFlow: () => { nav('flow'); toast('Flow created', (s.newName || 'Untitled flow') + ' · Draft', 'ok'); this.setState({ newName: '' }); },
+      openBuilder: () => nav('flow'), goList: () => nav('flows'), goRuns: () => nav('runs'), goBuilder: () => nav('flow'), goTrace: () => nav('trace'),
+      saveDot: s.dirty ? '#d39a1c' : '#2f9e5c', saveText: s.dirty ? 'Unsaved changes · v7' : 'Saved · v8 · just now', saveFg: s.dirty ? 'var(--ink)' : 'var(--muted)', save: this.save,
+      showVersions: s.versions, toggleVersions: () => this.setState({ versions: !s.versions }), versions,
+      hasIssues: issues.length > 0, issueCount: issues.length, issues, showValidate: s.validate, toggleValidate: () => this.setState({ validate: !s.validate }), valBg: s.validate ? 'var(--hover)' : 'transparent', valLeft: canEdit ? '252px' : '16px',
+      valIcon: issues.length ? 'triangle-alert' : 'circle-check', valColor: issues.length ? '#d39a1c' : '#2f9e5c', valTitle: issues.length ? `${issues.length} issue to fix before activating` : 'No issues — ready to run',
+      palQ: s.palQ, setPalQ: (e) => this.setState({ palQ: e.target.value }), palette, nodes, edgesSvg, edgeLabels: [],
+      zoom: s.zoom, zoomIn: () => this.setState({ zoom: Math.min(1.5, s.zoom + 0.1) }), zoomOut: () => this.setState({ zoom: Math.max(0.5, s.zoom - 0.1) }), zoomFit: () => this.setState({ zoom: 0.85 }),
+      noSel: !sd, hasSel: !!sd, sel, deselect: () => this.setState({ sel: null }), selTag: s.sel === 'tag', selIf: s.sel === 'if', selOther: !!sd && s.sel !== 'tag' && s.sel !== 'if',
+      fieldBg: readOnly ? 'var(--sunken)' : '#fff', tplOrder: '{{ $json.order.id }}', tplTotal: '{{ $json.order.totalPrice }}',
+      tags: s.tags, tagMissing: !tagOk, tagBd: tagOk ? 'var(--line2)' : '#e8c77c', tagSh: tagOk ? 'none' : '0 0 0 3px #fdf3dc', tagPh: tagOk ? '' : 'vip, high-value…',
+      tagKey: (e) => { if (e.key === 'Enter' && e.target.value.trim()) { const v = e.target.value.trim(); e.target.value = ''; this.setState(st => ({ tags: [...st.tags, ...v.split(',').map(x => x.trim()).filter(Boolean)], dirty: true })); } },
+      fields,
+      runDlg: s.run && route === 'flow', openRun: () => this.setState({ run: true }), closeRun: () => this.setState({ run: false }), runStores, runStore: runStoreDefs[s.runStore] ? { name: runStoreDefs[s.runStore][0], domain: runStoreDefs[s.runStore][1] } : {},
+      riskBd: rsProd ? '#f0c9c5' : 'var(--line)', riskBg: rsProd ? '#fdf3f2' : 'var(--sunken)', riskFg: rsProd ? '#7d1d17' : 'var(--ink2)', riskIcon: rsProd ? 'triangle-alert' : 'info', riskTitle: rsProd ? 'Production store.' : 'Staging store.', runBtnBg: rsProd ? '#a3211a' : 'var(--primary)',
+      startRun: () => { this.setState({ run: false }); nav('trace'); toast('Run #129 started', `${runStoreDefs[s.runStore][0]} · 240 items queued`, 'run'); },
+      runs,
+      views, vTimeline: s.view === 'timeline', vCanvas: s.view === 'canvas', summary, tsteps, traceNodes: trNodes, traceSvg, traceLabels,
+      itemScope: s.step ? `in ${stepName[s.step]} · click step again to clear` : 'all steps', itemFilters, items, cur, ioTabs, ioText: ioMap[s.io]
+    };
+  }
+}
+</script>
+</body>
+</html>

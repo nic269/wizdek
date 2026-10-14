@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="min-height: 100%">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+<div style="padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 18px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px">
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Stores</h1>
+      <p style="margin: 6px 0 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Shopify stores connected to wizloft. Open a store for health, scopes and webhook settings.</p>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button onClick="{{ goApps }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-boxes" style="font-size: 15px"></i>Shopify apps<span style="font: 500 11px/1 var(--mono); color: var(--muted); padding: 2px 5px; background: var(--sunken); border-radius: 4px">2</span></button>
+      <sc-if value="{{ canManage }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ goNew }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Connect store</button>
+      </sc-if>
+    </div>
+  </header>
+
+  <sc-if value="{{ readOnly }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px; font: 400 13px/1.45 var(--font); color: var(--ink2)"><i class="icon-eye" style="font-size: 16px; color: var(--muted)"></i><span style="flex: 1">You can view stores but not change them. Ask an Owner for the <strong style="font-weight: 600">Manage Shopify stores</strong> permission to connect, reconnect or disconnect.</span></div>
+  </sc-if>
+  <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #f0c9c5; background: #fdf3f2; border-radius: 8px; color: #7d1d17">
+      <i class="icon-circle-alert" style="font-size: 17px; margin-top: 1px"></i>
+      <div style="flex: 1; font: 400 13.5px/1.5 var(--font)"><strong style="font-weight: 600">Couldn’t load stores.</strong> Request failed with 503 Service Unavailable. Your connections are unaffected.</div>
+      <button style="height: 28px; padding: 0 10px; border: 1px solid #e3b0aa; background: #fff; color: #7d1d17; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Retry</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showToolbar }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap">
+      <div style="position: relative; flex: 0 1 300px; min-width: 200px">
+        <i class="icon-search" style="position: absolute; left: 10px; top: 9px; font-size: 15px; color: var(--muted)"></i>
+        <input value="{{ q }}" onChange="{{ setQ }}" placeholder="Filter by name or domain" style="width: 100%; height: 34px; padding: 0 10px 0 32px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink); background: var(--panel)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)">
+      </div>
+      <div style="display: inline-flex; padding: 3px; background: var(--sunken); border: 1px solid var(--line); border-radius: calc(var(--r) + 2px); gap: 2px">
+        <sc-for list="{{ filters }}" as="f" hint-placeholder-count="3">
+          <button onClick="{{ f.pick }}" style="height: 26px; padding: 0 10px; border: 0; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer; background: {{ f.bg }}; color: {{ f.fg }}; box-shadow: {{ f.sh }}">{{ f.label }}<span style="margin-left: 6px; color: var(--muted); font-family: var(--mono); font-size: 11px">{{ f.count }}</span></button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+    <div style="border: 1px dashed var(--line2); border-radius: 10px; padding: 56px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+      <div style="width: 44px; height: 44px; border-radius: 11px; background: var(--sunken); border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted)"><i class="icon-store" style="font-size: 20px"></i></div>
+      <div style="font: 600 16px/1.3 var(--font)">No stores connected yet</div>
+      <div style="font: 400 13.5px/1.5 var(--font); color: var(--muted); max-width: 420px; text-wrap: pretty">Connect a store to run GraphQL against it, build flows and receive webhooks. It takes about a minute with an access token.</div>
+      <sc-if value="{{ canManage }}"><button onClick="{{ goNew }}" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Connect your first store</button></sc-if>
+      <sc-if value="{{ readOnly }}"><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Only Owners can connect stores.</div></sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showTable }}" hint-placeholder-val="{{ true }}">
+    <div style="border: 1px solid var(--line); border-radius: 10px; overflow: auto">
+      <div style="min-width: 900px">
+        <div style="display: grid; grid-template-columns: minmax(240px, 2.2fr) 130px 190px 90px 110px 110px; gap: 16px; padding: 0 16px; height: 38px; align-items: center; background: var(--sunken); border-bottom: 1px solid var(--line); font: 500 12px/1 var(--font); color: var(--muted)">
+          <span>Store</span><span>Connection</span><span>Status</span><span>Scopes</span><span>Webhooks</span><span style="text-align: right">Actions</span>
+        </div>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{ skel }}" as="k" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: minmax(240px, 2.2fr) 130px 190px 90px 110px 110px; gap: 16px; padding: 0 16px; height: 60px; align-items: center; border-bottom: 1px solid var(--line)">
+              <div style="display: flex; flex-direction: column; gap: 7px"><div style="height: 10px; width: 50%; border-radius: 4px; background: linear-gradient(90deg, #efefec 0, #f7f7f5 50%, #efefec 100%); background-size: 800px 100%; animation: wzshimmer 1.4s linear infinite"></div><div style="height: 9px; width: 70%; border-radius: 4px; background: #f4f4f1"></div></div>
+              <div style="height: 10px; width: 70%; border-radius: 4px; background: #f0f0ed"></div><div style="height: 20px; width: 90px; border-radius: 99px; background: #f0f0ed"></div><div style="height: 10px; width: 40px; border-radius: 4px; background: #f0f0ed"></div><div style="height: 10px; width: 50px; border-radius: 4px; background: #f0f0ed"></div><div></div>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-for list="{{ rows }}" as="s" hint-placeholder-count="5">
+          <div onClick="{{ s.open }}" style="display: grid; grid-template-columns: minmax(240px, 2.2fr) 130px 190px 90px 110px 110px; gap: 16px; padding: 0 16px; min-height: 62px; align-items: center; border-bottom: 1px solid var(--line); cursor: pointer; background: {{ s.rowBg }}" style-hover="background: var(--hover)">
+            <div style="display: flex; align-items: center; gap: 11px; min-width: 0">
+              <span style="width: 30px; height: 30px; flex: none; border-radius: 7px; background: {{ s.tint }}; color: {{ s.color }}; display: grid; place-items: center; font: 700 12px/1 var(--font)">{{ s.ini }}</span>
+              <div style="min-width: 0">
+                <div style="display: flex; align-items: center; gap: 7px"><span style="font: 600 13.5px/1.3 var(--font); white-space: nowrap">{{ s.name }}</span><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ s.envBg }}; color: {{ s.envFg }}">{{ s.env }}</span></div>
+                <div style="font: 400 12px/1.4 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ s.domain }}</div>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px; font: 400 13px/1.3 var(--font); color: var(--ink2)"><i class="icon-{{ s.mIcon }}" style="font-size: 14px; color: var(--muted)"></i>{{ s.method }}</div>
+            <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ s.b.bg }}; color: {{ s.b.fg }}; font: 500 12px/1 var(--font); white-space: nowrap"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ s.b.dot }}"></span>{{ s.status }}</span>
+              <span style="font: 400 11.5px/1 var(--font); color: var(--muted)">{{ s.checked }}</span>
+            </div>
+            <div style="font: 500 13px/1 var(--mono); color: var(--ink2)">{{ s.scopes }}</div>
+            <div style="display: flex; align-items: center; gap: 6px; font: 400 12.5px/1 var(--font); color: {{ s.whColor }}"><i class="icon-{{ s.whIcon }}" style="font-size: 14px"></i>{{ s.wh }}</div>
+            <div style="display: flex; justify-content: flex-end; gap: 4px">
+              <button onClick="{{ s.check }}" title="Check health" style="width: 30px; height: 30px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink2); border-radius: var(--r); cursor: pointer; display: grid; place-items: center" style-hover="background: var(--hover)"><i class="icon-{{ s.checkIcon }}" style="font-size: 14px; animation: {{ s.checkAnim }}"></i></button>
+              <sc-if value="{{ s.needsReconnect }}"><button onClick="{{ s.open }}" style="height: 30px; padding: 0 10px; border: 1px solid #ecd8a8; background: #fbf1db; color: #7a5410; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Reconnect</button></sc-if>
+              <sc-if value="{{ s.notReconnect }}"><button onClick="{{ s.open }}" title="Open" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r); cursor: pointer; display: grid; place-items: center" style-hover="background: var(--hover); color: var(--ink)"><i class="icon-chevron-right" style="font-size: 16px"></i></button></sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noMatch }}"><div style="padding: 32px; text-align: center; color: var(--muted); font-size: 13.5px">No stores match this filter.</div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeDrawer }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.28); z-index: 50"></div>
+  <aside style="position: fixed; top: 8px; right: 8px; bottom: 8px; width: min(500px, calc(100vw - 16px)); z-index: 51; background: var(--panel); border: 1px solid var(--line); border-radius: var(--rp); box-shadow: 0 24px 60px -16px rgba(0,0,0,.3); display: flex; flex-direction: column; animation: wzslide .2s ease; overflow: hidden">
+    <div style="padding: 18px 20px 16px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start">
+      <span style="width: 38px; height: 38px; flex: none; border-radius: 9px; background: {{ d.tint }}; color: {{ d.color }}; display: grid; place-items: center; font: 700 14px/1 var(--font)">{{ d.ini }}</span>
+      <div style="flex: 1; min-width: 0">
+        <div style="display: flex; align-items: center; gap: 8px"><span style="font: 600 17px/1.25 var(--font); letter-spacing: -0.01em">{{ d.name }}</span><span style="font: 600 9.5px/1 var(--mono); letter-spacing: .06em; padding: 3px 5px; border-radius: 3px; background: {{ d.envBg }}; color: {{ d.envFg }}">{{ d.env }}</span></div>
+        <div style="display: flex; align-items: center; gap: 6px; font: 400 12.5px/1.4 var(--mono); color: var(--muted)">{{ d.domain }}<button onClick="{{ copyDomain }}" title="Copy" style="border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px"><i class="icon-copy" style="font-size: 13px"></i></button><i class="icon-external-link" style="font-size: 13px"></i></div>
+      </div>
+      <button onClick="{{ closeDrawer }}" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer" style-hover="background: var(--hover)"><i class="icon-x" style="font-size: 17px"></i></button>
+    </div>
+    <div style="flex: 1; overflow: auto; padding: 18px 20px 24px; display: flex; flex-direction: column; gap: 22px">
+      <sc-if value="{{ d.needsReconnect }}">
+        <div style="display: flex; gap: 10px; padding: 12px 14px; border: 1px solid #ecd8a8; background: #fdf7e8; border-radius: 8px; color: #6a490c">
+          <i class="icon-key-round" style="font-size: 16px; margin-top: 2px"></i>
+          <div style="flex: 1; font: 400 13px/1.5 var(--font)"><strong style="font-weight: 600">Reconnect required.</strong> The offline token expired on Oct 12. 1 active flow targets this store and will fail until it’s reconnected.
+            <sc-if value="{{ canManage }}"><div style="margin-top: 10px"><button onClick="{{ reconnect }}" style="height: 30px; padding: 0 12px; border: 1px solid #6a490c; background: #6a490c; color: #fff; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer">Reconnect via OAuth</button></div></sc-if>
+          </div>
+        </div>
+      </sc-if>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none">
+        <div style="background: var(--panel); padding: 12px 14px"><div style="font: 400 12px/1 var(--font); color: var(--muted); margin-bottom: 8px">Status</div><span style="display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 99px; background: {{ d.b.bg }}; color: {{ d.b.fg }}; font: 500 12px/1 var(--font)"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ d.b.dot }}"></span>{{ d.status }}</span></div>
+        <div style="background: var(--panel); padding: 12px 14px"><div style="font: 400 12px/1 var(--font); color: var(--muted); margin-bottom: 8px">Last health check</div><div style="font: 500 13px/1.3 var(--font)">{{ d.checkedLong }}</div></div>
+        <div style="background: var(--panel); padding: 12px 14px"><div style="font: 400 12px/1 var(--font); color: var(--muted); margin-bottom: 8px">Connection</div><div style="font: 500 13px/1.3 var(--font); display: flex; gap: 6px; align-items: center"><i class="icon-{{ d.mIcon }}" style="font-size: 14px; color: var(--muted)"></i>{{ d.method }}</div></div>
+        <div style="background: var(--panel); padding: 12px 14px"><div style="font: 400 12px/1 var(--font); color: var(--muted); margin-bottom: 8px">API version</div><div style="font: 500 13px/1.3 var(--mono)">2026-07</div></div>
+      </div>
+      <button onClick="{{ checkDrawer }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)"><i class="icon-activity" style="font-size: 14px"></i>Check health now</button>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: baseline; gap: 8px"><div style="font: 600 14px/1.2 var(--font); flex: 1">Access scopes</div><span style="font: 500 12px/1 var(--mono); color: var(--muted)">{{ d.scopes }} granted</span></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 5px">
+          <sc-for list="{{ scopeList }}" as="sc" hint-placeholder-count="12"><span style="font: 500 11.5px/1 var(--mono); padding: 5px 7px; border-radius: 4px; background: {{ sc.bg }}; color: {{ sc.fg }}; border: 1px solid {{ sc.bd }}">{{ sc.n }}</span></sc-for>
+          <button onClick="{{ toggleScopes }}" style="font: 500 11.5px/1 var(--font); padding: 5px 8px; border-radius: 4px; border: 1px dashed var(--line2); background: transparent; color: var(--acc-ink); cursor: pointer">{{ scopeToggleLabel }}</button>
+        </div>
+        <div style="font: 400 12px/1.4 var(--font); color: var(--muted)">Write scopes are highlighted. Scopes are set by the app or custom-app token and can’t be changed here.</div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 8px"><div style="font: 600 14px/1.2 var(--font); flex: 1">Webhook secret</div><span style="display: inline-flex; align-items: center; gap: 5px; font: 500 12px/1 var(--font); color: {{ d.whColor }}"><i class="icon-{{ d.whIcon }}" style="font-size: 13px"></i>{{ d.wh }}</span></div>
+        <div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Used to verify webhook payloads before a flow runs. Find it in the app’s settings under <em>Webhooks</em>.</div>
+        <sc-if value="{{ canManage }}">
+          <div style="display: flex; gap: 8px">
+            <div style="flex: 1; position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" placeholder="{{ d.whPlaceholder }}" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></div>
+            <button onClick="{{ saveSecret }}" style="height: 34px; padding: 0 13px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer">Save</button>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; font: 400 12px/1.4 var(--font); color: var(--muted)"><i class="icon-shield-check" style="font-size: 13px"></i>Stored encrypted. Write-only — it’s never shown again, only replaced.</div>
+        </sc-if>
+      </section>
+
+      <sc-if value="{{ canManage }}">
+        <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid #f0c9c5; border-radius: 8px">
+          <div style="font: 600 14px/1.2 var(--font); color: #9b231c">Disconnect store</div>
+          <div style="font: 400 13px/1.5 var(--font); color: var(--muted)">Removes the stored credentials. 2 flows and 6 saved queries reference this store; they’ll stop working until it’s reconnected.</div>
+          <button onClick="{{ disconnect }}" style="align-self: flex-start; height: 32px; padding: 0 12px; border: 1px solid #e3b0aa; background: #fff; color: #9b231c; border-radius: var(--r); font: 500 13px/1 var(--font); cursor: pointer" style-hover="background: #fdf3f2">Disconnect {{ d.name }}…</button>
+        </section>
+      </sc-if>
+    </div>
+  </aside>
+</sc-if>
+
+<sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+<div style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 22px; max-width: 1180px; margin: 0 auto">
+  <header style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <button onClick="{{ goList }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 0" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>Stores</button>
+    <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Connect a store</h1>
+    <p style="margin: 0; font: 400 14px/1.5 var(--font); color: var(--muted)">Choose how wizloft gets access. You can switch methods later by reconnecting.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0">
+      <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted)">1 · Method</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px">
+        <sc-for list="{{ methods }}" as="m" hint-placeholder-count="3">
+          <button onClick="{{ m.pick }}" style="position: relative; display: flex; flex-direction: column; gap: 8px; padding: 14px; text-align: left; border: 1px solid {{ m.bd }}; box-shadow: {{ m.sh }}; background: {{ m.bg }}; border-radius: 9px; cursor: pointer; color: var(--ink)">
+            <div style="display: flex; align-items: center; gap: 8px"><span style="width: 28px; height: 28px; border-radius: 7px; background: {{ m.iconBg }}; color: {{ m.iconFg }}; display: grid; place-items: center"><i class="icon-{{ m.icon }}" style="font-size: 15px"></i></span><span style="font: 600 14px/1.2 var(--font); flex: 1">{{ m.name }}</span><span style="width: 16px; height: 16px; border-radius: 50%; border: {{ m.radio }}; background: #fff"></span></div>
+            <div style="font: 400 12.5px/1.45 var(--font); color: var(--muted)">{{ m.best }}</div>
+            <div style="font: 500 11.5px/1.3 var(--font); color: var(--ink2); display: flex; gap: 5px; align-items: center"><i class="icon-clock" style="font-size: 12px; color: var(--muted)"></i>{{ m.time }}</div>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="font: 500 var(--lbl-size)/1 var(--lbl-font); text-transform: var(--lbl-tt); letter-spacing: var(--lbl-ls); color: var(--muted); margin-top: 6px">2 · Details</div>
+      <div style="border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{ mToken }}">
+          <div style="font: 600 15px/1.3 var(--font)">Paste an Admin API access token</div>
+          <div style="font: 400 13px/1.5 var(--font); color: var(--muted); margin-top: -8px">From a custom app created in the store’s own admin: <span style="font-family: var(--mono); font-size: 12px">Settings → Apps → Develop apps</span>.</div>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Store domain</span>
+            <div style="display: flex; border: 1px solid var(--line2); border-radius: var(--r); overflow: hidden"><input placeholder="your-store" style="flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 0; outline: none; font: 400 13.5px var(--mono); color: var(--ink)"><span style="display: flex; align-items: center; padding: 0 10px; background: var(--sunken); border-left: 1px solid var(--line2); font: 400 13px var(--mono); color: var(--muted)">.myshopify.com</span></div>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Admin API access token</span>
+            <div style="position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" placeholder="shpat_…" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13.5px var(--mono); outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></div>
+            <span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Checked against Shopify before the store is saved. Stored encrypted and never shown again.</span>
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center"><button onClick="{{ connect }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><sc-if value="{{ busy }}"><i class="icon-loader-circle" style="font-size: 14px; animation: wzspin 1s linear infinite"></i></sc-if>{{ connectLabel }}</button><button onClick="{{ goList }}" style="height: 34px; padding: 0 12px; border: 0; background: transparent; color: var(--muted); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button></div>
+        </sc-if>
+        <sc-if value="{{ mCreds }}">
+          <div style="font: 600 15px/1.3 var(--font)">Connect with app credentials</div>
+          <div style="font: 400 13px/1.5 var(--font); color: var(--muted); margin-top: -8px">Works for stores in the same Shopify organization as the app. Connect several at once.</div>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">App</span>
+            <div style="display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r)"><span style="width: 20px; height: 20px; border-radius: 5px; background: var(--acc-soft); color: var(--acc-ink); display: grid; place-items: center"><i class="icon-box" style="font-size: 12px"></i></span><span style="font: 500 13.5px var(--font); flex: 1">Wizloft Ops</span><span style="font: 400 12px var(--mono); color: var(--muted)">3f9a…c21e</span><i class="icon-chevron-down" style="font-size: 14px; color: var(--muted)"></i></div>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Store domains <span style="font-weight: 400; color: var(--muted)">· one per line</span></span>
+            <textarea rows="4" style="width: 100%; padding: 9px 10px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px/1.6 var(--mono); outline: none; color: var(--ink); resize: vertical">evisu-tw.myshopify.com
+evisu-sg.myshopify.com
+evisu-kr.myshopify.com</textarea>
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center"><button onClick="{{ connectCreds }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Connect 3 stores</button></div>
+          <sc-if value="{{ credsDone }}">
+            <div style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden">
+              <sc-for list="{{ credResults }}" as="cr" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line)"><i class="icon-{{ cr.icon }}" style="font-size: 15px; color: {{ cr.color }}"></i><span style="font: 400 13px var(--mono); flex: 1">{{ cr.d }}</span><span style="font: 400 12.5px/1.3 var(--font); color: var(--muted)">{{ cr.msg }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ mOauth }}">
+          <div style="font: 600 15px/1.3 var(--font)">Install through OAuth</div>
+          <div style="font: 400 13px/1.5 var(--font); color: var(--muted); margin-top: -8px">For any other store — a store owner approves the install in Shopify, then returns here.</div>
+          <div style="display: flex; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--sunken); border-radius: 8px">
+            <i class="icon-info" style="font-size: 15px; color: var(--acc-ink); margin-top: 2px"></i>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px"><div style="font: 400 13px/1.5 var(--font)">Add this redirect URL to the app’s <strong style="font-weight: 600">Allowed redirection URL(s)</strong> in the Shopify Dev Dashboard first.</div>
+              <div style="display: flex; gap: 6px"><code style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12.5px/32px var(--mono); padding: 0 10px; background: var(--panel); border: 1px solid var(--line2); border-radius: var(--r)">https://devkit.wizloft.dev/stores/oauth/callback</code><button onClick="{{ copyRedirect }}" style="height: 34px; padding: 0 11px; border: 1px solid var(--line2); background: var(--panel); border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; color: var(--ink)"><i class="icon-copy" style="font-size: 13px"></i>Copy</button></div>
+            </div>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">App</span>
+            <div style="display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r)"><span style="width: 20px; height: 20px; border-radius: 5px; background: var(--acc-soft); color: var(--acc-ink); display: grid; place-items: center"><i class="icon-box" style="font-size: 12px"></i></span><span style="font: 500 13.5px var(--font); flex: 1">Wizloft Public</span><span style="font: 400 12px var(--font); color: var(--muted)">Expiring tokens</span><i class="icon-chevron-down" style="font-size: 14px; color: var(--muted)"></i></div>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Store domain</span>
+            <div style="display: flex; border: 1px solid var(--line2); border-radius: var(--r); overflow: hidden"><input placeholder="client-store" style="flex: 1; min-width: 0; height: 34px; padding: 0 10px; border: 0; outline: none; font: 400 13.5px var(--mono); color: var(--ink)"><span style="display: flex; align-items: center; padding: 0 10px; background: var(--sunken); border-left: 1px solid var(--line2); font: 400 13px var(--mono); color: var(--muted)">.myshopify.com</span></div>
+          </label>
+          <div><button onClick="{{ oauth }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Continue to Shopify<i class="icon-external-link" style="font-size: 14px"></i></button></div>
+        </sc-if>
+      </div>
+    </div>
+
+    <aside style="position: sticky; top: 20px; border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--sunken)">
+      <div style="display: flex; align-items: center; gap: 8px"><i class="icon-signpost" style="font-size: 16px; color: var(--muted)"></i><div style="font: 600 14px/1.2 var(--font)">Which method?</div></div>
+      <div style="font: 400 12.5px/1.45 var(--font); color: var(--muted)">Pick the sentence that matches your situation.</div>
+      <sc-for list="{{ guide }}" as="gd" hint-placeholder-count="3">
+        <button onClick="{{ gd.pick }}" style="display: flex; flex-direction: column; gap: 6px; padding: 11px 12px; text-align: left; border: 1px solid {{ gd.bd }}; background: var(--panel); border-radius: 8px; cursor: pointer; color: var(--ink)" style-hover="border-color: var(--line2)">
+          <span style="font: 400 13px/1.45 var(--font)">{{ gd.q }}</span>
+          <span style="font: 600 12px/1 var(--font); color: var(--acc-ink)">→ {{ gd.a }}</span>
+        </button>
+      </sc-for>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApps }}" hint-placeholder-val="{{ false }}">
+<div style="padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 18px; max-width: 1400px; margin: 0 auto">
+  <header style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line)">
+    <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 10px">
+      <button onClick="{{ goList }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font: 500 13px/1 var(--font); cursor: pointer; padding: 0" style-hover="color: var(--ink)"><i class="icon-arrow-left" style="font-size: 14px"></i>Stores</button>
+      <h1 style="margin: 0; font: 600 24px/1.15 var(--font); letter-spacing: -0.02em">Shopify apps</h1>
+      <p style="margin: 0; font: 400 14px/1.5 var(--font); color: var(--muted); max-width: 640px">Apps from the Shopify Dev Dashboard that wizloft connects stores through. Used by the App credentials and OAuth methods.</p>
+    </div>
+    <sc-if value="{{ canManage }}"><button onClick="{{ openAppForm }}" style="display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer"><i class="icon-plus" style="font-size: 15px"></i>Register app</button></sc-if>
+  </header>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 14px">
+    <sc-for list="{{ apps }}" as="ap" hint-placeholder-count="2">
+      <div style="border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 10px; align-items: center"><span style="width: 34px; height: 34px; border-radius: 8px; background: var(--acc-soft); color: var(--acc-ink); display: grid; place-items: center"><i class="icon-box" style="font-size: 16px"></i></span><div style="flex: 1"><div style="font: 600 14.5px/1.3 var(--font)">{{ ap.name }}</div><div style="font: 400 12px/1.3 var(--mono); color: var(--muted)">client_id {{ ap.cid }}</div></div><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: var(--sunken); border: 1px solid var(--line); font: 500 11.5px/1 var(--font); color: var(--ink2)">{{ ap.mode }}</span></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line)">
+          <div><div style="font: 400 11.5px/1 var(--font); color: var(--muted); margin-bottom: 6px">Stores</div><div style="font: 600 14px/1 var(--font)">{{ ap.stores }}</div></div>
+          <div><div style="font: 400 11.5px/1 var(--font); color: var(--muted); margin-bottom: 6px">Scopes</div><div style="font: 600 14px/1 var(--font)">{{ ap.scopes }}</div></div>
+          <div><div style="font: 400 11.5px/1 var(--font); color: var(--muted); margin-bottom: 6px">Client secret</div><div style="font: 500 12.5px/1 var(--font); display: flex; gap: 5px; align-items: center; color: var(--ink2)"><i class="icon-lock" style="font-size: 12px"></i>Encrypted</div></div>
+        </div>
+        <sc-if value="{{ canManage }}">
+          <div style="display: flex; gap: 6px; align-items: center">
+            <button onClick="{{ openAppForm }}" style="height: 30px; padding: 0 11px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: pointer" style-hover="background: var(--hover)">Edit</button>
+            <button title="{{ ap.delTitle }}" style="height: 30px; padding: 0 11px; border: 0; background: transparent; color: {{ ap.delColor }}; border-radius: var(--r); font: 500 12.5px/1 var(--font); cursor: {{ ap.delCursor }}">Delete</button>
+            <span style="font: 400 12px/1.3 var(--font); color: var(--muted)">{{ ap.delNote }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ appForm }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeAppForm }}" style="position: fixed; inset: 0; background: rgba(20,20,18,.28); z-index: 50"></div>
+  <aside style="position: fixed; top: 8px; right: 8px; bottom: 8px; width: min(460px, calc(100vw - 16px)); z-index: 51; background: var(--panel); border: 1px solid var(--line); border-radius: var(--rp); box-shadow: 0 24px 60px -16px rgba(0,0,0,.3); display: flex; flex-direction: column; animation: wzslide .2s ease">
+    <div style="padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center"><div style="flex: 1"><div style="font: 600 16px/1.3 var(--font)">Register an app</div><div style="font: 400 12.5px/1.4 var(--font); color: var(--muted)">Copy these from the app’s settings in the Shopify Dev Dashboard.</div></div><button onClick="{{ closeAppForm }}" style="width: 30px; height: 30px; border: 0; background: transparent; color: var(--muted); cursor: pointer"><i class="icon-x" style="font-size: 17px"></i></button></div>
+    <div style="flex: 1; overflow: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">App name</span><input placeholder="Wizloft Ops" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font-size: 13.5px; outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Client ID</span><input placeholder="3f9a8b…" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)" style-focus="border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft)"></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Client secret</span><div style="position: relative"><i class="icon-lock" style="position: absolute; left: 10px; top: 10px; font-size: 14px; color: var(--muted)"></i><input type="password" placeholder="Paste secret" style="width: 100%; height: 34px; padding: 0 10px 0 30px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"></div><span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Write-only. Stored encrypted and never shown again.</span></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Scopes</span><input placeholder="read_orders, write_orders" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"><span style="font: 400 12px/1.4 var(--font); color: var(--muted)">Comma-separated. Must match the scopes configured in the Dev Dashboard.</span></label>
+      <label style="display: flex; flex-direction: column; gap: 6px"><span style="font: 500 13px/1 var(--font)">Install link <span style="font-weight: 400; color: var(--muted)">· optional</span></span><input placeholder="https://admin.shopify.com/…" style="height: 34px; padding: 0 10px; border: 1px solid var(--line2); border-radius: var(--r); font: 400 13px var(--mono); outline: none; color: var(--ink)"></label>
+      <div style="display: flex; flex-direction: column; gap: 8px"><span style="font: 500 13px/1 var(--font)">Token mode</span>
+        <sc-for list="{{ tokenModes }}" as="tm" hint-placeholder-count="2">
+          <button onClick="{{ tm.pick }}" style="display: flex; gap: 10px; padding: 11px 12px; text-align: left; border: 1px solid {{ tm.bd }}; background: var(--panel); border-radius: 8px; cursor: pointer; color: var(--ink)"><span style="width: 16px; height: 16px; flex: none; border-radius: 50%; border: {{ tm.radio }}; margin-top: 1px"></span><span><span style="display: block; font: 500 13px/1.3 var(--font)">{{ tm.l }}</span><span style="display: block; font: 400 12px/1.4 var(--font); color: var(--muted)">{{ tm.d }}</span></span></button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px"><button onClick="{{ closeAppForm }}" style="height: 34px; padding: 0 12px; border: 1px solid var(--line2); background: var(--panel); color: var(--ink); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Cancel</button><button onClick="{{ saveApp }}" style="height: 34px; padding: 0 14px; border: 1px solid var(--primary); background: var(--primary); color: var(--on-primary); border-radius: var(--r); font: 500 13.5px/1 var(--font); cursor: pointer">Save app</button></div>
+  </aside>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ST = { ok: ['#e8f4ec', '#1f6b3f', '#2f9e5c'], warn: ['#fbf1db', '#7a5410', '#d39a1c'], bad: ['#fbeceb', '#9b231c', '#d1453b'], info: ['#e9f0fb', '#1f4f99', '#3b7be0'], idle: ['#f0f0ed', '#55554f', '#a3a39c'] };
+const KIND = { Connected: 'ok', Pending: 'info', 'Reconnect required': 'warn', Disconnected: 'idle' };
+const badge = (l) => { const [bg, fg, dot] = ST[KIND[l] || 'idle']; return { bg, fg, dot }; };
+const ENV = { PROD: ['#fbeceb', '#9b231c'], STAGING: ['#e9f0fb', '#1f4f99'], DEV: ['#f0f0ed', '#55554f'] };
+const HUES = [25, 250, 70, 300, 170];
+const STORES = [
+  ['Evisu HK', 'evisu-hk.myshopify.com', 'PROD', 'OAuth', 'Connected', 41, true, '9:14 AM', 'Today, 9:14 AM'],
+  ['Evisu HK Staging', 'evisu-hk-staging.myshopify.com', 'STAGING', 'Access token', 'Connected', 33, false, '9:14 AM', 'Today, 9:14 AM'],
+  ['Evisu JP', 'evisu-jp.myshopify.com', 'PROD', 'App credentials', 'Reconnect required', 41, true, 'Oct 12', 'Oct 12, 2026, 3:02 AM'],
+  ['Maison Kitsu US', 'maison-kitsu.myshopify.com', 'PROD', 'OAuth', 'Pending', 0, false, 'Awaiting install', 'Never — awaiting OAuth approval'],
+  ['Hobo Supply Dev', 'hobo-supply-dev.myshopify.com', 'DEV', 'Access token', 'Disconnected', 12, false, 'Sep 30', 'Sep 30, 2026']
+];
+const M_ICON = { 'OAuth': 'shield-check', 'Access token': 'key-round', 'App credentials': 'box' };
+const SCOPES = ['read_orders', 'write_orders', 'read_products', 'write_products', 'read_customers', 'write_customers', 'read_draft_orders', 'write_draft_orders', 'read_fulfillments', 'write_fulfillments', 'read_inventory', 'read_locations', 'read_shipping', 'read_price_rules', 'read_discounts', 'write_discounts', 'read_metaobjects', 'write_metaobjects', 'read_files', 'read_themes'];
+
+class Component extends DCLogic {
+  state = { filter: 'all', q: '', checking: null, allScopes: false, method: 'token', busy: false, credsDone: false, appForm: false, tokenMode: 0, closed: false };
+  componentDidUpdate(pp) { if (pp.params !== this.props.params && this.state.closed) this.setState({ closed: false }); }
+  renderVals() {
+    const nav = this.props.nav || (() => {}), toast = this.props.toast || (() => {});
+    const route = this.props.route || 'stores', role = this.props.role || 'Owner', ds = this.props.dataState || 'live';
+    const params = this.props.params || {};
+    const canManage = role === 'Owner';
+    const s = this.state;
+    const all = STORES.map((r, i) => {
+      const h = HUES[i];
+      return { i, name: r[0], domain: r[1], env: r[2], envBg: ENV[r[2]][0], envFg: ENV[r[2]][1], method: r[3], mIcon: M_ICON[r[3]], status: r[4], b: badge(r[4]),
+        scopes: r[5] ? String(r[5]) : '—', whOk: r[6], wh: r[6] ? 'Secret set' : 'Missing', whIcon: r[6] ? 'circle-check' : 'circle-dashed', whColor: r[6] ? '#1f6b3f' : 'var(--muted)',
+        checked: s.checking === i ? 'Checking…' : r[7], checkedLong: r[8], ini: r[0].split(' ').map(w => w[0]).slice(0, 2).join(''),
+        color: `oklch(0.5 0.13 ${h})`, tint: `oklch(0.95 0.035 ${h})`, needsReconnect: r[4] === 'Reconnect required', notReconnect: r[4] !== 'Reconnect required',
+        whPlaceholder: r[6] ? '•••••••• (set Oct 3 — paste to replace)' : 'Paste webhook signing secret',
+        checkIcon: s.checking === i ? 'loader-circle' : 'refresh-cw', checkAnim: s.checking === i ? 'wzspin 1s linear infinite' : 'none', rowBg: 'transparent' };
+    });
+    const runCheck = (i) => { this.setState({ checking: i }); setTimeout(() => { this.setState({ checking: null }); toast('Health check passed', `${STORES[i][0]} responded in 182 ms · 41 scopes verified`, 'ok'); }, 1300); };
+    const attention = all.filter(x => x.status !== 'Connected');
+    const prod = all.filter(x => x.env === 'PROD');
+    let rows = s.filter === 'attention' ? attention : s.filter === 'prod' ? prod : all;
+    const q = s.q.trim().toLowerCase();
+    if (q) rows = rows.filter(x => (x.name + x.domain).toLowerCase().includes(q));
+    rows = rows.map(x => ({ ...x, open: () => nav('stores', { store: x.i }), check: (e) => { e.stopPropagation(); runCheck(x.i); } }));
+    const isLoading = ds === 'loading', isEmpty = ds === 'empty', isError = ds === 'error';
+    if (isLoading || isEmpty || isError) rows = [];
+    const fdef = [['all', 'All', all.length], ['attention', 'Needs attention', attention.length], ['prod', 'Production', prod.length]];
+    const filters = fdef.map(f => ({ label: f[1], count: f[2], pick: () => this.setState({ filter: f[0] }), bg: s.filter === f[0] ? 'var(--panel)' : 'transparent', fg: s.filter === f[0] ? 'var(--ink)' : 'var(--muted)', sh: s.filter === f[0] ? '0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line)' : 'none' }));
+
+    const di = params.store;
+    const drawer = route === 'stores' && di !== undefined && di !== null && !s.closed && !isEmpty;
+    const d = all[di] || all[0];
+    const writeScopes = new Set(SCOPES.filter(x => x.startsWith('write_')));
+    const scopeList = (s.allScopes ? SCOPES : SCOPES.slice(0, 10)).map(n => ({ n, bg: writeScopes.has(n) ? 'oklch(0.96 0.03 60)' : 'var(--sunken)', fg: writeScopes.has(n) ? 'oklch(0.42 0.1 55)' : 'var(--ink2)', bd: writeScopes.has(n) ? 'oklch(0.9 0.05 60)' : 'var(--line)' }));
+
+    const mdefs = [
+      ['token', 'Access token', 'key-round', 'You created a custom app in the store’s own admin and have its Admin API token.', 'About 1 minute', 'oklch(0.94 0.04 60)', 'oklch(0.45 0.1 55)'],
+      ['creds', 'App credentials', 'box', 'The store is in the same Shopify organization as one of your registered apps.', 'Bulk · seconds per store', 'oklch(0.94 0.035 250)', 'oklch(0.42 0.12 255)'],
+      ['oauth', 'OAuth install', 'shield-check', 'Any other store. The store owner approves the install in Shopify.', 'Needs owner approval', 'oklch(0.94 0.04 160)', 'oklch(0.4 0.09 165)']
+    ];
+    const methods = mdefs.map(m => { const a = s.method === m[0]; return { name: m[1], icon: m[2], best: m[3], time: m[4], iconBg: m[5], iconFg: m[6], pick: () => this.setState({ method: m[0] }), bd: a ? 'var(--acc)' : 'var(--line)', sh: a ? '0 0 0 3px var(--acc-soft)' : 'none', bg: 'var(--panel)', radio: a ? '5px solid var(--acc)' : '1.5px solid var(--line2)' }; });
+    const guide = [
+      ['I created a custom app inside the store’s admin.', 'Access token', 'token'],
+      ['The store belongs to the same Shopify organization as our app.', 'App credentials', 'creds'],
+      ['It’s a client’s or partner’s store we don’t own.', 'OAuth install', 'oauth']
+    ].map(g => ({ q: g[0], a: g[1], pick: () => this.setState({ method: g[2] }), bd: s.method === g[2] ? 'var(--acc)' : 'var(--line)' }));
+    const apps = [
+      { name: 'Wizloft Ops', cid: '3f9a…c21e', mode: 'Non-expiring offline', stores: 3, scopes: 41, delTitle: 'In use by 3 stores', delColor: 'var(--faint)', delCursor: 'not-allowed', delNote: 'Used by 3 stores — disconnect them to delete.' },
+      { name: 'Wizloft Public', cid: '8b02…77ad', mode: 'Expiring offline', stores: 1, scopes: 28, delTitle: 'In use by 1 store', delColor: 'var(--faint)', delCursor: 'not-allowed', delNote: 'Used by 1 store.' }
+    ];
+    return {
+      isList: route === 'stores', isNew: route === 'stores/new', isApps: route === 'stores/apps',
+      canManage, readOnly: !canManage, isError, isEmpty, isLoading, showTable: !isEmpty, showToolbar: !isEmpty && !isError, noMatch: !isLoading && !isEmpty && !isError && rows.length === 0,
+      rows, filters, q: s.q, setQ: (e) => this.setState({ q: e.target.value }), skel: [1, 2, 3, 4],
+      goNew: () => nav('stores/new'), goApps: () => nav('stores/apps'), goList: () => nav('stores'),
+      drawer, d, closeDrawer: () => nav('stores'), copyDomain: () => toast('Copied', d.domain, 'ok'),
+      checkDrawer: () => runCheck(d.i), reconnect: () => toast('Redirecting to Shopify…', `Approve the install for ${d.domain}`, 'run'),
+      scopeList, scopeToggleLabel: s.allScopes ? 'Show less' : `+${SCOPES.length - 10} more`, toggleScopes: () => this.setState({ allScopes: !s.allScopes }),
+      saveSecret: () => toast('Webhook secret saved', `Payloads from ${d.domain} will now be verified.`, 'ok'),
+      disconnect: () => { nav('stores'); toast('Store disconnected', `${d.name} credentials were removed.`, 'warn'); },
+      methods, guide, mToken: s.method === 'token', mCreds: s.method === 'creds', mOauth: s.method === 'oauth',
+      busy: s.busy, connectLabel: s.busy ? 'Verifying with Shopify…' : 'Connect store',
+      connect: () => { this.setState({ busy: true }); setTimeout(() => { this.setState({ busy: false }); nav('stores'); toast('Store connected', 'Token verified · 33 scopes granted', 'ok'); }, 1400); },
+      connectCreds: () => this.setState({ credsDone: true }), credsDone: s.credsDone,
+      credResults: [{ d: 'evisu-tw.myshopify.com', msg: 'Connected · 41 scopes', icon: 'circle-check', color: '#2f9e5c' }, { d: 'evisu-sg.myshopify.com', msg: 'Connected · 41 scopes', icon: 'circle-check', color: '#2f9e5c' }, { d: 'evisu-kr.myshopify.com', msg: 'Not in the app’s Shopify organization — use OAuth', icon: 'circle-x', color: '#d1453b' }],
+      copyRedirect: () => toast('Redirect URL copied', 'Paste it into the app’s allowed redirection URLs.', 'ok'),
+      oauth: () => toast('Opening Shopify…', 'You’ll come back here after approval.', 'run'),
+      apps, appForm: s.appForm, openAppForm: () => this.setState({ appForm: true }), closeAppForm: () => this.setState({ appForm: false }),
+      saveApp: () => { this.setState({ appForm: false }); toast('App saved', 'Client secret stored encrypted.', 'ok'); },
+      tokenModes: [['Non-expiring offline tokens', 'Simplest. Token stays valid until the app is uninstalled.'], ['Expiring offline tokens', 'Rotated automatically with a refresh token. Required for newer apps.']].map((t, i) => ({ l: t[0], d: t[1], pick: () => this.setState({ tokenMode: i }), bd: s.tokenMode === i ? 'var(--acc)' : 'var(--line)', radio: s.tokenMode === i ? '5px solid var(--acc)' : '1.5px solid var(--line2)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>
