@@ -4,6 +4,7 @@
     "@repo/api": ["./client", "./contract", "./errors"],
     "@repo/auth": ["./client"],
     "@repo/database": [],
+    "@repo/database-tools": [],
     "@repo/flows": ["./definition"],
     "@repo/jobs": [],
     "@repo/mail": [],
@@ -20,6 +21,7 @@
       "@repo/auth",
       "@repo/config",
       "@repo/database",
+      "@repo/database-tools",
       "@repo/flows",
       "@repo/jobs",
       "@repo/logger",
@@ -39,6 +41,13 @@
     "@repo/cms": [],
     "@repo/config": ["@repo/helpers", "@repo/i18n"],
     "@repo/database": ["@repo/access-control"],
+    "@repo/database-tools": [
+      "@repo/database",
+      "@repo/jobs",
+      "@repo/logger",
+      "@repo/security",
+      "@repo/storage"
+    ],
     "@repo/design-system": ["@repo/config", "@repo/helpers", "@repo/i18n"],
     "@repo/flags": [],
     "@repo/flows": [
@@ -55,7 +64,7 @@
     "@repo/mail": ["@repo/logger"],
     "@repo/observability": [],
     "@repo/security": [],
-    "@repo/shopify": ["@repo/database", "@repo/logger"],
+    "@repo/shopify": ["@repo/database", "@repo/logger", "@repo/security"],
     "@repo/storage": [],
     "@repo/test": [],
     "@repo/typescript-config": []

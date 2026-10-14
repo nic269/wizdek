@@ -1,5 +1,5 @@
 import { type Prisma, prisma } from "@repo/database";
-import { encryptSecret } from "../crypto/secret-encryption";
+import { encryptSecret } from "../crypto";
 import { defaultApiVersion } from "../keys";
 import type { ShopifyTokenResult } from "../oauth/types";
 import { normalizeShopDomain } from "../shop-domain";

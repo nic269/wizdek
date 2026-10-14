@@ -1,3 +1,5 @@
+import type { Readable } from "node:stream";
+
 export interface PutObjectInput {
   body: Uint8Array;
   contentType: string;
@@ -18,6 +20,21 @@ export interface GetObjectInput {
 
 export type StoredObjectBody = StoredObject & {
   body: Uint8Array;
+};
+
+/**
+ * Writes an object of unknown length without holding it in memory. When the
+ * body fails or the upload is rejected, no object is left at the key.
+ */
+export interface PutObjectStreamInput {
+  body: Readable;
+  contentType: string;
+  key: string;
+  metadata?: Record<string, string>;
+}
+
+export type StoredObjectStream = StoredObject & {
+  body: Readable;
 };
 
 export interface DeleteObjectInput {
@@ -49,9 +66,11 @@ export interface SignedDownload {
 export interface StorageProvider {
   deleteObject(input: DeleteObjectInput): Promise<void>;
   getObject(input: GetObjectInput): Promise<StoredObjectBody>;
+  getObjectStream(input: GetObjectInput): Promise<StoredObjectStream>;
   getSignedDownloadUrl?(input: SignedDownloadInput): Promise<SignedDownload>;
   getSignedUploadUrl?(input: SignedUploadInput): Promise<SignedUpload>;
   putObject(input: PutObjectInput): Promise<StoredObject>;
+  putObjectStream(input: PutObjectStreamInput): Promise<StoredObject>;
 }
 
 export const sanitizeObjectKeySegment = (value: string) =>

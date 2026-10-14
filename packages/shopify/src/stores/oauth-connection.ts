@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@repo/database";
-import { decryptSecret } from "../crypto/secret-encryption";
+import { decryptSecret } from "../crypto";
 import {
   hashOAuthState,
   verifyAndDecodeShopifySessionToken,

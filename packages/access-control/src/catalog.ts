@@ -16,4 +16,17 @@ export const PERMISSION_CATALOG = [
   // Running a flow changes store data through its action nodes, with the
   // full scopes of the store's token.
   { action: "run", label: "Run flows", module: "flows" },
+  // Database connections reach production data, and their hosts and names
+  // are sensitive, so even read access is withheld from the Viewer preset.
+  { action: "read", label: "View database connections", module: "databases" },
+  {
+    action: "manage",
+    label: "Manage database connections",
+    module: "databases",
+  },
+  {
+    action: "backup",
+    label: "Run and download database backups",
+    module: "databases",
+  },
 ] as const;

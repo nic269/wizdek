@@ -1,7 +1,11 @@
 import { serve } from "@hono/node-server";
 import { createApiApp } from "@repo/api/app";
 import { assertApiProviderConfiguration } from "@repo/api/health";
-import { getJobProvider, registerJobs } from "@repo/api/jobs";
+import {
+  failInterruptedDatabaseBackups,
+  getJobProvider,
+  registerJobs,
+} from "@repo/api/jobs";
 import { env } from "../env";
 
 assertApiProviderConfiguration();
@@ -15,6 +19,9 @@ const main = async () => {
   const jobs = getJobProvider();
   registerJobs(jobs);
   await jobs.start();
+  await failInterruptedDatabaseBackups().catch((error: unknown) => {
+    console.error("database_backups.sweep_failed", error);
+  });
 
   const server = serve({ fetch: app.fetch, hostname: "0.0.0.0", port });
   console.log(`API listening on http://localhost:${port}`);

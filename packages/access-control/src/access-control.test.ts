@@ -70,4 +70,22 @@ describe("access-control policy", () => {
     expect(keysOf("Viewer")).toContain("flows:read");
     expect(keysOf("Viewer")).not.toContain("flows:run");
   });
+
+  it("keeps database tools to owners and admins", () => {
+    const keysOf = (role: keyof typeof ROLE_PERMISSION_PRESETS) =>
+      ROLE_PERMISSION_PRESETS[role].map(permissionKey);
+    const databaseKeys = [
+      "databases:read",
+      "databases:manage",
+      "databases:backup",
+    ];
+
+    expect(keysOf("Owner")).toEqual(expect.arrayContaining(databaseKeys));
+    expect(keysOf("Admin")).toEqual(expect.arrayContaining(databaseKeys));
+    for (const role of ["Member", "Viewer"] as const) {
+      expect(
+        keysOf(role).filter((key) => key.startsWith("databases:"))
+      ).toEqual([]);
+    }
+  });
 });

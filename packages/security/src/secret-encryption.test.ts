@@ -44,6 +44,14 @@ describe("secret encryption", () => {
     );
   });
 
+  it("decrypts a payload written by an earlier release", () => {
+    // Stored tokens and URLs must keep decrypting; a format change breaks them.
+    const stored =
+      "v1.lDeJiAsYJ0X2JLu0.klDxEAlDdsT0SkMyy-J9mQ.osig4QKLeezIVZwByT9iNI2KISE";
+
+    expect(decryptSecret(stored, KEY)).toBe("shpat_compat_fixture");
+  });
+
   it("refuses to encrypt an empty secret", () => {
     expect(() => encryptSecret("", KEY)).toThrow();
   });

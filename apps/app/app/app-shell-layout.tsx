@@ -3,6 +3,7 @@ import { appConfig, dashboardNav } from "@repo/config";
 import {
   AppShell,
   Braces,
+  Database,
   Home,
   LayoutDashboard,
   Settings,
@@ -20,6 +21,10 @@ import { OrganizationSwitcher } from "./lib/active-organization";
 const getDashboardNavIcon = (href: string) => {
   if (href.startsWith("/flows")) {
     return <Workflow className="h-4 w-4" />;
+  }
+
+  if (href.startsWith("/database")) {
+    return <Database className="h-4 w-4" />;
   }
 
   if (href.startsWith("/graphql")) {

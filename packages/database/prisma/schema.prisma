@@ -132,6 +132,8 @@ model Organization {
   savedGraphqlQueries SavedGraphqlQuery[]
   flows               Flow[]
   flowRuns            FlowRun[]
+  databaseConnections DatabaseConnection[]
+  databaseBackups     DatabaseBackup[]
 
   @@map("organization")
 }
@@ -618,4 +620,74 @@ model FlowActivation {
   @@unique([flowId, storeId])
   @@index([storeId])
   @@map("flow_activation")
+}
+
+enum DatabaseEngine {
+  POSTGRESQL
+}
+
+enum DatabaseBackupStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+/// A database the organization can run tools against. The URL, password
+/// included, is stored only encrypted; the other columns are for display.
+model DatabaseConnection {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  engine         DatabaseEngine
+  urlEncrypted   String         @db.Text
+  host           String
+  port           Int
+  databaseName   String
+  username       String
+  serverVersion  String?
+  lastCheckedAt  DateTime?
+  lastCheckError String?        @db.Text
+  createdById    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  backups      DatabaseBackup[]
+
+  @@unique([organizationId, name])
+  @@unique([id, organizationId])
+  @@map("database_connection")
+}
+
+/// One backup attempt. Kept, with its file, after the connection is deleted.
+model DatabaseBackup {
+  id              String               @id @default(cuid())
+  organizationId  String
+  connectionId    String?
+  connectionName  String
+  engine          DatabaseEngine
+  databaseName    String
+  status          DatabaseBackupStatus @default(QUEUED)
+  storageProvider String?
+  objectKey       String?
+  fileName        String?
+  sizeBytes       BigInt?
+  checksumSha256  String?
+  toolVersion     String?
+  serverVersion   String?
+  error           String?              @db.Text
+  requestedById   String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connection   DatabaseConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([connectionId, createdAt])
+  @@index([status, startedAt])
+  @@map("database_backup")
 }

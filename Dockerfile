@@ -66,6 +66,9 @@ CMD ["node", "apps/web/server.js"]
 FROM base AS api-runner
 ENV NODE_ENV=production
 ENV PORT=3002
+# pg_dump and pg_restore for database backups. A client can dump servers of its
+# own major version and older, so keep this at the newest available.
+RUN apk add --no-cache postgresql18-client
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=pruner /app/out/json/ .
 RUN mkdir -p scripts
@@ -76,9 +79,11 @@ RUN pnpm install --prod --frozen-lockfile \
       --filter @repo/access-control \
       --filter @repo/auth \
       --filter @repo/database \
+      --filter @repo/database-tools \
       --filter @repo/jobs \
       --filter @repo/logger \
       --filter @repo/mail \
+      --filter @repo/security \
       --filter @repo/storage
 COPY --from=installer --chown=app:app /app/apps/api/dist ./apps/api/dist
 RUN rm -rf packages/database/node_modules/@prisma/client

@@ -107,6 +107,14 @@ export const createApiHarness = () => {
     };
   };
 
+  /** Like `call`, but hands back the raw response, for streamed bodies. */
+  const request = (actor: Pick<Actor, "userId"> | null, path: string) => {
+    vi.mocked(getCurrentSession).mockResolvedValue(
+      actor ? ({ user: { id: actor.userId } } as never) : null
+    );
+    return app.request(path);
+  };
+
   const cleanup = async () => {
     await prisma.organization.deleteMany({
       where: { id: { in: organizationIds.splice(0) } },
@@ -120,6 +128,7 @@ export const createApiHarness = () => {
     createActor,
     createActorWithPermissions,
     createOrganization,
+    request,
     responseBodies,
   };
 };

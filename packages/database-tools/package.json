@@ -1,0 +1,34 @@
+{
+  "name": "@repo/database-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./keys": "./src/keys.ts"
+  },
+  "scripts": {
+    "build": "echo '@repo/database-tools is source-only'",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "@repo/jobs": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@repo/security": "workspace:*",
+    "@repo/storage": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "pg": "^8.22.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "@types/pg": "^8.23.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

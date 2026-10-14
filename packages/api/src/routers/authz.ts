@@ -2,6 +2,12 @@ import { hasPermission } from "@repo/auth/permissions";
 import { getCurrentSession } from "@repo/auth/session";
 import { prisma } from "@repo/database";
 import {
+  type DatabaseBackupRecord,
+  type DatabaseConnectionRecord,
+  findBackupById,
+  findConnectionById,
+} from "@repo/database-tools";
+import {
   type FlowRecord,
   type FlowRunRecord,
   findFlowById,
@@ -153,4 +159,64 @@ export const requireRunPermission = async (
     "You do not have permission for this flow action."
   );
   return { run, user };
+};
+
+type DatabaseAction = "read" | "manage" | "backup";
+
+const connectionNotFound = () =>
+  new ApiError("NOT_FOUND", "Database connection not found.", 404);
+const backupNotFound = () =>
+  new ApiError("NOT_FOUND", "Backup not found.", 404);
+
+/**
+ * Authorizes an action on a database connection; the organization comes from
+ * the connection row.
+ */
+export const requireConnectionPermission = async (
+  headers: Headers,
+  connectionId: string,
+  action: DatabaseAction
+): Promise<{
+  connection: DatabaseConnectionRecord;
+  user: Awaited<ReturnType<typeof requireUser>>;
+}> => {
+  const user = await requireUser(headers);
+  const connection = await findConnectionById(connectionId);
+  if (!connection) {
+    throw connectionNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    connection.organizationId,
+    "databases",
+    action,
+    connectionNotFound,
+    "You do not have permission for this database action."
+  );
+  return { connection, user };
+};
+
+/** Authorizes an action on a backup; the organization comes from the backup row. */
+export const requireBackupPermission = async (
+  headers: Headers,
+  backupId: string,
+  action: DatabaseAction
+): Promise<{
+  backup: DatabaseBackupRecord;
+  user: Awaited<ReturnType<typeof requireUser>>;
+}> => {
+  const user = await requireUser(headers);
+  const backup = await findBackupById(backupId);
+  if (!backup) {
+    throw backupNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    backup.organizationId,
+    "databases",
+    action,
+    backupNotFound,
+    "You do not have permission for this database action."
+  );
+  return { backup, user };
 };

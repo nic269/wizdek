@@ -1,1 +1,1 @@
-export * from "./secret-encryption";
+export { decryptSecret, encryptSecret } from "@repo/security/crypto";

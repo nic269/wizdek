@@ -1,5 +1,5 @@
 import { type Prisma, prisma } from "@repo/database";
-import { encryptSecret } from "../crypto/secret-encryption";
+import { encryptSecret } from "../crypto";
 import { recordShopifyAudit } from "./audit";
 import { StoreConnectionError } from "./errors";
 import { createApp, findApp, type ShopifyAppRecord } from "./store-repository";

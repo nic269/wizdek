@@ -1,6 +1,6 @@
 import { type Prisma, prisma } from "@repo/database";
 import { ShopifyGraphqlError, ShopifyTransportError } from "../admin/errors";
-import { decryptSecret } from "../crypto/secret-encryption";
+import { decryptSecret } from "../crypto";
 import { defaultApiVersion } from "../keys";
 import { requestClientCredentialsToken } from "../oauth/client-credentials";
 import { ShopifyOAuthError } from "../oauth/token-endpoint";

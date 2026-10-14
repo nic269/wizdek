@@ -1,3 +1,4 @@
+import { databaseBackupsRouter, databaseConnectionsRouter } from "./databases";
 import { filesRouter } from "./files";
 import { flowsRouter } from "./flows";
 import { healthRouter } from "./health";
@@ -11,6 +12,8 @@ import { shopifyGraphqlRouter } from "./shopify-graphql";
 import { shopifyStoresRouter } from "./shopify-stores";
 
 export const router = os.router({
+  databaseBackups: databaseBackupsRouter,
+  databaseConnections: databaseConnectionsRouter,
   files: filesRouter,
   flows: flowsRouter,
   health: healthRouter,

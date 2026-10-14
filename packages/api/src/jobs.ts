@@ -1,10 +1,19 @@
 import {
+  BACKUP_TIMEOUT_SECONDS,
+  createDatabaseBackupJob,
+  failStaleBackups,
+} from "@repo/database-tools";
+import {
   builtInRegistry,
   createAssetReader,
   createFlowRunJob,
   createFlowScheduleJob,
 } from "@repo/flows";
-import { createLocalJobProvider, type JobQueueProvider } from "@repo/jobs";
+import {
+  createLocalJobProvider,
+  getJobProviderStatus,
+  type JobQueueProvider,
+} from "@repo/jobs";
 import { keys } from "@repo/jobs/keys";
 import { createPgBossJobProvider } from "@repo/jobs/pg-boss";
 
@@ -40,4 +49,16 @@ export const registerJobs = (target: JobQueueProvider): void => {
     })
   );
   target.register(createFlowScheduleJob(target));
+  target.register(createDatabaseBackupJob());
+};
+
+/**
+ * Fails backups that cannot finish any more. The in-memory provider loses
+ * every job on restart; a durable one has stopped any job past its timeout.
+ */
+export const failInterruptedDatabaseBackups = (): Promise<number> => {
+  const lostEverything = getJobProviderStatus().mode === "ephemeral";
+  return failStaleBackups(
+    new Date(Date.now() - (lostEverything ? 0 : BACKUP_TIMEOUT_SECONDS * 1000))
+  );
 };

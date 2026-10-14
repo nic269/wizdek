@@ -1,5 +1,5 @@
 import { prisma } from "@repo/database";
-import { decryptSecret } from "../crypto/secret-encryption";
+import { decryptSecret } from "../crypto";
 import { requestClientCredentialsToken } from "../oauth/client-credentials";
 import { refreshAccessToken } from "../oauth/refresh-access-token";
 import { ShopifyOAuthError } from "../oauth/token-endpoint";

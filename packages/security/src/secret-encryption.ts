@@ -4,7 +4,7 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto";
-import { keys } from "../keys";
+import { keys } from "./keys";
 
 const ALGORITHM = "aes-256-gcm";
 const FORMAT_VERSION = "v1";

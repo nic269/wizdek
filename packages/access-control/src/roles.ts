@@ -25,7 +25,9 @@ export const MEMBER_PERMISSIONS = [
 ] as const satisfies readonly KnownPermission[];
 
 export const VIEWER_PERMISSIONS = withoutLabels(
-  PERMISSION_CATALOG.filter(({ action }) => action === "read")
+  PERMISSION_CATALOG.filter(
+    ({ action, module }) => action === "read" && module !== "databases"
+  )
 );
 
 export const CUSTOM_ROLE_DEFAULT_PERMISSION_KEYS = [

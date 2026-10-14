@@ -20,5 +20,9 @@ describe("dashboard navigation", () => {
     expect(dashboardNav).toContainEqual({ href: "/stores", label: "Stores" });
     expect(dashboardNav).toContainEqual({ href: "/graphql", label: "GraphQL" });
     expect(dashboardNav).toContainEqual({ href: "/flows", label: "Flows" });
+    expect(dashboardNav).toContainEqual({
+      href: "/database",
+      label: "Database",
+    });
   });
 });

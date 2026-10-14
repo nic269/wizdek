@@ -6,6 +6,10 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { requestContext } from "./context";
+import {
+  DATABASE_BACKUP_DOWNLOAD_PATH,
+  handleDatabaseBackupDownload,
+} from "./database-backup-download-route";
 import { ApiError, type ApiErrorResponse } from "./errors";
 import { requireAuthEndpointEnabled } from "./feature-guards";
 import { getOpenApiDocument } from "./openapi";
@@ -148,9 +152,12 @@ export const createApiApp = () => {
     requireAuthEndpointEnabled(context.req.path);
     return auth.handler(context.req.raw);
   });
-  // Writes that change store data or accept files must come from the app.
+  // Writes that change store data, reach a database or accept files must
+  // come from the app.
   for (const path of [
     "/api/shopify/*",
+    "/api/databases/*",
+    "/api/organizations/:organizationId/databases/*",
     "/api/flows/*",
     "/api/flow-runs/*",
     "/api/organizations/:organizationId/flows",
@@ -160,6 +167,8 @@ export const createApiApp = () => {
     app.use(path, requireAppOrigin);
   }
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
+  // Streamed rather than returned as JSON, so it lives outside the contract.
+  app.get(DATABASE_BACKUP_DOWNLOAD_PATH, handleDatabaseBackupDownload);
   // Enforced while the body streams in, so an oversized or endless request
   // is cut off instead of being buffered. The webhook route has no session.
   app.post(
