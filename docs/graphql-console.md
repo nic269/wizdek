@@ -4,12 +4,12 @@ The console at `/graphql` runs Shopify Admin GraphQL against a connected store. 
 
 ## Using it
 
-1. Pick a store. Only stores with the status Connected are listed.
+1. Pick a store. Only stores with the status Connected can be chosen. Each shows its environment; on a Production store a red band stays under the toolbar, and a mutation asks for confirmation before it is sent.
 2. Pick an API version. The list comes from the store; the store's own version is selected first. Changing the store or the version reloads the schema and keeps your open tabs.
 3. Write a query, or open the Explorer in the left sidebar and tick fields. To write a mutation in the Explorer, choose **Mutation** next to **Add new** and press **+**.
 4. Run it. The response pane shows Shopify's JSON unchanged.
 
-Turn on **Return detailed cost** to ask Shopify for a per-field cost breakdown in `extensions.cost.fields`.
+Turn on **Detailed cost** to ask Shopify for a per-field cost breakdown in `extensions.cost.fields`.
 
 The bar under the response summarises the last run:
 
@@ -18,9 +18,10 @@ The bar under the response summarises the last run:
 | HTTP | Shopify's HTTP status. 400 means the document did not parse and was not sent. |
 | GraphQL errors | Entries in the top-level `errors` list |
 | User errors | Entries in `userErrors` lists inside mutation payloads. A mutation can return HTTP 200 and still report these. |
-| Requested / actual cost | Query cost before and after execution |
+| Cost | Query cost before and after execution |
 | Throttle | Points available now, the bucket size, and the restore rate per second |
-| Request ID | Shopify's request id, useful when contacting Shopify support |
+| Time | How long the request took |
+| Request | Shopify's request id, useful when contacting Shopify support |
 
 Tabs, history and settings are kept in the browser, separately for each user and organization. **Saved queries** in the sidebar are stored on the server and shared with everyone in the organization. Anyone who can use the console can save and load them; only the person who saved a query, or someone who can manage stores, can rename or delete it.
 
@@ -33,7 +34,7 @@ The console is a desktop tool. At phone width an open sidebar panel leaves no ro
 | Open the console, run queries, load the schema, use saved queries | `graphql:query` |
 | Run mutations | `graphql:mutate` |
 
-Members have both by default. Viewers have neither. To let someone read but not write, give them a custom role with `graphql:query` only.
+Members have both by default. Viewers have neither, and see a locked page that names the permission. To let someone read but not write, give them a custom role with `graphql:query` only.
 
 The permission is decided on the server from the parsed document, not from anything the browser says. A document with several operations is judged by the operation that will run, so it needs an operation name. Subscriptions are refused. When permission fails, nothing is sent to Shopify.
 

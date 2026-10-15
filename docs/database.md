@@ -24,10 +24,10 @@ MySQL, MariaDB and MongoDB are not supported yet. See [Not supported yet](#not-s
 
 ## Adding a connection
 
-1. Open **Database → Add connection**.
-2. Give it a name, for example `EVISU production`.
+1. Open **Database → Add connection**. The form opens in a side panel.
+2. Give it a name, for example `EVISU production`, and choose its environment: Production, Staging or Development.
 3. Paste the URL: `postgresql://user:password@host:5432/database`. Characters such as `@`, `/` or `:` in the user name or password must be percent-encoded (`@` is `%40`).
-4. Choose **Save connection**.
+4. Choose **Test & save**.
 
 The toolkit connects once to check the URL and reads the server version. A URL that cannot connect is not saved, and the error never includes the password. Once saved, the URL is stored encrypted and is never shown again. To change the password later, choose **Edit** on the connection and paste a new URL; leave the field blank to keep the saved one.
 
@@ -37,7 +37,7 @@ Only `sslmode` is read from the URL's query string. Other parameters, such as `s
 
 ## Backing up
 
-Open the connection and choose **Back up now**. The backup runs in the background; you can leave the page.
+Open the connection and choose **Back up now**, then **Start backup** in the confirmation, which names the database and its environment. The backup runs in the background; you can leave the page. While it runs, the row shows a progress bar and the elapsed time (`pg_dump` reports no percentage), and a notification appears when it finishes.
 
 | Status | Meaning |
 |--------|---------|

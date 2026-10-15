@@ -1,6 +1,6 @@
 # Connecting Shopify stores
 
-Stores belong to an organization. Anyone with the `stores:read` permission sees them; connecting, reconnecting and disconnecting need `stores:manage`, which Owners and Admins have by default. Use the organization switcher in the top bar to choose which organization you are working in.
+Stores belong to an organization. Anyone with the `stores:read` permission sees them; connecting, reconnecting and disconnecting need `stores:manage`, which Owners and Admins have by default. Use the organization switcher at the top of the sidebar to choose which organization you are working in.
 
 ## Choosing a connection method
 
@@ -18,7 +18,7 @@ App credentials and OAuth both go through an app you register once per organizat
 
 1. In the Shopify Dev Dashboard, create an app (or open an existing one) and select the Admin API scopes the toolkit should have.
 2. Copy the client ID and client secret from the app's settings.
-3. For OAuth, add the redirect URL shown on the **Connect store → OAuth install** tab to the app's allowed redirect URLs. It is `<app URL>/api/shopify/oauth/callback`.
+3. For OAuth, add the redirect URL shown under **Connect store → OAuth install** to the app's allowed redirect URLs. It is `<app URL>/api/shopify/oauth/callback`.
 4. In the toolkit, enter the name, client ID, client secret and the same scopes. Optionally paste the app's install link.
 5. Choose the token mode. Non-expiring offline tokens need no upkeep. Expiring offline tokens last one hour and are refreshed automatically; choose this when the app is configured for expiring tokens.
 
@@ -28,7 +28,7 @@ An app cannot be deleted while stores are connected through it.
 
 ## Connecting a store
 
-Open **Stores → Connect store** and pick a tab.
+Open **Stores → Connect store**, pick a method (**Which method?** explains the choice), and choose the store's environment: Production, Staging or Development.
 
 - **Access token.** Enter the domain (`your-store.myshopify.com`) and the token. The token is checked against Shopify before the store is saved.
 - **App credentials.** Pick the app and enter one domain per line. Each domain gets its own result, so one failure does not block the others.
@@ -41,7 +41,7 @@ To reconnect a store, connect the same domain again; the existing store is updat
 Flows can start from Shopify webhooks. Shopify signs every webhook with the client secret of the app that created the subscription, and the toolkit rejects deliveries whose signature does not match.
 
 - A store connected through a registered app (OAuth install or app credentials) needs nothing more: the app's client secret is already stored.
-- A store connected by a pasted access token has no app registered here. On the Stores page choose **Add webhook secret** for it and enter the client secret (API secret key) of the custom app the token belongs to. It is stored encrypted and never shown again.
+- A store connected by a pasted access token has no app registered here. Open the store from the Stores page and, under **Webhook secret**, enter the client secret (API secret key) of the custom app the token belongs to. It is stored encrypted and never shown again.
 
 Until a secret is saved, a webhook flow cannot be activated on such a store.
 
@@ -54,10 +54,12 @@ Until a secret is saved, a webhook flow cannot be activated on such a store.
 | Reconnect required | Shopify rejected the credentials (for example the app was uninstalled or the token revoked) |
 | Disconnected | Credentials were removed in the toolkit |
 
-**Check health** calls the store and refreshes its name, currency and granted scopes. **Disconnect** deletes the stored tokens; it does not uninstall the app from the store.
+Selecting a store opens its panel. **Check health** calls the store and refreshes its name, currency and granted scopes. The environment can be changed there. **Disconnect**, under the danger zone, deletes the stored tokens after a confirmation that counts the runs and activations using the store; it does not uninstall the app from the store.
+
+A store marked Production carries a red PROD tag. The GraphQL console shows a red band for it and asks before sending a mutation, and the Run dialog uses a red button for it.
 
 ## Operating notes
 
 - `SHOPIFY_TOKEN_ENCRYPTION_KEY` encrypts every stored token and client secret, and the URLs of [database connections](./database.md). Back it up with the database. If it is lost or changed, every store must be reconnected and every database connection added again.
 - OAuth needs a URL Shopify can redirect to. Shopify may refuse an `http://localhost` redirect URL; if it does, run the app behind a tunnel or on its deployed host and register that URL instead. The access-token and app-credentials methods are unaffected.
-- Connection events (app created, updated, deleted; store connected, OAuth started, disconnected) are written to the organization's audit log. Tokens and secrets are never included.
+- Connection events (app created, updated, deleted; store connected, OAuth started, disconnected, environment changed) are written to the organization's audit log. Tokens and secrets are never included.

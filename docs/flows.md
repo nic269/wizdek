@@ -22,7 +22,7 @@ Open **Flows**, type a name and choose **Create flow**. The builder has three pa
 2. **Connect them.** Drag from a step's output handle (right edge) to another step's input handle (left edge), or click one handle and then the other. A connection that would form a loop, connect a step to itself, or lead into a trigger is refused.
 3. **Configure each step.** Select a step to edit its settings. Problems appear under the form and as a red count on the step.
 4. **Validate.** Lists everything that must be fixed before the flow can run, and takes you to the step.
-5. **Save.** Each save creates a new version. A flow may be saved with problems; it cannot be run until they are fixed.
+5. **Save.** Each save creates a new version; the save indicator in the header lists earlier versions. A flow may be saved with problems; it cannot be run until they are fixed.
 
 If someone else saved the flow while you were editing, your save is refused and a dialog offers to reload. Your changes stay on the canvas until you choose to reload.
 
@@ -94,13 +94,13 @@ Each delivery starts one run. Shopify may send the same delivery more than once;
 
 ## Running a flow
 
-In the builder, choose **Run**. Pick the store, provide the trigger's inputs (a CSV file is uploaded first) and start. Run is unavailable while the flow has unsaved changes or problems. The run uses the saved version, and later edits to the flow do not change it.
+In the builder, choose **Run…**. Pick the store, provide the trigger's inputs (a CSV file is uploaded first) and start. The dialog shows the store's environment, the rows in a chosen CSV file and, when the flow changes store data, up to how many items may be changed; for a Production store the start button is red. Run is unavailable while the flow has unsaved changes or problems. The run uses the saved version, and later edits to the flow do not change it.
 
 Runs for the same store go one at a time, in the order they were started. Runs for different stores go side by side.
 
 The run page shows the flow as it was when the run started. Each step shows its status and how many items it received, how many succeeded and how many failed. Each connection shows how many items travelled along it. Select a step to list its items; filter by status, page through them, and open an item's input and output. The page refreshes by itself while the run is active.
 
-**Runs** in the builder lists every run of the flow with its status, store, who started it, duration and item counts.
+Each run is numbered per flow ("Run #128"). **Runs** in the builder lists every run of the flow with its status, store, who started it, duration and item counts, and the dashboard shows recent runs across all flows.
 
 ### Run statuses
 

@@ -1,6 +1,6 @@
 # Wizdek UI/UX redesign
 
-Status: in progress (approved 2026-10-14) · branch `feat/wizdek-redesign`
+Status: implemented 2026-10-15, awaiting the user's review (approved 2026-10-14; the user asked for all phases without pausing) · branch `feat/wizdek-redesign`
 Source: `docs/design/design_handoff_wizdek_redesign/` (README, original-brief, prototype)
 
 ## Outcome
@@ -18,7 +18,7 @@ The app is rebuilt to the Paper direction of the handoff, using shadcn on Base U
 
 Dark mode, new product features, replacing GraphiQL or React Flow, and the prototype's switcher controls.
 
-## Phases (one commit each, user review between)
+## Phases (one commit each)
 
 | # | Phase | README section | Main files |
 |---|-------|----------------|-----------|
@@ -48,3 +48,22 @@ Each phase is verified by checking types, running Biome and unit tests, and runn
 - Editing a custom role, renaming an organization and declining an invitation stay unavailable: shown read-only or omitted.
 - The Run dialog counts CSV rows in the browser for "up to N items".
 - shadcn `--accent` is the indigo accent, so menu highlights use `--hover` instead.
+
+## Added during implementation
+
+- The audit log endpoint accepts several comma-separated prefixes in `actionPrefix`, so the Members filter covers members, invitations and roles.
+- `invitations.preview` (`POST /api/invitations/preview`) lets the invitation page show the organization, inviter, role and expiry before signing in.
+- The profile name is saved with Better Auth's `updateUser`; the organization name stays read-only.
+- Email verification from the page omits the callback URL, so a bad or expired token is reported instead of shown as verified.
+- The database page lists backups of deleted connections again (dropped by mistake in phase h).
+
+## Known gaps
+
+- Flows write no audit events, so the audit log's Flows filter is empty until they do.
+- The add-tags "Resource" segmented control from the prototype is not built: the node has no field for it.
+- The migration `20261015000000_wizdek_redesign_fields` must be applied with `pnpm db:migrate:deploy` (back up first).
+- `pnpm check:ci` reports a parse error in `docs/design/design_handoff_wizdek_redesign/prototype/Dashboard.dc.html`, a design reference added before this work.
+
+## Commits
+
+`20c6122` tokens · `a09a697` shared components · `23bddcb` shell · `ce62ab6` dashboard · `1b3c38f` flows · `4bdda75` stores · `366ad0b` GraphQL · `46a2fb9` database · `d5a4b11` settings · `7fe3fc3` auth · `5bf08a0` deleted-connection backups

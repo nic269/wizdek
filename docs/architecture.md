@@ -24,9 +24,17 @@ Existing packages under `packages/` come from the boilerplate: `api` (contracts 
 
 ## App UI
 
-Signed-in pages render inside `AppShellLayout` (`apps/app/app/app-shell-layout.tsx`), which follows the Meldmark product shell: a collapsible sidebar on a grey canvas, with navigation, ⌘K destination search, the organization switcher and the account menu at its foot, and each page in one white panel that scrolls on its own on desktop. The shell itself is `AppShell` in `@repo/design-system`. The visual language is wizdek's "Paper" direction (`docs/design/design_handoff_wizdek_redesign/`): the shadcn roles are set in `apps/app/app/theme.tweakcn.css`, and the tokens beyond them (sunken and faint greys, status, environment and flow-category colours, panel and menu radii, elevation) are in `packages/design-system/src/styles/wizdek-tokens.css`, mapped to Tailwind utilities such as `bg-sunken` and `rounded-panel` in `theme-contract.css`. The alternate "Console" direction is kept there as an unused `.theme-console` class.
+Signed-in pages render inside `AppShellLayout` (`apps/app/app/app-shell-layout.tsx`), which renders the wizdek shell (`apps/app/app/shell/`): a 244px sidebar on a grey canvas with the organization switcher at the top, ⌘K search (the shadcn `Command` dialog), navigation grouped as Workspace and Organization with live indicators (stores needing attention, running flows), and the account menu at its foot. The sidebar collapses to a 60px rail and becomes a sheet below 820px. Each page sits in one white panel that scrolls on its own; `width="full"` gives the flow builder, the run trace and the console the whole panel. Without an organization the shell shows a create-organization state instead of the page. The shell component itself is `AppShell` in `@repo/design-system`. The visual language is wizdek's "Paper" direction (`docs/design/design_handoff_wizdek_redesign/`): the shadcn roles are set in `apps/app/app/theme.tweakcn.css`, and the tokens beyond them (sunken and faint greys, status, environment and flow-category colours, panel and menu radii, elevation) are in `packages/design-system/src/styles/wizdek-tokens.css`, mapped to Tailwind utilities such as `bg-sunken` and `rounded-panel` in `theme-contract.css`. The alternate "Console" direction is kept there as an unused `.theme-console` class.
 
 The app is light-only: `layout.tsx` sets `defaultTheme="light"` with system detection off, and the palette has no dark values.
+
+Shared building blocks live in `@repo/design-system`: `StatusBadge` (one mapping for every entity status; Unknown is the only solid badge), `EnvTag`, `IdentityChip`, `PageHeader`, `EmptyState`, `ErrorAlert` and `InlineAlert`, `ReadOnlyBanner`, `SkeletonRows`, `SecretInput` and `SegmentedControl`. Feedback uses Sonner toasts, drawers use `Sheet`, and confirmations use `AlertDialog`.
+
+What a page offers follows the caller's permissions: `usePermissions()` (`apps/app/app/lib/permissions.ts`) reads `organizations.permissions` for the active organization, and every list screen has loading, empty, error and read-only states. The server stays the authority. Organization-wide lists that several screens share (stores, flows, organization runs, connections, backups, Shopify apps) are React Query hooks in `apps/app/app/lib/queries.ts`, so the shell, the dashboard and the list pages read one cache.
+
+Settings, Members and Access (`apps/app/app/settings/`) share one header with underline tabs. Access shows roles with a permission grid grouped by resource (built-in roles read-only; custom roles are drafted and saved through `roles.create`), inline role assignments, and the audit log, whose filter passes several comma-separated prefixes in `actionPrefix`.
+
+The auth pages and the invitation page use the split layout in `apps/app/app/(auth)/auth-split.tsx`. The invitation page reads `invitations.preview` (`POST /api/invitations/preview`), which takes the invite token and returns the organization, inviter, role, expiry and connected-store count; the token is the secret the link already carries, so no session is needed.
 
 Controls use the shadcn components in `packages/design-system/src/components/ui` instead of native elements: `Select`, `Checkbox`, `Label`, `Field`, `Textarea`, `Combobox`, `Button`, `Input`, and the rest. `OptionSelect` (`apps/app/app/lib/option-select.tsx`) wraps `Select` for a plain list of value and label options. Add a missing component with `pnpm ui:gen <component>`.
 
@@ -84,7 +92,9 @@ OAuth completes in two steps so a callback URL alone can never attach a token to
 1. `GET /api/shopify/oauth/callback` is a plain Hono route. It validates the `shop` parameter and redirects to `/stores/oauth/callback` on the configured app URL with the query unchanged. It changes no state.
 2. The app page posts the query to `shopifyStores.completeOAuth`, which needs a session and `stores:manage`. It resolves the store from the single-use state (hashed at rest, valid 10 minutes, bound to the user who started the install), verifies the callback HMAC, exchanges the code and marks the store connected.
 
-In the app, `app/lib/active-organization.tsx` provides the active organization to every toolkit page and renders the switcher in the top bar. User-facing steps are in [Connecting Shopify stores](./stores.md).
+In the app, `app/lib/active-organization.tsx` provides the active organization to every toolkit page; the switcher sits at the top of the sidebar.
+
+Stores and database connections carry an `environment` (`PROD`, `STAGING` or `DEV`, default `DEV`), chosen when connecting and changed with `shopifyStores.update` (audited as `shopify.store.environment_changed`) or the connection edit. Production targets get a red tag, a red band and a mutation confirmation in the console, and a red primary button in the run and backup dialogs. User-facing steps are in [Connecting Shopify stores](./stores.md).
 
 Browser tests run against the in-process fake Shopify server: `playwright.config.ts` starts it and passes its URL to the API as `SHOPIFY_ADMIN_BASE_URL_OVERRIDE`.
 
@@ -188,6 +198,8 @@ Limits: 100 nodes per flow, 100,000 items per run, 1 MB per item, 10 MB per uplo
 
 `files.upload` accepts one CSV file per request as multipart form data, up to 10 MB, for use as a run input. The store and any uploaded file must belong to the flow's organization. Writes to the flow, run and upload routes pass the same origin check as `/api/shopify/*`.
 
+Each run gets a `number` per flow (shown as "Run #128"), assigned under an advisory lock when the run is created. `flows.versions` lists a flow's saved versions, and `flows.runs.listForOrganization` (`GET /api/organizations/{organizationId}/flow-runs`) lists recent runs across flows with per-status item counts, for the dashboard.
+
 Run items hold business data from CSV files and stores. They are organization-scoped and readable with `flows:read`. They are kept indefinitely for now; a retention policy is needed before the product is opened beyond internal use.
 
 ### Flow builder
@@ -243,7 +255,7 @@ A node's `mode` can be `batch`: `executeBatch` receives every pending item in on
 - **Child processes.** `runTool` spawns without a shell, gives the child only the environment it is passed, keeps the last few kilobytes of output, redacts secrets from it, and stops the child when the signal aborts. The PostgreSQL adapter passes the connection in `PG*` variables, never as arguments.
 - **The job.** `startBackup` records a `QUEUED` row and enqueues `database-backup` with only the backup id, one at a time per connection. `runBackup` checks versions, dumps to `DATABASE_BACKUP_TMP_DIR`, verifies, uploads with `putObjectStream` and records the result; any failure is recorded with a redacted reason and leaves nothing stored. The API marks backups that can no longer finish as failed at startup (`failInterruptedDatabaseBackups`).
 - **API.** Contracts are in `packages/api/src/contracts/databases.ts`; permissions are `databases:read`, `databases:manage` and `databases:backup`, checked against the organization of the connection or backup row. Downloads are served by a plain Hono route, `GET /api/databases/backups/:backupId/download`, which redirects to a 60-second signed URL when storage supports one and otherwise streams the file.
-- **UI.** `apps/app/app/database` holds the connection list, the add form and a per-connection page whose server component checks permissions before rendering, like the flow builder.
+- **UI.** `apps/app/app/database` holds the connection list, with adding in a sheet (`/database/new` opens it) and backups of deleted connections listed under it, and a per-connection page whose server component checks permissions before rendering, like the flow builder. Backup progress is an indeterminate bar with elapsed time, because `pg_dump` reports no percentage.
 
 ## Local development
 
