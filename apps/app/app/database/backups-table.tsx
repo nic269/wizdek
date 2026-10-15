@@ -71,7 +71,8 @@ const StatusCell = ({ backup }: { backup: DatabaseBackup }) => {
       ) : null}
       {backup.status === "COMPLETED" ? (
         <span className="text-muted-foreground text-xs leading-[1.35]">
-          pg_dump {backup.toolVersion ?? ""} · custom format
+          {/* The recorded version already names the tool. */}
+          {backup.toolVersion ?? "pg_dump"} · custom format
         </span>
       ) : null}
     </div>
@@ -143,12 +144,15 @@ export function BackupsTable({
   canBackup,
   freshId,
   onChanged,
+  showConnection = false,
 }: {
   backups: DatabaseBackup[];
   canBackup: boolean;
   /** A backup that just finished, highlighted for a moment. */
   freshId: string | null;
   onChanged: () => void;
+  /** Names the connection on each row, for backups listed outside it. */
+  showConnection?: boolean | undefined;
 }) {
   useTick(backups.some((backup) => isBackupActive(backup.status)));
   return (
@@ -179,8 +183,9 @@ export function BackupsTable({
                 <div className="font-medium text-[13px] text-foreground">
                   {formatWhen(backup.startedAt ?? backup.createdAt)}
                 </div>
-                <div className="text-muted-foreground text-xs leading-[1.4]">
-                  by {backup.requestedByName ?? "someone"}
+                <div className="truncate text-muted-foreground text-xs leading-[1.4]">
+                  {showConnection ? `${backup.connectionName} · ` : ""}by{" "}
+                  {backup.requestedByName ?? "someone"}
                 </div>
               </TableCell>
               <TableCell className="whitespace-normal">

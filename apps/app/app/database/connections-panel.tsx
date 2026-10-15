@@ -15,6 +15,7 @@ import {
   PageHeader,
   Plus,
   ReadOnlyBanner,
+  SectionHeader,
   SegmentedControl,
   SkeletonRows,
   StatusBadge,
@@ -50,6 +51,7 @@ import {
   useOrganizationBackups,
 } from "../lib/queries";
 import { ENVIRONMENT_OPTIONS } from "../stores/store-drawer";
+import { BackupsTable } from "./backups-table";
 import { ConnectionUrlField } from "./connection-url-field";
 
 const COLUMNS = "minmax(220px,1.4fr) minmax(220px,1.4fr) 170px 190px 40px";
@@ -366,6 +368,10 @@ export function ConnectionsPanel({
   const [adding, setAdding] = useState(startAdding);
 
   const latest = latestBackups(backups.data);
+  // A backup outlives its connection; these are listed on their own.
+  const orphaned = (backups.data ?? []).filter(
+    (backup) => backup.connectionId === null
+  );
   const list = connections.data ?? [];
   const isLoading = permissionsLoading || connections.isLoading;
   const isEmpty = !(isLoading || connections.isError) && list.length === 0;
@@ -404,6 +410,23 @@ export function ConnectionsPanel({
       ) : null}
       {canRead && !isEmpty && !connections.isError ? (
         <ConnectionsTable isLoading={isLoading} latest={latest} list={list} />
+      ) : null}
+      {canRead && orphaned.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <SectionHeader
+            description="Kept until you delete them."
+            title="Backups of deleted connections"
+          />
+          <div className="overflow-x-auto rounded-card border border-border bg-card">
+            <BackupsTable
+              backups={orphaned}
+              canBackup={can("databases:backup")}
+              freshId={null}
+              onChanged={() => backups.refetch()}
+              showConnection
+            />
+          </div>
+        </section>
       ) : null}
       {organizationId && canManage ? (
         <AddConnectionSheet
