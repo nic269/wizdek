@@ -355,7 +355,7 @@ describe("webhook-triggered flows", () => {
 
     const off = await deactivateFlow(
       scope,
-      { storeId: workspace.storeId },
+      { actorId: workspace.userId, storeId: workspace.storeId },
       { jobs }
     );
     expect(off).toMatchObject({
@@ -363,6 +363,27 @@ describe("webhook-triggered flows", () => {
       webhookSubscriptionId: null,
     });
     expect(server.webhookSubscriptions.has(subscriptionId)).toBe(false);
+    const recorded = await prisma.auditLog.findMany({
+      select: { action: true, actorId: true, metadata: true },
+      where: {
+        action: { in: ["flow.activated", "flow.deactivated"] },
+        organizationId: scope.organizationId,
+      },
+    });
+    expect(recorded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "flow.activated",
+          actorId: workspace.userId,
+          metadata: expect.objectContaining({ status: "ACTIVE" }),
+        }),
+        expect.objectContaining({
+          action: "flow.deactivated",
+          actorId: workspace.userId,
+        }),
+      ])
+    );
+    expect(recorded).toHaveLength(2);
     await expect(
       receiveWebhookDelivery(delivery(workspace, activation.id, { id: 1 }), {
         jobs,
@@ -372,7 +393,11 @@ describe("webhook-triggered flows", () => {
 
     // Deactivating again, and activating again, both work.
     await expect(
-      deactivateFlow(scope, { storeId: workspace.storeId }, { jobs })
+      deactivateFlow(
+        scope,
+        { actorId: workspace.userId, storeId: workspace.storeId },
+        { jobs }
+      )
     ).resolves.toMatchObject({ status: "INACTIVE" });
     const again = await activateFlow(
       scope,
@@ -510,7 +535,11 @@ describe("scheduled flows", () => {
     });
 
     await expect(
-      deactivateFlow(scope, { storeId: workspace.storeId }, { jobs })
+      deactivateFlow(
+        scope,
+        { actorId: workspace.userId, storeId: workspace.storeId },
+        { jobs }
+      )
     ).resolves.toMatchObject({ error: null, status: "INACTIVE" });
     await jobs.waitUntilIdle();
     const afterDeactivation = await runCount(scope.flowId);

@@ -93,14 +93,14 @@ const runScopeOf = (run: FlowRunRecord) => ({
 
 const runsRouter = {
   cancel: os.flows.runs.cancel.handler(async ({ context, input }) => {
-    const { run } = await requireRunPermission(
+    const { run, user } = await requireRunPermission(
       context.headers,
       input.runId,
       "run"
     );
     return {
       data: toPublicRun(
-        await withFlowErrors(() => cancelFlowRun(runScopeOf(run)))
+        await withFlowErrors(() => cancelFlowRun(runScopeOf(run), user.id))
       ),
     };
   }),
@@ -295,7 +295,7 @@ const activationsRouter = {
   ),
   deactivate: os.flows.activations.deactivate.handler(
     async ({ context, input }) => {
-      const { flow } = await requireFlowPermission(
+      const { flow, user } = await requireFlowPermission(
         context.headers,
         input.flowId,
         "manage"
@@ -303,7 +303,7 @@ const activationsRouter = {
       await withFlowErrors(() =>
         deactivateFlow(
           scopeOf(flow),
-          { storeId: input.storeId },
+          { actorId: user.id, storeId: input.storeId },
           { jobs: getJobProvider() }
         )
       );
@@ -422,7 +422,7 @@ export const flowsRouter = {
     };
   }),
   update: os.flows.update.handler(async ({ context, input }) => {
-    const { flow } = await requireFlowPermission(
+    const { flow, user } = await requireFlowPermission(
       context.headers,
       input.flowId,
       "manage"
@@ -430,7 +430,7 @@ export const flowsRouter = {
     const { flowId: _flowId, ...changes } = input;
     return {
       data: toPublicFlow(
-        await withFlowErrors(() => updateFlow(scopeOf(flow), changes))
+        await withFlowErrors(() => updateFlow(scopeOf(flow), changes, user.id))
       ),
     };
   }),

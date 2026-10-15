@@ -163,6 +163,10 @@ Shopify runs up to five bulk mutations at a time per store on API versions from 
 
 The GraphQL request and Bulk mutation steps let a flow's author write any mutation the store's token allows. People with `flows:run`, and triggers, then execute it. Treat `flows:manage` as the permission to decide what flows may do to a store.
 
+## What is audited
+
+Creating, editing, archiving and restoring a flow, saving a version, starting and canceling a run, and activating and deactivating a flow on a store are recorded in the organization's audit log, under the **Flows** filter in **Settings → Access**. Entries name the flow, the run number and the store domain; run inputs and item data are never included. Runs started by a webhook or a schedule have no person behind them and are not recorded.
+
 ## Data kept by runs
 
 Run items hold the rows of uploaded files, webhook payloads and the data read from the store, which can include customer data. They are visible to everyone with `flows:read` in the organization and are kept indefinitely for now. Uploaded files are read only by the run; there is no download link for them.

@@ -5,6 +5,7 @@ import type { manualInputSchema } from "../definition/specs/trigger-manual";
 import { enqueueFlowRun } from "../engine/run-job";
 import { builtInRegistry } from "../nodes";
 import type { NodeRegistry } from "../registry/registry";
+import { recordFlowAudit } from "./audit";
 import { FlowServiceError } from "./errors";
 import {
   type FlowScope,
@@ -44,10 +45,12 @@ const invalidInput = (message: string) =>
 /** Unscoped lookup, for deciding which organization a run id belongs to. */
 /**
  * Creates a run with the next number of its flow. An advisory lock on the
- * flow makes concurrent starts take numbers one at a time.
+ * flow makes concurrent starts take numbers one at a time. A run a person
+ * started is recorded in the audit log with it.
  */
 export const createNumberedRun = (
-  data: Omit<Prisma.FlowRunUncheckedCreateInput, "number">
+  data: Omit<Prisma.FlowRunUncheckedCreateInput, "number">,
+  audit?: { flowName: string; shopDomain: string }
 ): Promise<FlowRunRecord> =>
   prisma.$transaction(async (transaction) => {
     await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${data.flowId}, 0))::text AS locked`;
@@ -55,9 +58,24 @@ export const createNumberedRun = (
       _max: { number: true },
       where: { flowId: data.flowId },
     });
-    return transaction.flowRun.create({
+    const run = await transaction.flowRun.create({
       data: { ...data, number: (last._max.number ?? 0) + 1 },
     });
+    if (audit && data.startedById) {
+      await recordFlowAudit(transaction, {
+        action: "flow.run.started",
+        actorId: data.startedById,
+        metadata: {
+          flowName: audit.flowName,
+          runNumber: run.number,
+          shopDomain: audit.shopDomain,
+        },
+        organizationId: data.organizationId,
+        targetId: run.id,
+        targetType: "FlowRun",
+      });
+    }
+    return run;
   });
 
 export const findRunById = (runId: string): Promise<FlowRunRecord | null> =>
@@ -147,7 +165,7 @@ export const startFlowRun = async (
     );
   }
   const store = await prisma.shopifyStore.findFirst({
-    select: { id: true, status: true },
+    select: { id: true, shopDomain: true, status: true },
     where: { id: input.storeId, organizationId: scope.organizationId },
   });
   if (!store) {
@@ -180,15 +198,18 @@ export const startFlowRun = async (
     scope.organizationId
   );
 
-  const run = await createNumberedRun({
-    flowId: flow.id,
-    flowVersionId: version.id,
-    organizationId: scope.organizationId,
-    startedById: input.actorId,
-    storeId: store.id,
-    triggerPayload,
-    triggerType: "manual",
-  });
+  const run = await createNumberedRun(
+    {
+      flowId: flow.id,
+      flowVersionId: version.id,
+      organizationId: scope.organizationId,
+      startedById: input.actorId,
+      storeId: store.id,
+      triggerPayload,
+      triggerType: "manual",
+    },
+    { flowName: flow.name, shopDomain: store.shopDomain }
+  );
   await enqueueFlowRun(dependencies.jobs, run);
   return run;
 };
@@ -224,9 +245,11 @@ export const startTriggeredRun = async (
  * processed finishes and the rest stay pending.
  */
 export const cancelFlowRun = async (
-  scope: RunScope
+  scope: RunScope,
+  actorId: string
 ): Promise<FlowRunRecord> => {
   const run = await prisma.flowRun.findFirst({
+    include: { flow: { select: { name: true } } },
     where: { id: scope.runId, organizationId: scope.organizationId },
   });
   if (!run) {
@@ -238,9 +261,23 @@ export const cancelFlowRun = async (
       "The run has already finished."
     );
   }
-  return prisma.flowRun.update({
-    data: { cancelRequestedAt: run.cancelRequestedAt ?? new Date() },
-    where: { id: run.id },
+  return prisma.$transaction(async (transaction) => {
+    const updated = await transaction.flowRun.update({
+      data: { cancelRequestedAt: run.cancelRequestedAt ?? new Date() },
+      where: { id: run.id },
+    });
+    // Asking twice records one cancellation.
+    if (!run.cancelRequestedAt) {
+      await recordFlowAudit(transaction, {
+        action: "flow.run.canceled",
+        actorId,
+        metadata: { flowName: run.flow.name, runNumber: run.number },
+        organizationId: scope.organizationId,
+        targetId: run.id,
+        targetType: "FlowRun",
+      });
+    }
+    return updated;
   });
 };
 

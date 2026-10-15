@@ -12,6 +12,7 @@ import type { FlowNode } from "../definition/schema";
 import { FLOW_SCHEDULE_JOB } from "../engine/schedule-job";
 import { builtInRegistry } from "../nodes";
 import type { NodeRegistry } from "../registry/registry";
+import { recordFlowAudit } from "./audit";
 import { FlowServiceError } from "./errors";
 import {
   type FlowScope,
@@ -107,7 +108,7 @@ export const activateFlow = async (
   dependencies: ActivationDependencies
 ): Promise<FlowActivationRecord> => {
   const registry = dependencies.registry ?? builtInRegistry;
-  const { version } = await getFlow(scope);
+  const { flow, version } = await getFlow(scope);
   if (!version) {
     throw invalid("The flow has no saved version.");
   }
@@ -194,25 +195,65 @@ export const activateFlow = async (
         timezone: String(trigger.config.timezone ?? "UTC"),
       });
     }
-    return await prisma.flowActivation.update({
+    return await finishActivation(activation.id, {
       data: { status: "ACTIVE", webhookSubscriptionId },
-      where: { id: activation.id },
+      event: { actorId: input.actorId, flowName: flow.name, scope, store },
     });
   } catch (error) {
-    return prisma.flowActivation.update({
+    return finishActivation(activation.id, {
       data: { error: describe(error), status: "FAILED" },
-      where: { id: activation.id },
+      event: { actorId: input.actorId, flowName: flow.name, scope, store },
     });
   }
 };
 
+/**
+ * Records an activation's outcome together with its audit event. A failed
+ * activation is still recorded, with the status saying it failed.
+ */
+const finishActivation = (
+  activationId: string,
+  outcome: {
+    data: Prisma.FlowActivationUpdateInput;
+    event: {
+      actorId: string;
+      flowName: string;
+      scope: FlowScope;
+      store: { shopDomain: string };
+    };
+  }
+) =>
+  prisma.$transaction(async (transaction) => {
+    const activation = await transaction.flowActivation.update({
+      data: outcome.data,
+      where: { id: activationId },
+    });
+    await recordFlowAudit(transaction, {
+      action: "flow.activated",
+      actorId: outcome.event.actorId,
+      metadata: {
+        flowName: outcome.event.flowName,
+        shopDomain: outcome.event.store.shopDomain,
+        status: activation.status,
+      },
+      organizationId: outcome.event.scope.organizationId,
+      targetId: activation.id,
+      targetType: "FlowActivation",
+    });
+    return activation;
+  });
+
 /** Turns a flow off for a store. Doing it twice is harmless. */
 export const deactivateFlow = async (
   scope: FlowScope,
-  input: { storeId: string },
+  input: { actorId: string; storeId: string },
   dependencies: ActivationDependencies
 ): Promise<FlowActivationRecord | null> => {
   const activation = await prisma.flowActivation.findFirst({
+    include: {
+      flow: { select: { name: true } },
+      store: { select: { shopDomain: true } },
+    },
     where: {
       flow: { id: scope.flowId, organizationId: scope.organizationId },
       storeId: input.storeId,
@@ -231,16 +272,35 @@ export const deactivateFlow = async (
       error = `Deactivated, but the subscription could not be removed in Shopify: ${describe(cause)}`;
     }
   }
-  return prisma.flowActivation.update({
-    data: { error, status: "INACTIVE", webhookSubscriptionId: null },
-    where: { id: activation.id },
+  const wasOn = activation.status !== "INACTIVE";
+  return prisma.$transaction(async (transaction) => {
+    const updated = await transaction.flowActivation.update({
+      data: { error, status: "INACTIVE", webhookSubscriptionId: null },
+      where: { id: activation.id },
+    });
+    // Turning off what is already off changes nothing worth recording.
+    if (wasOn) {
+      await recordFlowAudit(transaction, {
+        action: "flow.deactivated",
+        actorId: input.actorId,
+        metadata: {
+          flowName: activation.flow.name,
+          shopDomain: activation.store.shopDomain,
+        },
+        organizationId: scope.organizationId,
+        targetId: activation.id,
+        targetType: "FlowActivation",
+      });
+    }
+    return updated;
   });
 };
 
 /** Turns off every flow activated on a store, before the store is disconnected. */
 export const deactivateStoreActivations = async (
   store: { id: string; organizationId: string },
-  dependencies: ActivationDependencies
+  dependencies: ActivationDependencies,
+  actorId: string
 ): Promise<void> => {
   const activations = await prisma.flowActivation.findMany({
     where: { status: { not: "INACTIVE" }, storeId: store.id },
@@ -248,7 +308,7 @@ export const deactivateStoreActivations = async (
   for (const activation of activations) {
     await deactivateFlow(
       { flowId: activation.flowId, organizationId: store.organizationId },
-      { storeId: store.id },
+      { actorId, storeId: store.id },
       dependencies
     );
   }

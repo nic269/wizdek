@@ -21,6 +21,7 @@ import { z } from "zod";
 import {
   type AnyNodeDefinition,
   builtInNodes,
+  cancelFlowRun,
   createAssetReader,
   createFlow,
   createFlowRunJob,
@@ -33,6 +34,7 @@ import {
   FlowServiceError,
   saveFlowVersion,
   startFlowRun,
+  updateFlow,
   uploadFlowFile,
 } from "../src";
 
@@ -702,6 +704,14 @@ describe("starting runs", () => {
       { jobs, registry }
     );
     expect(run.status).toBe("QUEUED");
+    await expect(
+      prisma.auditLog.findFirst({
+        where: { action: "flow.run.started", targetId: run.id },
+      })
+    ).resolves.toMatchObject({
+      actorId: workspace.userId,
+      metadata: expect.objectContaining({ runNumber: run.number }),
+    });
     await jobs.waitUntilIdle();
 
     expect((await runOf(run.id)).status).toBe("SUCCEEDED");
@@ -771,6 +781,43 @@ describe("starting runs", () => {
 
     // Nothing was queued: the only new run is the invalid flow's own fixture.
     await expect(countRuns()).resolves.toBe(runsBefore + 1);
+  });
+
+  it("records what people do to a flow in the audit log", async () => {
+    const workspace = await createWorkspace();
+    const { flowId, runId } = await createRun(
+      workspace,
+      csvTaggingFlow(),
+      "Order,Total\n"
+    );
+    const scope = { flowId, organizationId: workspace.organizationId };
+    await updateFlow(scope, { status: "ARCHIVED" }, workspace.userId);
+    await updateFlow(scope, { status: "ACTIVE" }, workspace.userId);
+    const runScope = { organizationId: workspace.organizationId, runId };
+    await cancelFlowRun(runScope, workspace.userId);
+    // Asking again does not record a second cancellation.
+    await cancelFlowRun(runScope, workspace.userId);
+
+    const recorded = await prisma.auditLog.findMany({
+      orderBy: { createdAt: "asc" },
+      select: { action: true, actorId: true },
+      where: {
+        action: { startsWith: "flow." },
+        organizationId: workspace.organizationId,
+      },
+    });
+    expect(recorded.map(({ action }) => action).sort()).toEqual(
+      [
+        "flow.archived",
+        "flow.created",
+        "flow.restored",
+        "flow.run.canceled",
+        "flow.version_saved",
+      ].sort()
+    );
+    expect(recorded.every(({ actorId }) => actorId === workspace.userId)).toBe(
+      true
+    );
   });
 
   it("refuses to overwrite a version someone else saved", async () => {

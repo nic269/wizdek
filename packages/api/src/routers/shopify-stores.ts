@@ -181,7 +181,11 @@ export const shopifyStoresRouter = {
       );
       // Flows activated on the store are turned off first, while its
       // credentials can still remove their webhook subscriptions.
-      await deactivateStoreActivations(store, { jobs: getJobProvider() });
+      await deactivateStoreActivations(
+        store,
+        { jobs: getJobProvider() },
+        user.id
+      );
       const disconnected = await withShopifyErrors(() =>
         disconnectStore(scopeOf(store), user.id)
       );

@@ -132,7 +132,7 @@ export const AUDIT_FILTERS: readonly {
 }[] = [
   { label: "All", prefixes: "", value: "all" },
   { label: "Stores", prefixes: "shopify.", value: "stores" },
-  { label: "Flows", prefixes: "flow.,flows.", value: "flows" },
+  { label: "Flows", prefixes: "flow.", value: "flows" },
   { label: "Database", prefixes: "database.", value: "database" },
   {
     label: "Members",

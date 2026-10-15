@@ -200,6 +200,8 @@ Limits: 100 nodes per flow, 100,000 items per run, 1 MB per item, 10 MB per uplo
 
 Each run gets a `number` per flow (shown as "Run #128"), assigned under an advisory lock when the run is created. `flows.versions` lists a flow's saved versions, and `flows.runs.listForOrganization` (`GET /api/organizations/{organizationId}/flow-runs`) lists recent runs across flows with per-status item counts, for the dashboard.
 
+The flow services record what people do in the audit log, in the same transaction as the change: `flow.created`, `flow.updated`, `flow.archived`, `flow.restored`, `flow.version_saved`, `flow.run.started`, `flow.run.canceled`, `flow.activated` and `flow.deactivated` (`packages/flows/src/services/audit.ts`). Runs started by triggers are not recorded.
+
 Run items hold business data from CSV files and stores. They are organization-scoped and readable with `flows:read`. They are kept indefinitely for now; a retention policy is needed before the product is opened beyond internal use.
 
 ### Flow builder

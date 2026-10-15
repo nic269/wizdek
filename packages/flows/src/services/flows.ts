@@ -10,6 +10,7 @@ import {
 } from "../definition/validate";
 import { builtInRegistry } from "../nodes";
 import type { NodeRegistry } from "../registry/registry";
+import { recordFlowAudit } from "./audit";
 import { FlowServiceError } from "./errors";
 
 export type FlowRecord = Prisma.FlowGetPayload<object>;
@@ -202,6 +203,14 @@ export const createFlow = (input: {
         version: 1,
       },
     });
+    await recordFlowAudit(transaction, {
+      action: "flow.created",
+      actorId: input.actorId,
+      metadata: { name: flow.name },
+      organizationId: input.organizationId,
+      targetId: flow.id,
+      targetType: "Flow",
+    });
     return {
       flow: await transaction.flow.update({
         data: { currentVersionId: version.id },
@@ -211,29 +220,53 @@ export const createFlow = (input: {
     };
   });
 
-export const updateFlow = async (
+/** Which audit event a change to a flow is recorded as. */
+const updateAction = (status: FlowRecord["status"] | undefined) => {
+  if (status === "ARCHIVED") {
+    return "flow.archived" as const;
+  }
+  if (status === "ACTIVE") {
+    return "flow.restored" as const;
+  }
+  return "flow.updated" as const;
+};
+
+export const updateFlow = (
   scope: FlowScope,
   changes: {
     description?: string | null | undefined;
     name?: string | undefined;
     status?: FlowRecord["status"] | undefined;
-  }
-): Promise<FlowRecord> => {
-  const { count } = await prisma.flow.updateMany({
-    data: {
-      ...(changes.description === undefined
-        ? {}
-        : { description: changes.description?.trim() || null }),
-      ...(changes.name === undefined ? {} : { name: changes.name.trim() }),
-      ...(changes.status === undefined ? {} : { status: changes.status }),
-    },
-    where: { id: scope.flowId, organizationId: scope.organizationId },
+  },
+  actorId: string
+): Promise<FlowRecord> =>
+  prisma.$transaction(async (transaction) => {
+    const { count } = await transaction.flow.updateMany({
+      data: {
+        ...(changes.description === undefined
+          ? {}
+          : { description: changes.description?.trim() || null }),
+        ...(changes.name === undefined ? {} : { name: changes.name.trim() }),
+        ...(changes.status === undefined ? {} : { status: changes.status }),
+      },
+      where: { id: scope.flowId, organizationId: scope.organizationId },
+    });
+    if (count === 0) {
+      throw flowNotFound();
+    }
+    const flow = await transaction.flow.findUniqueOrThrow({
+      where: { id: scope.flowId },
+    });
+    await recordFlowAudit(transaction, {
+      action: updateAction(changes.status),
+      actorId,
+      metadata: { name: flow.name },
+      organizationId: scope.organizationId,
+      targetId: flow.id,
+      targetType: "Flow",
+    });
+    return flow;
   });
-  if (count === 0) {
-    throw flowNotFound();
-  }
-  return prisma.flow.findUniqueOrThrow({ where: { id: scope.flowId } });
-};
 
 /**
  * Saves the definition as a new immutable version. `baseVersion` is the
@@ -293,6 +326,14 @@ export const saveFlowVersion = (
     const flow = await transaction.flow.update({
       data: { currentVersionId: version.id },
       where: { id: scope.flowId },
+    });
+    await recordFlowAudit(transaction, {
+      action: "flow.version_saved",
+      actorId: input.actorId,
+      metadata: { name: flow.name, version: version.version },
+      organizationId: scope.organizationId,
+      targetId: flow.id,
+      targetType: "Flow",
     });
     return {
       flow,

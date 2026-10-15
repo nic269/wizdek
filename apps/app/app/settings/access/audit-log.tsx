@@ -3,10 +3,13 @@
 import { apiClient } from "@repo/api/client";
 import {
   Activity,
+  Archive,
+  ArchiveRestore,
   Box,
   Braces,
   Building2,
   Button,
+  CircleX,
   Database,
   Download,
   ErrorAlert,
@@ -14,6 +17,11 @@ import {
   KeyRound,
   type LucideIcon,
   MailX,
+  PencilLine,
+  Play,
+  Power,
+  PowerOff,
+  Save,
   SegmentedControl,
   Send,
   Shield,
@@ -24,6 +32,7 @@ import {
   Unplug,
   UserCheck,
   UserCog,
+  Workflow,
 } from "@repo/design-system";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -37,10 +46,37 @@ type AuditEvent = AuditPage["data"][number];
 const PAGE_SIZE = 20;
 const COLUMNS = "140px 28px minmax(0,1fr) 190px";
 
-/** How an action reads: an icon, a verb phrase, and the metadata naming its object. */
+type Metadata = Record<string, unknown>;
+
+const text = (metadata: Metadata, field: string) => {
+  const value = metadata[field];
+  return typeof value === "string" || typeof value === "number"
+    ? String(value)
+    : "";
+};
+
+/** "Tag orders #128 on evisu-hk.myshopify.com", from a run's metadata. */
+const runObject = (metadata: Metadata) =>
+  `${text(metadata, "flowName")} #${text(metadata, "runNumber")}${
+    text(metadata, "shopDomain") ? ` on ${text(metadata, "shopDomain")}` : ""
+  }`;
+
+const activationObject = (metadata: Metadata) =>
+  `${text(metadata, "flowName")} on ${text(metadata, "shopDomain")}${
+    text(metadata, "status") === "FAILED" ? " (failed)" : ""
+  }`;
+
+/**
+ * How an action reads: an icon, a verb phrase, and its object, named by a
+ * metadata field or built from several.
+ */
 const EVENTS: Record<
   string,
-  { icon: LucideIcon; object?: string; what: string }
+  {
+    icon: LucideIcon;
+    object?: string | ((metadata: Metadata) => string);
+    what: string;
+  }
 > = {
   "database.backup.deleted": {
     icon: Trash2,
@@ -71,6 +107,36 @@ const EVENTS: Record<
     icon: Database,
     object: "name",
     what: "updated connection",
+  },
+  "flow.activated": {
+    icon: Power,
+    object: activationObject,
+    what: "activated flow",
+  },
+  "flow.archived": { icon: Archive, object: "name", what: "archived flow" },
+  "flow.created": { icon: Workflow, object: "name", what: "created flow" },
+  "flow.deactivated": {
+    icon: PowerOff,
+    object: activationObject,
+    what: "deactivated flow",
+  },
+  "flow.restored": {
+    icon: ArchiveRestore,
+    object: "name",
+    what: "restored flow",
+  },
+  "flow.run.canceled": {
+    icon: CircleX,
+    object: runObject,
+    what: "canceled run",
+  },
+  "flow.run.started": { icon: Play, object: runObject, what: "ran flow" },
+  "flow.updated": { icon: PencilLine, object: "name", what: "edited flow" },
+  "flow.version_saved": {
+    icon: Save,
+    object: (metadata) =>
+      `${text(metadata, "name")} · v${text(metadata, "version")}`,
+    what: "saved a version of",
   },
   "invitation.accepted": {
     icon: UserCheck,
@@ -125,12 +191,16 @@ const EVENTS: Record<
   },
 };
 
-const metadataText = (metadata: unknown, field: string | undefined) => {
-  if (!(field && metadata && typeof metadata === "object")) {
+const objectText = (
+  metadata: unknown,
+  object: string | ((metadata: Metadata) => string) | undefined
+) => {
+  if (!(object && metadata && typeof metadata === "object")) {
     return "";
   }
-  const value = (metadata as Record<string, unknown>)[field];
-  return typeof value === "string" ? value : "";
+  return typeof object === "string"
+    ? text(metadata as Metadata, object)
+    : object(metadata as Metadata);
 };
 
 /** "Oct 14 16:00", in the viewer's time zone. */
@@ -151,7 +221,7 @@ const auditTime = (value: Date | string) => {
 const AuditRow = ({ event }: { event: AuditEvent }) => {
   const known = EVENTS[event.action];
   const Icon = known?.icon ?? Activity;
-  const object = metadataText(event.metadata, known?.object);
+  const object = objectText(event.metadata, known?.object);
   return (
     <div
       className="grid items-center gap-3 border-border border-b px-4 py-2.5 last:border-b-0"

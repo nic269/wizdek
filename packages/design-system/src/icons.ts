@@ -65,6 +65,8 @@ export {
   PencilLine,
   Play,
   Plus,
+  Power,
+  PowerOff,
   RefreshCw,
   RotateCcw,
   Save,
