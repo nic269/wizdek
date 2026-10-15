@@ -51,6 +51,13 @@ const writeStoredId = (organizationId: string) => {
   }
 };
 
+/**
+ * Makes an organization the one selected on the next load, such as one the
+ * viewer just joined from an invitation.
+ */
+export const rememberOrganization = (organizationId: string) =>
+  writeStoredId(organizationId);
+
 export function ActiveOrganizationProvider({
   children,
 }: {

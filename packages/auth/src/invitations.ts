@@ -182,6 +182,53 @@ export const revokeInvitation = (input: {
     });
   });
 
+/**
+ * What the holder of an invitation link may see before accepting: the
+ * organization, who invited them, the role it grants and when it lapses.
+ * A pending invitation past its expiry reads as expired.
+ */
+export const previewInvitation = async (input: {
+  token: string;
+  now?: Date;
+}) => {
+  const now = input.now ?? new Date();
+  const invitation = await prisma.invitation.findUnique({
+    select: {
+      email: true,
+      expiresAt: true,
+      invitedBy: { select: { name: true } },
+      organization: {
+        select: {
+          _count: {
+            select: { shopifyStores: { where: { status: "CONNECTED" } } },
+          },
+          id: true,
+          name: true,
+        },
+      },
+      role: { select: { name: true } },
+      status: true,
+    },
+    where: { tokenHash: hashInvitationToken(input.token) },
+  });
+  if (!invitation) {
+    throw new InvitationError("INVITATION_NOT_FOUND", "Invitation not found.");
+  }
+  const lapsed = invitation.status === "PENDING" && invitation.expiresAt <= now;
+  return {
+    connectedStoreCount: invitation.organization._count.shopifyStores,
+    email: invitation.email,
+    expiresAt: invitation.expiresAt,
+    invitedBy: invitation.invitedBy,
+    organization: {
+      id: invitation.organization.id,
+      name: invitation.organization.name,
+    },
+    role: invitation.role,
+    status: lapsed ? ("EXPIRED" as const) : invitation.status,
+  };
+};
+
 export const acceptInvitation = async (input: {
   token: string;
   userId: string;

@@ -63,6 +63,7 @@ vi.mock("@repo/auth/invitations", () => ({
     }
   },
   listInvitations: vi.fn(),
+  previewInvitation: vi.fn(),
   revokeInvitation: vi.fn(),
 }));
 vi.mock("@repo/auth/access-control", () => ({

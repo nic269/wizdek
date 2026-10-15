@@ -1,5 +1,8 @@
+import { getCurrentSession } from "@repo/auth/session";
 import { authFeatureConfig } from "@repo/config";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { AuthSplit } from "../../(auth)/auth-split";
 import { InviteAcceptance } from "./invite-acceptance";
 
 export default async function InvitePage({
@@ -12,9 +15,13 @@ export default async function InvitePage({
   }
 
   const { token } = await params;
+  const session = await getCurrentSession(await headers());
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <InviteAcceptance token={token} />
-    </main>
+    <AuthSplit>
+      <InviteAcceptance
+        token={token}
+        viewerEmail={session?.user.email ?? null}
+      />
+    </AuthSplit>
   );
 }

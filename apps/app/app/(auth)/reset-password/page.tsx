@@ -13,9 +13,5 @@ export default async function ResetPasswordPage({
 
   const { token } = await searchParams;
 
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <ResetPasswordForm token={token ?? ""} />
-    </main>
-  );
+  return <ResetPasswordForm token={token ?? ""} />;
 }

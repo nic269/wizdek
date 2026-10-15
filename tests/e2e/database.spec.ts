@@ -94,7 +94,6 @@ test("an owner backs up a database, downloads it, and a member has no access", a
   const memberPage = await memberContext.newPage();
   try {
     await memberPage.goto(inviteUrl);
-    await memberPage.getByRole("button", { name: "Accept invitation" }).click();
     await memberPage.getByRole("link", { name: "Create account" }).click();
     await memberPage.getByPlaceholder("Full name").fill("Database Member");
     await memberPage.getByPlaceholder("you@example.com").fill(memberEmail);

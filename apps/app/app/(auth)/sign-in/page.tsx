@@ -8,8 +8,6 @@ export default async function SignInPage({
 }) {
   const { callbackUrl } = await searchParams;
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <AuthForm callbackUrl={safeAuthCallbackUrl(callbackUrl)} mode="sign-in" />
-    </main>
+    <AuthForm callbackUrl={safeAuthCallbackUrl(callbackUrl)} mode="sign-in" />
   );
 }

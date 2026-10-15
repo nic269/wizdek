@@ -20,12 +20,10 @@ export default async function VerifyEmailPage({
   const safeCallbackUrl = safeAuthCallbackUrl(callbackUrl);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <VerifyEmailForm
-        callbackUrl={safeCallbackUrl}
-        email={email ?? ""}
-        token={token ?? ""}
-      />
-    </main>
+    <VerifyEmailForm
+      callbackUrl={safeCallbackUrl}
+      email={email ?? ""}
+      token={token ?? ""}
+    />
   );
 }

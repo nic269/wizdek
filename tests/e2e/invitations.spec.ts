@@ -37,7 +37,6 @@ test("owner can invite a member who signs up and accepts access", async ({
   const memberPage = await memberContext.newPage();
   try {
     await memberPage.goto(inviteUrl);
-    await memberPage.getByRole("button", { name: "Accept invitation" }).click();
     await memberPage.getByRole("link", { name: "Create account" }).click();
     await memberPage.getByPlaceholder("Full name").fill("Invited Member");
     await memberPage.getByPlaceholder("you@example.com").fill(memberEmail);

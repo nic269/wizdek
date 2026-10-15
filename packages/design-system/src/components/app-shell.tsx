@@ -70,7 +70,7 @@ const activeHrefOf = (groups: readonly AppShellNavGroup[], path: string) =>
       undefined
     );
 
-const BrandMark = ({ size = 28 }: { size?: number }) => (
+export const BrandMark = ({ size = 28 }: { size?: number }) => (
   <span
     aria-hidden="true"
     className="grid shrink-0 place-items-center bg-(--brand-mark) font-bold text-white leading-none tracking-[-0.04em]"

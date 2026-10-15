@@ -5,13 +5,18 @@ import {
   createInvitation,
   hashInvitationToken,
   listInvitations,
+  previewInvitation,
   revokeInvitation,
 } from "./invitations";
 
 vi.mock("@repo/database", () => ({
   prisma: {
     $transaction: vi.fn(),
-    invitation: { findMany: vi.fn(), updateMany: vi.fn() },
+    invitation: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
+    },
   },
   syncSystemRoles: vi.fn(),
 }));
@@ -165,6 +170,54 @@ describe("invitation service", () => {
       }),
       where: { id: "invite-1" },
     });
+  });
+
+  it("previews an invitation by its token hash and reads lapsed ones as expired", async () => {
+    const row = {
+      email: "member@example.com",
+      expiresAt: new Date("2026-10-20T00:00:00.000Z"),
+      invitedBy: { name: "Minh Tran" },
+      organization: {
+        _count: { shopifyStores: 5 },
+        id: "org-1",
+        name: "wizloft",
+      },
+      role: { name: "Member" },
+      status: "PENDING",
+    };
+    vi.mocked(prisma.invitation.findUnique).mockResolvedValue(row as never);
+
+    const pending = await previewInvitation({
+      now: new Date("2026-10-15T00:00:00.000Z"),
+      token: "token-1",
+    });
+    expect(prisma.invitation.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tokenHash: hashInvitationToken("token-1") },
+      })
+    );
+    expect(pending).toEqual({
+      connectedStoreCount: 5,
+      email: "member@example.com",
+      expiresAt: row.expiresAt,
+      invitedBy: { name: "Minh Tran" },
+      organization: { id: "org-1", name: "wizloft" },
+      role: { name: "Member" },
+      status: "PENDING",
+    });
+
+    const lapsed = await previewInvitation({
+      now: new Date("2026-10-21T00:00:00.000Z"),
+      token: "token-1",
+    });
+    expect(lapsed.status).toBe("EXPIRED");
+  });
+
+  it("reports an unknown invitation token as not found", async () => {
+    vi.mocked(prisma.invitation.findUnique).mockResolvedValue(null);
+    await expect(previewInvitation({ token: "missing" })).rejects.toMatchObject(
+      { code: "INVITATION_NOT_FOUND" }
+    );
   });
 
   it("rejects acceptance from a different signed-in email", async () => {

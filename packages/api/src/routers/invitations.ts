@@ -2,6 +2,7 @@ import {
   acceptInvitation,
   InvitationError,
   type InvitationErrorCode,
+  previewInvitation,
 } from "@repo/auth/invitations";
 import { getCurrentSession } from "@repo/auth/session";
 import { ApiError } from "../errors";
@@ -14,6 +15,19 @@ const errorStatus: Record<InvitationErrorCode, 403 | 404 | 409 | 410> = {
   INVITATION_NOT_FOUND: 404,
   INVITATION_NOT_PENDING: 409,
 };
+
+const toApiError = (error: unknown) =>
+  error instanceof InvitationError
+    ? new ApiError(
+        error.code,
+        error.message,
+        errorStatus[error.code],
+        undefined,
+        {
+          cause: error,
+        }
+      )
+    : error;
 
 export const invitationsRouter = {
   accept: os.invitations.accept.handler(async ({ context, input }) => {
@@ -31,16 +45,17 @@ export const invitationsRouter = {
       });
       return { data: { organization } };
     } catch (error) {
-      if (error instanceof InvitationError) {
-        throw new ApiError(
-          error.code,
-          error.message,
-          errorStatus[error.code],
-          undefined,
-          { cause: error }
-        );
-      }
-      throw error;
+      throw toApiError(error);
+    }
+  }),
+  // The token is the secret the invite link carries, so its holder may read
+  // what they were invited to before signing in.
+  preview: os.invitations.preview.handler(async ({ input }) => {
+    requireOrganizationInvitationsEnabled();
+    try {
+      return { data: await previewInvitation({ token: input.token }) };
+    } catch (error) {
+      throw toApiError(error);
     }
   }),
 };
