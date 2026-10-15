@@ -1,23 +1,24 @@
+import { getCurrentSession } from "@repo/auth/session";
 import { authFeatureConfig } from "@repo/config";
-import { PageHeader } from "@repo/design-system";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { AppShellLayout } from "../../app-shell-layout";
+import { SettingsHeader } from "../settings-header";
 import { MembersPanel } from "./members-panel";
 
 export default async function MembersPage() {
   if (!authFeatureConfig.organizationInvitations) {
     notFound();
   }
+  const session = await getCurrentSession(await headers());
+  if (!session) {
+    redirect("/sign-in");
+  }
 
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          description="Invite collaborators and manage pending access."
-          title="Members"
-        />
-        <MembersPanel />
-      </div>
+      <SettingsHeader tab="members" />
+      <MembersPanel currentUserId={session.user.id} />
     </AppShellLayout>
   );
 }

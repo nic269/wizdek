@@ -24,7 +24,7 @@ test("owner can invite a member who signs up and accepts access", async ({
   await createOrganization({ name: organizationName, page });
 
   await page.goto("/settings/members");
-  await page.getByPlaceholder("member@example.com").fill(memberEmail);
+  await page.getByRole("textbox", { name: "Email address" }).fill(memberEmail);
   await page.getByRole("button", { name: "Send invite" }).click();
   const inviteLink = page.getByRole("link", { name: INVITE_URL_PATTERN });
   await expect(inviteLink).toBeVisible();
@@ -54,9 +54,9 @@ test("owner can invite a member who signs up and accepts access", async ({
     await memberPage.getByRole("button", { name: "Accept invitation" }).click();
     await expect(memberPage).toHaveURL(DASHBOARD_URL_PATTERN);
     await expect(
-      memberPage
-        .getByRole("listitem")
-        .getByText(organizationName, { exact: true })
+      memberPage.getByRole("button", {
+        name: `Switch organization, current: ${organizationName}`,
+      })
     ).toBeVisible();
   } finally {
     await memberContext.close();

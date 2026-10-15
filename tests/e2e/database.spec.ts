@@ -82,7 +82,7 @@ test("an owner backs up a database, downloads it, and a member has no access", a
 
   // A member of the same organization sees neither the list nor the connection.
   await page.goto("/settings/members");
-  await page.getByPlaceholder("member@example.com").fill(memberEmail);
+  await page.getByRole("textbox", { name: "Email address" }).fill(memberEmail);
   await page.getByRole("button", { name: "Send invite" }).click();
   const inviteLink = page.getByRole("link", { name: INVITE_URL_PATTERN });
   await expect(inviteLink).toBeVisible();
@@ -110,7 +110,9 @@ test("an owner backs up a database, downloads it, and a member has no access", a
     await expect(memberPage).toHaveURL(DASHBOARD_URL_PATTERN);
 
     await memberPage.goto("/database");
-    await expect(memberPage.getByText(NO_PERMISSION_PATTERN).first()).toBeVisible();
+    await expect(
+      memberPage.getByText(NO_PERMISSION_PATTERN).first()
+    ).toBeVisible();
     await expect(memberPage.getByText("E2E source")).toHaveCount(0);
     const detail = await memberPage.goto(connectionPath);
     expect(detail?.status()).toBe(404);

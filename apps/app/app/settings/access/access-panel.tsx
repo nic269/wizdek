@@ -1,410 +1,78 @@
 "use client";
 
 import {
-  CUSTOM_ROLE_DEFAULT_PERMISSION_KEYS,
-  formatPermissionKey,
-  PERMISSION_CATALOG,
-  permissionKey,
-} from "@repo/access-control";
-import { apiClient, getApiErrorMessage } from "@repo/api/client";
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
+  EmptyState,
+  Lock,
+  ReadOnlyBanner,
+  SkeletonRows,
 } from "@repo/design-system";
-import { Checkbox } from "@repo/design-system/components/ui/checkbox";
-import { Label } from "@repo/design-system/components/ui/label";
-import {
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { OptionSelect } from "../../lib/option-select";
+import { useActiveOrganization } from "../../lib/active-organization";
+import { usePermissions } from "../../lib/permissions";
+import { ListFrame, useRoles } from "../people";
+import { AuditLog } from "./audit-log";
+import { RoleAssignments } from "./role-assignments";
+import { RolesSection } from "./roles-section";
 
-type Organization = Awaited<
-  ReturnType<typeof apiClient.organizations.list>
->["data"][number];
-type Role = Awaited<
-  ReturnType<typeof apiClient.organizations.roles.list>
->["data"][number];
-type Member = Awaited<
-  ReturnType<typeof apiClient.organizations.members.list>
->["data"][number];
-type AuditLog = Awaited<
-  ReturnType<typeof apiClient.organizations.auditLogs>
->["data"][number];
+/** Roles, role assignments and the audit log, each shown to those allowed. */
+export function AccessPanel({ currentUserId }: { currentUserId: string }) {
+  const { organization } = useActiveOrganization();
+  const { can, isLoading } = usePermissions();
+  const organizationId = organization?.id ?? null;
+  const canReadRoles = can("roles:read");
+  // Assignments offer every role, so they read the roles list too.
+  const roles = useRoles(organizationId, canReadRoles);
 
-/** Stands in for the empty prefix, which matches every action. */
-const ALL_EVENTS = "all";
-
-const AUDIT_FILTERS = [
-  { actionPrefix: "", label: "All events" },
-  { actionPrefix: "member.", label: "Members" },
-  { actionPrefix: "invitation.", label: "Invitations" },
-  { actionPrefix: "role.", label: "Roles" },
-  { actionPrefix: "shopify.store.", label: "Store connections" },
-  { actionPrefix: "shopify.app.", label: "Shopify apps" },
-  { actionPrefix: "shopify.graphql.", label: "GraphQL console" },
-] as const;
-
-export function AccessPanel() {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [organizationId, setOrganizationId] = useState("");
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [auditCursor, setAuditCursor] = useState<string | null>(null);
-  const [auditFilter, setAuditFilter] = useState("");
-  // Mirrors the filter for the organization loader, which is created once.
-  const auditFilterRef = useRef("");
-  const [roleName, setRoleName] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([
-    ...CUSTOM_ROLE_DEFAULT_PERMISSION_KEYS,
-  ]);
-  const [error, setError] = useState<string | null>(null);
-  const [isBusy, setIsBusy] = useState(false);
-
-  const loadAccess = useCallback(async (selectedOrganizationId: string) => {
-    if (!selectedOrganizationId) {
-      return;
-    }
-    const loadAllRoles = async () => {
-      const items: Role[] = [];
-      let cursor: string | null = null;
-      do {
-        const response = await apiClient.organizations.roles.list({
-          ...(cursor ? { cursor } : {}),
-          limit: 100,
-          organizationId: selectedOrganizationId,
-        });
-        items.push(...response.data);
-        cursor = response.pageInfo.nextCursor;
-      } while (cursor);
-      return items;
-    };
-    const loadAllMembers = async () => {
-      const items: Member[] = [];
-      let cursor: string | null = null;
-      do {
-        const response = await apiClient.organizations.members.list({
-          ...(cursor ? { cursor } : {}),
-          limit: 100,
-          organizationId: selectedOrganizationId,
-        });
-        items.push(...response.data);
-        cursor = response.pageInfo.nextCursor;
-      } while (cursor);
-      return items;
-    };
-    const [nextRoles, nextMembers, nextAuditLogs] = await Promise.all([
-      loadAllRoles(),
-      loadAllMembers(),
-      apiClient.organizations.auditLogs({
-        ...(auditFilterRef.current
-          ? { actionPrefix: auditFilterRef.current }
-          : {}),
-        limit: 20,
-        organizationId: selectedOrganizationId,
-      }),
-    ]);
-    setRoles(nextRoles);
-    setMembers(nextMembers);
-    setAuditLogs(nextAuditLogs.data);
-    setAuditCursor(nextAuditLogs.pageInfo.nextCursor);
-  }, []);
-
-  const loadMoreAuditLogs = async () => {
-    if (!(organizationId && auditCursor)) {
-      return;
-    }
-    const response = await apiClient.organizations.auditLogs({
-      ...(auditFilter ? { actionPrefix: auditFilter } : {}),
-      cursor: auditCursor,
-      limit: 20,
-      organizationId,
-    });
-    setAuditLogs((current) => [...current, ...response.data]);
-    setAuditCursor(response.pageInfo.nextCursor);
-  };
-
-  const changeAuditFilter = async (actionPrefix: string) => {
-    setAuditFilter(actionPrefix);
-    auditFilterRef.current = actionPrefix;
-    if (!organizationId) {
-      return;
-    }
-    try {
-      const response = await apiClient.organizations.auditLogs({
-        ...(actionPrefix ? { actionPrefix } : {}),
-        limit: 20,
-        organizationId,
-      });
-      setAuditLogs(response.data);
-      setAuditCursor(response.pageInfo.nextCursor);
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not load the audit log."));
-    }
-  };
-
-  useEffect(() => {
-    apiClient.organizations
-      .list({})
-      .then((response) => response.data)
-      .then((data) => {
-        setOrganizations(data);
-        const first = data[0]?.id ?? "";
-        setOrganizationId(first);
-        return loadAccess(first);
-      })
-      .catch((cause: unknown) =>
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Could not load access settings."
-        )
-      );
-  }, [loadAccess]);
-
-  const permissions = useMemo(
-    () =>
-      PERMISSION_CATALOG.filter((permission) =>
-        selectedPermissions.includes(permissionKey(permission))
-      ).map(({ module, action }) => ({ action, module })),
-    [selectedPermissions]
-  );
-
-  const createRole = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
-    setIsBusy(true);
-    try {
-      await apiClient.organizations.roles.create({
-        name: roleName,
-        organizationId,
-        permissions,
-      });
-      setRoleName("");
-      await loadAccess(organizationId);
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not create role."));
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const updateMemberRole = async (membershipId: string, roleId: string) => {
-    setError(null);
-    try {
-      await apiClient.organizations.members.updateRole({
-        membershipId,
-        organizationId,
-        roleId,
-      });
-      await loadAccess(organizationId);
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not update member role."));
-    }
-  };
-
-  const togglePermission = (key: string) => {
-    setSelectedPermissions((current) =>
-      current.includes(key)
-        ? current.filter((item) => item !== key)
-        : [...current, key]
+  if (!organizationId || isLoading) {
+    return (
+      <ListFrame minWidth={560}>
+        <SkeletonRows columns="minmax(0,1fr) 150px" count={4} />
+      </ListFrame>
     );
-  };
+  }
 
+  const canReadMembers = can("members:read");
+  const canReadAudit = can("audit:read");
+  if (!(canReadRoles || canReadMembers || canReadAudit)) {
+    return (
+      <EmptyState
+        description="Access needs the roles:read, members:read or audit:read permission. Ask an Owner for access."
+        icon={<Lock />}
+        title="You don't have permission to see access settings"
+      />
+    );
+  }
+
+  const canManageMembers = can("members:manage");
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization</CardTitle>
-          <CardDescription>
-            Select the workspace access policy to inspect.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <OptionSelect
-            aria-label="Organization"
-            onValueChange={(value) => {
-              setOrganizationId(value);
-              loadAccess(value);
-            }}
-            options={organizations.map(({ id, name }) => ({
-              label: name,
-              value: id,
-            }))}
-            value={organizationId || null}
-          />
-          {error ? <p className="text-destructive text-sm">{error}</p> : null}
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Members</CardTitle>
-            <CardDescription>
-              Assign active members to organization-scoped roles.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y rounded-md border">
-              {members.map((member) => (
-                <li
-                  className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  key={member.id}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-sm">
-                      {member.user.name}
-                    </p>
-                    <p className="truncate text-muted-foreground text-xs">
-                      {member.user.email}
-                    </p>
-                  </div>
-                  <OptionSelect
-                    aria-label={`Role for ${member.user.email}`}
-                    className="sm:w-44"
-                    onValueChange={(value) => {
-                      updateMemberRole(member.id, value);
-                    }}
-                    options={roles.map(({ id, name }) => ({
-                      label: name,
-                      value: id,
-                    }))}
-                    placeholder="No role"
-                    value={member.role?.id ?? null}
-                  />
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Roles</CardTitle>
-            <CardDescription>
-              Create reusable permission sets for this organization.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="divide-y rounded-md border">
-              {roles.map((role) => (
-                <li className="space-y-1 px-3 py-3" key={role.id}>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-sm">{role.name}</p>
-                    <span className="text-muted-foreground text-xs">
-                      {role._count.memberships} members
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    {role.permissions.map(formatPermissionKey).join(", ") ||
-                      "No permissions"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            <form className="space-y-3" onSubmit={createRole}>
-              <Input
-                maxLength={40}
-                minLength={2}
-                onChange={(event) => setRoleName(event.target.value)}
-                placeholder="Role name"
-                required
-                value={roleName}
-              />
-              <div className="grid gap-2 sm:grid-cols-2">
-                {PERMISSION_CATALOG.map((permission) => {
-                  const key = permissionKey(permission);
-                  return (
-                    <Label
-                      className="rounded-md border px-3 py-2 font-normal"
-                      key={key}
-                    >
-                      <Checkbox
-                        checked={selectedPermissions.includes(key)}
-                        onCheckedChange={() => togglePermission(key)}
-                      />
-                      {permission.label}
-                    </Label>
-                  );
-                })}
-              </div>
-              <Button disabled={isBusy || !organizationId} type="submit">
-                {isBusy ? "Creating..." : "Create role"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit log</CardTitle>
-          <CardDescription>
-            Latest organization security and access events.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OptionSelect
-            aria-label="Audit log filter"
-            className="mb-3 sm:w-72"
-            onValueChange={(value) =>
-              changeAuditFilter(value === ALL_EVENTS ? "" : value)
-            }
-            options={AUDIT_FILTERS.map((filter) => ({
-              label: filter.label,
-              value: filter.actionPrefix || ALL_EVENTS,
-            }))}
-            value={auditFilter || ALL_EVENTS}
-          />
-          {auditLogs.length === 0 ? (
-            <p className="mb-3 text-muted-foreground text-sm">
-              No events match this filter.
-            </p>
-          ) : null}
-          <ul className="divide-y rounded-md border">
-            {auditLogs.map((log) => (
-              <li
-                className="grid gap-1 px-3 py-3 sm:grid-cols-[1fr_auto]"
-                key={log.id}
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-sm">{log.action}</p>
-                  <p className="truncate text-muted-foreground text-xs">
-                    {log.actor?.email ?? "System"}{" "}
-                    {log.targetType ? `on ${log.targetType}` : ""}
-                  </p>
-                </div>
-                <time
-                  className="text-muted-foreground text-xs"
-                  dateTime={log.createdAt}
-                >
-                  {new Date(log.createdAt).toLocaleString()}
-                </time>
-              </li>
-            ))}
-          </ul>
-          {auditCursor ? (
-            <Button
-              className="mt-3"
-              onClick={loadMoreAuditLogs}
-              variant="outline"
-            >
-              Load more
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-[26px]">
+      {canManageMembers && can("roles:manage") ? null : (
+        <ReadOnlyBanner>
+          You can view access settings but not change them. Changing roles needs{" "}
+          <strong>members:manage</strong>; creating roles needs{" "}
+          <strong>roles:manage</strong>.
+        </ReadOnlyBanner>
+      )}
+      {canReadRoles ? (
+        <RolesSection
+          canManage={can("roles:manage")}
+          organizationId={organizationId}
+        />
+      ) : null}
+      {canReadMembers ? (
+        <RoleAssignments
+          canManage={canManageMembers && canReadRoles}
+          currentUserId={currentUserId}
+          organizationId={organizationId}
+          roles={roles.data ?? []}
+        />
+      ) : null}
+      {canReadAudit ? (
+        <AuditLog organizationId={organizationId} />
+      ) : (
+        <ReadOnlyBanner>
+          The audit log needs <strong>audit:read</strong>.
+        </ReadOnlyBanner>
+      )}
     </div>
   );
 }

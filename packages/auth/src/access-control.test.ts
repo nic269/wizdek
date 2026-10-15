@@ -57,6 +57,32 @@ describe("access control service", () => {
     );
   });
 
+  it("matches any of several comma-separated audit action prefixes", async () => {
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
+
+    await listAuditLogs({
+      actionPrefix: "member.,invitation.",
+      limit: 20,
+      organizationId: "org-1",
+    });
+
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            {
+              OR: [
+                { action: { startsWith: "member." } },
+                { action: { startsWith: "invitation." } },
+              ],
+            },
+          ],
+          organizationId: "org-1",
+        },
+      })
+    );
+  });
+
   it("creates roles with catalog permissions and audit evidence transactionally", async () => {
     const transaction = {
       auditLog: { create: vi.fn().mockResolvedValue({ id: "audit-1" }) },

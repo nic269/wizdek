@@ -1,17 +1,20 @@
-import { PageHeader } from "@repo/design-system";
+import { getCurrentSession } from "@repo/auth/session";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { AppShellLayout } from "../../app-shell-layout";
+import { SettingsHeader } from "../settings-header";
 import { AccessPanel } from "./access-panel";
 
 export default async function AccessPage() {
+  const session = await getCurrentSession(await headers());
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   return (
     <AppShellLayout>
-      <div className="space-y-6">
-        <PageHeader
-          description="Manage organization roles, member assignments, and audit history."
-          title="Access"
-        />
-        <AccessPanel />
-      </div>
+      <SettingsHeader tab="access" />
+      <AccessPanel currentUserId={session.user.id} />
     </AppShellLayout>
   );
 }

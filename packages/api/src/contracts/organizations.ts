@@ -80,6 +80,9 @@ export const auditLogSchema = z.object({
   targetType: z.string().nullable(),
 });
 
+const AUDIT_ACTION_PREFIX_PATTERN =
+  /^[a-z0-9_.]{1,64}(,[a-z0-9_.]{1,64}){0,5}$/;
+
 const organizationIdInput = z.object({ organizationId: z.string().min(1) });
 const organizationPageInput = organizationIdInput.extend(
   cursorPaginationInputSchema.shape
@@ -95,11 +98,14 @@ export const organizationsContract = {
     })
     .input(
       organizationPageInput.extend({
-        /** Keeps only actions starting with this text, such as `role.`. */
+        /**
+         * Keeps only actions starting with this text, such as `role.`.
+         * Up to six prefixes separated by commas match any of them.
+         */
         actionPrefix: z
           .string()
           .trim()
-          .regex(/^[a-z0-9_.]{1,64}$/)
+          .regex(AUDIT_ACTION_PREFIX_PATTERN)
           .optional(),
       })
     )

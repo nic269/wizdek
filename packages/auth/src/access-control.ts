@@ -284,12 +284,30 @@ export const updateMemberRole = async (input: UpdateMemberRoleInput) => {
 
 export const listAuditLogs = async (
   input: PageInput & {
-    /** Keeps only actions that start with this text, such as `role.`. */
+    /**
+     * Keeps only actions that start with this text, such as `role.`. Several
+     * prefixes separated by commas match an action that starts with any.
+     */
     actionPrefix?: string;
   }
 ) => {
   const cursor = decodeCursor(input.cursor, "audit-logs");
   const cursorCreatedAt = cursor ? cursorDate(cursor.sort) : undefined;
+  const prefixes = (input.actionPrefix ?? "").split(",").filter(Boolean);
+  const conditions: Prisma.AuditLogWhereInput[] = [];
+  if (prefixes.length > 0) {
+    conditions.push({
+      OR: prefixes.map((prefix) => ({ action: { startsWith: prefix } })),
+    });
+  }
+  if (cursor && cursorCreatedAt) {
+    conditions.push({
+      OR: [
+        { createdAt: { lt: cursorCreatedAt } },
+        { createdAt: cursorCreatedAt, id: { lt: cursor.id } },
+      ],
+    });
+  }
   const rows = await prisma.auditLog.findMany({
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     select: {
@@ -304,17 +322,7 @@ export const listAuditLogs = async (
     take: input.limit + 1,
     where: {
       organizationId: input.organizationId,
-      ...(input.actionPrefix
-        ? { action: { startsWith: input.actionPrefix } }
-        : {}),
-      ...(cursor && cursorCreatedAt
-        ? {
-            OR: [
-              { createdAt: { lt: cursorCreatedAt } },
-              { createdAt: cursorCreatedAt, id: { lt: cursor.id } },
-            ],
-          }
-        : {}),
+      ...(conditions.length > 0 ? { AND: conditions } : {}),
     },
   });
   return toPage(rows, input.limit, (auditLog) => ({
