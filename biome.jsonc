@@ -7,7 +7,13 @@
   ],
   "files": {
     // Agent tooling and plan records are vendored or prose, not product source.
-    "includes": ["!.claude", "!.agentkit", "!plans"]
+    // Design handoff prototypes are reference HTML, not code we ship.
+    "includes": [
+      "!.claude",
+      "!.agentkit",
+      "!plans",
+      "!docs/design/design_handoff_wizdek_redesign/prototype"
+    ]
   },
   "linter": {
     "rules": {
