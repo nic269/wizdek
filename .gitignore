@@ -28,8 +28,18 @@ apps/*/next-env.d.ts
 *.log
 *.pid
 
-# Agent tooling runtime output
-.claude/hooks/.logs/
+# Local Claude tooling (keep installed files on this machine only)
+/.claude/
+
+# Python tooling caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Browser test authentication state
+/playwright/.auth/
+/tests/.auth/
 
 # OS and editor files
 .DS_Store
