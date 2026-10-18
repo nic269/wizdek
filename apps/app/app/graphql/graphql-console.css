@@ -33,11 +33,11 @@
 /* Icon rail: 48px on the sunken colour; the open panel's icon sits raised. */
 .graphql-console .graphiql-container .graphiql-sidebar {
   gap: 4px;
+  align-items: center;
   width: 48px;
   padding: 10px 0;
   background: var(--sunken);
   border-right: 1px solid var(--border);
-  align-items: center;
 }
 
 .graphql-console .graphiql-container .graphiql-sidebar button,
@@ -157,8 +157,8 @@
 
 .graphiql-container .graphiql-toolbar {
   align-items: center;
-  padding-inline: .5rem;
   width: auto;
+  padding-inline: 0.5rem;
 }
 
 .graphql-console .graphiql-container .graphiql-toolbar-button {
