@@ -45,6 +45,7 @@ import Link from "next/link";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { formatDateTime, plural } from "../lib/format";
 import { queryKeys } from "../lib/queries";
+import { CopySecretButton, StoreDetailsForm } from "./store-details-form";
 import {
   isWriteScope,
   STRATEGY_ICONS,
@@ -168,6 +169,11 @@ const WebhookSecret = ({
             <CircleDashed className="size-[13px]" />
           )}
           {store.hasWebhookSecret ? "Secret set" : "Missing"}
+          {canManage && store.hasWebhookSecret ? (
+            <span className="ml-1.5">
+              <CopySecretButton secret="webhookSecret" store={store} />
+            </span>
+          ) : null}
         </span>
       }
       title="Webhook secret"
@@ -201,7 +207,7 @@ const WebhookSecret = ({
       {canManage ? (
         <p className="flex items-center gap-1.5 text-muted-foreground text-xs leading-[1.4]">
           <ShieldCheck className="size-[13px]" />
-          Stored encrypted. Write-only — it's never shown again, only replaced.
+          Stored encrypted. Copying it is recorded in the audit log.
         </p>
       ) : null}
     </Section>
@@ -493,7 +499,10 @@ const ScopesSection = ({ store }: { store: Store }) => {
   );
 };
 
-/** A store's health, scopes, webhook secret and danger zone, in a right sheet. */
+/**
+ * A store's health, editable details, scopes, webhook secret and danger zone,
+ * in a right sheet.
+ */
 export function StoreDrawer({
   canManage,
   checking,
@@ -557,6 +566,9 @@ export function StoreDrawer({
                 )}
                 {checking ? "Checking…" : "Check health now"}
               </Button>
+              {canManage ? (
+                <StoreDetailsForm onSaved={onRefresh} store={store} />
+              ) : null}
               {canManage ? (
                 <EnvironmentSetting onSaved={onRefresh} store={store} />
               ) : null}

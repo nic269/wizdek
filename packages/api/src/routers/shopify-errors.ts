@@ -13,12 +13,15 @@ const FAILURE_RESPONSES: Record<
   APP_IN_USE: { code: "CONFLICT", status: 409 },
   APP_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   CREDENTIALS_REJECTED: { code: "VALIDATION_ERROR", status: 422 },
+  DOMAIN_TAKEN: { code: "CONFLICT", status: 409 },
   OAUTH_CALLBACK_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   OAUTH_SIGNATURE_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   OAUTH_STATE_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   OAUTH_STORE_AMBIGUOUS: { code: "CONFLICT", status: 409 },
   OAUTH_STORE_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
+  SECRET_NOT_SET: { code: "NOT_FOUND", status: 404 },
   SHOP_UNREACHABLE: { code: "SERVICE_UNAVAILABLE", status: 503 },
+  STORE_IN_USE: { code: "CONFLICT", status: 409 },
   STRATEGY_CONFLICT: { code: "CONFLICT", status: 409 },
 };
 

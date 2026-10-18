@@ -89,17 +89,6 @@ export const persistConnectedStore = async (
   }
 ): Promise<ShopifyStoreRecord> => {
   const now = new Date();
-  const connection: Prisma.ShopifyStoreUncheckedUpdateInput = {
-    appId: input.appId,
-    connectedAt: now,
-    currencyCode: input.details.currencyCode,
-    lastHealthCheckAt: now,
-    lastHealthCheckError: null,
-    name: input.details.shopName,
-    scopes: input.details.scopes,
-    status: "CONNECTED",
-    strategy: input.strategy,
-  };
   const key = {
     organizationId: input.organizationId,
     shopDomain: input.shopDomain,
@@ -107,6 +96,17 @@ export const persistConnectedStore = async (
   const existing = await db.shopifyStore.findUnique({
     where: { organizationId_shopDomain: key },
   });
+  const connection: Prisma.ShopifyStoreUncheckedUpdateInput = {
+    appId: input.appId,
+    connectedAt: now,
+    currencyCode: input.details.currencyCode,
+    lastHealthCheckAt: now,
+    lastHealthCheckError: null,
+    ...(existing?.nameCustomized ? {} : { name: input.details.shopName }),
+    scopes: input.details.scopes,
+    status: "CONNECTED",
+    strategy: input.strategy,
+  };
   const store = existing
     ? await db.shopifyStore.update({
         data: connection,

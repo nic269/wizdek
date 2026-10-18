@@ -116,7 +116,8 @@ const renewUnderLock = (
 /**
  * Returns a plaintext access token for the store, renewing it first when the
  * credential strategy allows and the stored one is missing or near expiry.
- * This is the only exported function that returns a decrypted secret.
+ * Apart from `revealStoreSecret`, which a person uses to copy it, this is the
+ * only exported function that returns a decrypted secret.
  */
 export const resolveAccessToken = async (
   scope: StoreScope,

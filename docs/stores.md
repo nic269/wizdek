@@ -41,7 +41,7 @@ To reconnect a store, connect the same domain again; the existing store is updat
 Flows can start from Shopify webhooks. Shopify signs every webhook with the client secret of the app that created the subscription, and the toolkit rejects deliveries whose signature does not match.
 
 - A store connected through a registered app (OAuth install or app credentials) needs nothing more: the app's client secret is already stored.
-- A store connected by a pasted access token has no app registered here. Open the store from the Stores page and, under **Webhook secret**, enter the client secret (API secret key) of the custom app the token belongs to. It is stored encrypted and never shown again.
+- A store connected by a pasted access token has no app registered here. Open the store from the Stores page and, under **Webhook secret**, enter the client secret (API secret key) of the custom app the token belongs to. It is stored encrypted and is never displayed; a store manager can copy it from the panel (see [Editing a store](#editing-a-store)).
 
 Until a secret is saved, a webhook flow cannot be activated on such a store.
 
@@ -54,9 +54,17 @@ Until a secret is saved, a webhook flow cannot be activated on such a store.
 | Reconnect required | Shopify rejected the credentials (for example the app was uninstalled or the token revoked) |
 | Disconnected | Credentials were removed in the toolkit |
 
-Selecting a store opens its panel. **Check health** calls the store and refreshes its name, currency and granted scopes. The environment can be changed there. **Disconnect**, under the danger zone, deletes the stored tokens after a confirmation that counts the runs and activations using the store; it does not uninstall the app from the store.
+Selecting a store opens its panel. **Check health** calls the store and refreshes its currency, granted scopes and, unless you renamed it, its name. The environment can be changed there. **Disconnect**, under the danger zone, deletes the stored tokens after a confirmation that counts the runs and activations using the store; it does not uninstall the app from the store.
 
 A store marked Production carries a red PROD tag. The GraphQL console shows a red band for it and asks before sending a mutation, and the Run dialog uses a red button for it.
+
+## Editing a store
+
+People who can manage stores (Owner and Admin) can change a store from its panel, under **Details**:
+
+- **Store name.** By default the name comes from Shopify and is refreshed on every health check. Once you rename a store, health checks and reconnects keep your name. **Use the Shopify name** goes back to the name Shopify reports.
+- **Store domain and access token**, for stores connected by an access token. Leave the token empty to keep the current one. The toolkit checks the new domain and token with Shopify before saving, and saves nothing if Shopify refuses them. The domain cannot be changed while a flow is activated on the store, because its webhook subscriptions live on the old shop, and it cannot be one another store in the organization already uses. Stores connected through an app get their tokens from the toolkit, so their domain and token are read-only; reconnect them instead.
+- **Copy** next to the access token and the webhook secret puts the value on the clipboard without showing it. Each copy is recorded in the audit log as `shopify.store.secret_revealed`, with which secret was copied but never its value. For a store connected through an app, the copied token is the current one, renewed first if it was about to expire.
 
 ## Operating notes
 

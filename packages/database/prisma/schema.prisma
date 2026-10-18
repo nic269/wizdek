@@ -390,6 +390,8 @@ model ShopifyStore {
   appId                  String?
   shopDomain             String
   name                   String
+  // Set when a person renamed the store; health checks then keep the name.
+  nameCustomized         Boolean                   @default(false)
   strategy               ShopifyCredentialStrategy
   status                 ShopifyStoreStatus        @default(PENDING)
   environment            TargetEnvironment         @default(DEV)

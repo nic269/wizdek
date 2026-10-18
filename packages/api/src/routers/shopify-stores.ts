@@ -10,11 +10,15 @@ import {
   disconnectStore,
   getStore,
   listStores,
+  renameStore,
+  revealStoreSecret,
   runStoreHealthCheck,
   type ShopifyStoreRecord,
+  StoreConnectionError,
   type StoreEnvironment,
   setStoreEnvironment,
   updateStore,
+  updateStoreCredentials,
 } from "@repo/shopify/stores";
 import { getJobProvider } from "../jobs";
 import { SHOPIFY_OAUTH_CALLBACK_PATH } from "../shopify-oauth-callback";
@@ -38,6 +42,7 @@ export const toPublicStore = (store: ShopifyStoreRecord) => ({
   lastHealthCheckAt: store.lastHealthCheckAt,
   lastHealthCheckError: store.lastHealthCheckError,
   name: store.name,
+  nameCustomized: store.nameCustomized,
   organizationId: store.organizationId,
   scopes: store.scopes,
   shopDomain: store.shopDomain,
@@ -211,6 +216,20 @@ export const shopifyStoresRouter = {
     const stores = await listStores(input.organizationId);
     return { data: stores.map(toPublicStore) };
   }),
+  revealSecret: os.shopifyStores.revealSecret.handler(
+    async ({ context, input }) => {
+      const { store, user } = await requireStorePermission(
+        context.headers,
+        input.storeId,
+        "stores",
+        "manage"
+      );
+      const value = await withShopifyErrors(() =>
+        revealStoreSecret(scopeOf(store), input.secret, user.id)
+      );
+      return { data: { value } };
+    }
+  ),
   setWebhookSecret: os.shopifyStores.setWebhookSecret.handler(
     async ({ context, input }) => {
       const { store } = await requireStorePermission(
@@ -233,12 +252,53 @@ export const shopifyStoresRouter = {
       "stores",
       "manage"
     );
+    const scope = scopeOf(store);
+    if (input.name !== undefined) {
+      await renameStore(scope, input.name, user.id);
+      if (input.name === null) {
+        // Fills in the name Shopify reports; a failed check keeps the old one.
+        await withShopifyErrors(() => runStoreHealthCheck(scope));
+      }
+    }
     return {
       data: toPublicStore(
-        await applyEnvironment(store, input.environment, user.id)
+        await applyEnvironment(
+          await getStore(scope),
+          input.environment,
+          user.id
+        )
       ),
     };
   }),
+  updateCredentials: os.shopifyStores.updateCredentials.handler(
+    async ({ context, input }) => {
+      const { store, user } = await requireStorePermission(
+        context.headers,
+        input.storeId,
+        "stores",
+        "manage"
+      );
+      const scope = scopeOf(store);
+      const updated = await withShopifyErrors(async () => {
+        const domainChanged =
+          input.shopDomain !== undefined &&
+          input.shopDomain !== store.shopDomain;
+        // Activations hold webhook subscriptions registered on the old shop.
+        if (domainChanged && (await countStoreUsage(scope)).activationCount) {
+          throw new StoreConnectionError(
+            "STORE_IN_USE",
+            "Turn off the flows activated on this store before changing its domain."
+          );
+        }
+        return updateStoreCredentials(
+          scope,
+          { accessToken: input.accessToken, shopDomain: input.shopDomain },
+          user.id
+        );
+      });
+      return { data: toPublicStore(updated) };
+    }
+  ),
   usage: os.shopifyStores.usage.handler(async ({ context, input }) => {
     const { store } = await requireStorePermission(
       context.headers,

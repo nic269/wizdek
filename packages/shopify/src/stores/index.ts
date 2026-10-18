@@ -8,3 +8,4 @@ export * from "./health-check";
 export * from "./oauth-connection";
 export * from "./store-client";
 export * from "./store-repository";
+export * from "./store-settings";

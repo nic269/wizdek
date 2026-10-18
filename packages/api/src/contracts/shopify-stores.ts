@@ -22,7 +22,10 @@ export const shopifyStoreStatusSchema = z.enum([
   "DISCONNECTED",
 ]);
 
-/** Fields are listed explicitly; no token or secret is ever part of a store. */
+/**
+ * Fields are listed explicitly; no token or secret is ever part of a store.
+ * Secrets are only returned one at a time by `revealSecret`.
+ */
 export const shopifyStoreSchema = z.object({
   apiVersion: z.string(),
   appId: z.string().nullable(),
@@ -36,6 +39,8 @@ export const shopifyStoreSchema = z.object({
   lastHealthCheckAt: z.date().nullable(),
   lastHealthCheckError: z.string().nullable(),
   name: z.string(),
+  /** True when a person renamed the store; health checks then keep the name. */
+  nameCustomized: z.boolean(),
   organizationId: z.string(),
   scopes: z.array(z.string()),
   shopDomain: z.string(),
@@ -43,6 +48,12 @@ export const shopifyStoreSchema = z.object({
   strategy: shopifyCredentialStrategySchema,
   updatedAt: z.date(),
 });
+
+/** Secrets a store manager can copy; each copy is audited. */
+export const shopifyStoreSecretSchema = z.enum([
+  "accessToken",
+  "webhookSecret",
+]);
 
 const appId = z.string().min(1);
 /** Set on connect; when omitted a new store is DEV and a reconnect keeps its value. */
@@ -177,6 +188,17 @@ export const shopifyStoresContract = {
     })
     .input(organizationIdInput)
     .output(dataEnvelope(z.array(shopifyStoreSchema))),
+  revealSecret: apiContract
+    .route({
+      method: "POST",
+      operationId: "shopifyStores.revealSecret",
+      path: "/api/shopify/stores/{storeId}/secrets/reveal",
+      summary:
+        "Return a store's access token or webhook secret so it can be copied",
+    })
+    .input(storeIdInput.extend({ secret: shopifyStoreSecretSchema }))
+    .output(dataEnvelope(z.object({ value: z.string() }))),
+
   setWebhookSecret: apiContract
     .route({
       method: "PUT",
@@ -186,14 +208,36 @@ export const shopifyStoresContract = {
     })
     .input(storeIdInput.extend({ secret: z.string().trim().min(8).max(512) }))
     .output(dataEnvelope(shopifyStoreSchema)),
+
   update: apiContract
     .route({
       method: "PATCH",
       operationId: "shopifyStores.update",
       path: "/api/shopify/stores/{storeId}",
-      summary: "Change a store's environment",
+      summary: "Rename a store or change its environment",
     })
-    .input(storeIdInput.extend({ environment: targetEnvironmentSchema }))
+    .input(
+      storeIdInput.extend({
+        environment: targetEnvironmentSchema.optional(),
+        /** `null` goes back to the name Shopify reports. */
+        name: z.string().trim().min(1).max(120).nullable().optional(),
+      })
+    )
+    .output(dataEnvelope(shopifyStoreSchema)),
+  updateCredentials: apiContract
+    .route({
+      method: "PUT",
+      operationId: "shopifyStores.updateCredentials",
+      path: "/api/shopify/stores/{storeId}/credentials",
+      summary:
+        "Change the domain or access token of a store connected by token",
+    })
+    .input(
+      storeIdInput.extend({
+        accessToken: z.string().trim().min(8).max(512).optional(),
+        shopDomain: shopDomainSchema.optional(),
+      })
+    )
     .output(dataEnvelope(shopifyStoreSchema)),
   usage: apiContract
     .route({

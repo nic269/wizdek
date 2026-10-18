@@ -37,6 +37,7 @@
   padding: 10px 0;
   background: var(--sunken);
   border-right: 1px solid var(--border);
+  align-items: center;
 }
 
 .graphql-console .graphiql-container .graphiql-sidebar button,
@@ -152,6 +153,12 @@
   .graphiql-container
   .graphiql-execute-button {
   background: var(--danger-solid);
+}
+
+.graphiql-container .graphiql-toolbar {
+  align-items: center;
+  padding-inline: .5rem;
+  width: auto;
 }
 
 .graphql-console .graphiql-container .graphiql-toolbar-button {

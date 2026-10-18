@@ -63,8 +63,8 @@ const isExpectedFailure = (error: unknown): error is Error =>
 
 /**
  * Calls the store with its current credentials and records the outcome. A
- * success marks the store connected and refreshes its name, currency and
- * granted scopes; a failure records the reason and leaves the status to the
+ * success marks the store connected and refreshes its currency, granted scopes
+ * and, unless a person renamed it, its name; a failure records the reason and leaves the status to the
  * credential checks that already ran.
  */
 export const runStoreHealthCheck = async (
@@ -86,7 +86,7 @@ export const runStoreHealthCheck = async (
       currencyCode: details.currencyCode,
       lastHealthCheckAt: checkedAt,
       lastHealthCheckError: null,
-      name: details.shopName,
+      ...(client.store.nameCustomized ? {} : { name: details.shopName }),
       scopes: details.scopes,
       status: "CONNECTED",
     });

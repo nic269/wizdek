@@ -9,6 +9,9 @@ export type ShopifyAuditAction =
   | "shopify.store.oauth_started"
   | "shopify.store.disconnected"
   | "shopify.store.environment_changed"
+  | "shopify.store.renamed"
+  | "shopify.store.credentials_updated"
+  | "shopify.store.secret_revealed"
   | "shopify.graphql.query"
   | "shopify.graphql.mutation";
 
