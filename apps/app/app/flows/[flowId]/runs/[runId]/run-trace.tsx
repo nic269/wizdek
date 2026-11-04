@@ -181,10 +181,28 @@ const TraceTitleBar = ({
 }) => {
   const queryClient = useQueryClient();
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   const { run } = detail;
   const active = isRunActive(run.status);
   const cancelRequested = Boolean(run.cancelRequestedAt);
   const setView = onViewChange;
+
+  const resume = async () => {
+    setIsResuming(true);
+    try {
+      await apiClient.flows.runs.resume({ runId });
+      toast.success("Run queued to resume", {
+        description: "Saved customer batches will be reused.",
+      });
+      await queryClient.invalidateQueries({ queryKey: runQueryKey(runId) });
+    } catch (cause) {
+      toast.error("Could not resume the run", {
+        description: getApiErrorMessage(cause, "Try again."),
+      });
+    } finally {
+      setIsResuming(false);
+    }
+  };
 
   const cancel = async () => {
     setIsCanceling(true);
@@ -237,6 +255,11 @@ const TraceTitleBar = ({
       >
         Open flow
       </Link>
+      {canRun && detail.canResume ? (
+        <Button disabled={isResuming} onClick={resume} type="button">
+          {isResuming ? "Resuming…" : "Resume run"}
+        </Button>
+      ) : null}
       {canRun && active ? (
         <Button
           disabled={isCanceling || cancelRequested}
@@ -448,6 +471,27 @@ function Trace({ canRun, flowId, runId }: RunTraceProps) {
             view={view}
           />
           <TraceMeta detail={detail} />
+          {detail.fetchProgress.map((progress) => (
+            <p className="text-muted-foreground text-sm" key={progress.nodeId}>
+              {progress.pages.toLocaleString()} batches saved ·{" "}
+              {progress.customers.toLocaleString()} customers saved
+              {progress.done ? " · Fetch complete" : " · Resumable checkpoint"}
+            </p>
+          ))}
+          {detail.files.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {detail.files.map((file) => (
+                <a
+                  className="text-accent-ink text-sm underline"
+                  href={`/api/flow-runs/${encodeURIComponent(runId)}/files/${encodeURIComponent(file.id)}/download`}
+                  key={file.id}
+                >
+                  Download {file.fileName} ({Math.ceil(file.sizeBytes / 1024)}{" "}
+                  KB)
+                </a>
+              ))}
+            </div>
+          ) : null}
           <SummaryTiles
             filter={filter}
             onPick={pickFilter}

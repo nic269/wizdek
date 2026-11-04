@@ -13,6 +13,10 @@ import type { FlowIssue } from "@repo/flows/definition";
 import { type ComponentType, useEffect, useState } from "react";
 import { asCategory, CategoryChip } from "../node-visuals";
 import { AddTagsForm } from "./config-forms/add-tags-form";
+import {
+  ExportCsvForm,
+  FetchCustomersForm,
+} from "./config-forms/customer-export-forms";
 import { FindOrderForm } from "./config-forms/find-order-form";
 import { type ConfigFormProps, Field } from "./config-forms/form-parts";
 import { GenericForm } from "./config-forms/generic-form";
@@ -30,11 +34,13 @@ import { issueText } from "./validation-panel";
 
 /** Node types with a hand-made form; every other type gets the generic one. */
 const BESPOKE_FORMS: Record<string, ComponentType<ConfigFormProps>> = {
+  "data.exportCsv": ExportCsvForm,
   "data.parseCsv": ParseCsvForm,
   "logic.filter": FilterForm,
   "logic.if": IfForm,
   "logic.switch": SwitchForm,
   "shopify.addTags": AddTagsForm,
+  "shopify.fetchCustomers": FetchCustomersForm,
   "shopify.findOrder": FindOrderForm,
   "shopify.graphql": ShopifyGraphqlForm,
   "trigger.manual": TriggerManualForm,

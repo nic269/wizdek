@@ -289,6 +289,22 @@ export const flowsContract = {
       .output(
         dataEnvelope(
           z.object({
+            canResume: z.boolean(),
+            fetchProgress: z.array(
+              z.object({
+                customers: z.number(),
+                done: z.boolean(),
+                nodeId: z.string(),
+                pages: z.number(),
+              })
+            ),
+            files: z.array(
+              z.object({
+                fileName: z.string(),
+                id: z.string(),
+                sizeBytes: z.number(),
+              })
+            ),
             flowName: z.string(),
             nodes: z.record(z.string(), flowRunNodeSchema),
             run: flowRunSchema,
@@ -337,6 +353,16 @@ export const flowsContract = {
       })
       .input(organizationIdInput.extend(cursorPaginationInputSchema.shape))
       .output(paginatedDataEnvelope(flowRunListItemSchema)),
+    resume: apiContract
+      .route({
+        method: "POST",
+        operationId: "flows.runs.resume",
+        path: "/api/flow-runs/{runId}/resume",
+        summary:
+          "Resume a stopped customer export from saved batch checkpoints",
+      })
+      .input(runIdInput)
+      .output(dataEnvelope(flowRunSchema)),
     start: apiContract
       .route({
         method: "POST",

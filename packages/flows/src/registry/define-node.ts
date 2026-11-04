@@ -64,8 +64,16 @@ export interface NodeContext {
     set(key: string, value: unknown): Promise<void>;
   };
   storage: {
+    /** Private node-scoped blobs, used for durable batch checkpoints. */
+    checkpoints?: {
+      read(key: string): Promise<JsonObject>;
+      write(key: string, value: JsonObject): Promise<void>;
+    };
     /** Reads a file uploaded to the run's organization. */
     readAsset(assetId: string): Promise<NodeAsset>;
+    writeAsset?(
+      asset: NodeAsset
+    ): Promise<{ id: string; fileName: string; sizeBytes: number }>;
   };
   store: NodeStoreInfo;
 }

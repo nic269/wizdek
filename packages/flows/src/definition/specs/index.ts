@@ -1,4 +1,5 @@
 import type { AnyNodeSpec } from "../node-spec";
+import { dataExportCsvSpec } from "./data-export-csv";
 import { dataParseCsvSpec } from "./data-parse-csv";
 import { dataSetFieldsSpec } from "./data-set-fields";
 import { logicFilterSpec } from "./logic-filter";
@@ -6,6 +7,7 @@ import { logicIfSpec } from "./logic-if";
 import { logicSwitchSpec } from "./logic-switch";
 import { shopifyAddTagsSpec } from "./shopify-add-tags";
 import { shopifyBulkMutationSpec } from "./shopify-bulk-mutation";
+import { shopifyFetchCustomersSpec } from "./shopify-fetch-customers";
 import { shopifyFindOrderSpec } from "./shopify-find-order";
 import { shopifyGraphqlSpec } from "./shopify-graphql";
 import { triggerManualSpec } from "./trigger-manual";
@@ -27,6 +29,8 @@ export * from "./trigger-webhook";
 
 /** Every built-in node type, in the order the palette lists them. */
 export const builtInNodeSpecs: readonly AnyNodeSpec[] = [
+  dataExportCsvSpec,
+  shopifyFetchCustomersSpec,
   triggerManualSpec,
   triggerWebhookSpec,
   triggerScheduleSpec,

@@ -3,6 +3,7 @@ import {
   activateFlow,
   builtInRegistry,
   cancelFlowRun,
+  canResumeCustomerExport,
   createFlow,
   deactivateFlow,
   type FlowRecord,
@@ -17,6 +18,7 @@ import {
   listFlows,
   listFlowVersions,
   readDefinition,
+  resumeCustomerExport,
   saveFlowVersion,
   startFlowRun,
   updateFlow,
@@ -133,6 +135,53 @@ const runsRouter = {
       : null;
     return {
       data: {
+        canResume: canResumeCustomerExport(run.status, version.definition),
+        fetchProgress: Object.entries(detail.nodes).flatMap(
+          ([nodeId, { step }]) => {
+            if (
+              step?.nodeType !== "shopify.fetchCustomers" ||
+              !step.state ||
+              typeof step.state !== "object" ||
+              Array.isArray(step.state)
+            ) {
+              return [];
+            }
+            return Object.entries(step.state).flatMap(([key, value]) => {
+              if (
+                !(key.startsWith("customers:") && value) ||
+                typeof value !== "object" ||
+                Array.isArray(value)
+              ) {
+                return [];
+              }
+              return [
+                {
+                  customers: Number(value.customers ?? 0),
+                  done: value.done === true,
+                  nodeId,
+                  pages: Number(value.pages ?? 0),
+                },
+              ];
+            });
+          }
+        ),
+        files: (
+          await prisma.fileAsset.findMany({
+            orderBy: { createdAt: "asc" },
+            where: {
+              AND: [
+                { metadata: { equals: "flow-export", path: ["purpose"] } },
+                { metadata: { equals: run.id, path: ["runId"] } },
+              ],
+              deletedAt: null,
+              organizationId: run.organizationId,
+            },
+          })
+        ).map((file) => ({
+          fileName: file.fileName,
+          id: file.id,
+          sizeBytes: Number(file.sizeBytes),
+        })),
         flowName: related.flow.name,
         nodes: Object.fromEntries(
           Object.entries(detail.nodes).map(
@@ -218,6 +267,20 @@ const runsRouter = {
       return toPublicRunPage(page);
     }
   ),
+  resume: os.flows.runs.resume.handler(async ({ context, input }) => {
+    const { run, user } = await requireRunPermission(
+      context.headers,
+      input.runId,
+      "run"
+    );
+    return {
+      data: toPublicRun(
+        await withFlowErrors(() =>
+          resumeCustomerExport(runScopeOf(run), user.id, getJobProvider())
+        )
+      ),
+    };
+  }),
   start: os.flows.runs.start.handler(async ({ context, input }) => {
     const { flow, user } = await requireFlowPermission(
       context.headers,

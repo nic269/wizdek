@@ -12,6 +12,7 @@ const FAILURE_RESPONSES: Record<
   INPUT_INVALID: { code: "VALIDATION_ERROR", status: 422 },
   RUN_NOT_CANCELABLE: { code: "CONFLICT", status: 409 },
   RUN_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
+  RUN_NOT_RESUMABLE: { code: "CONFLICT", status: 409 },
   STORE_NOT_AVAILABLE: { code: "VALIDATION_ERROR", status: 422 },
   UPLOAD_REJECTED: { code: "VALIDATION_ERROR", status: 422 },
   VERSION_CONFLICT: { code: "CONFLICT", status: 409 },

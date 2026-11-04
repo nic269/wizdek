@@ -8,6 +8,7 @@ export type FlowAuditAction =
   | "flow.version_saved"
   | "flow.run.started"
   | "flow.run.canceled"
+  | "flow.run.resumed"
   | "flow.activated"
   | "flow.deactivated";
 

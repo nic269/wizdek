@@ -39,11 +39,12 @@ export const createFlowRunJob = (
 
 export const enqueueFlowRun = (
   provider: JobQueueProvider,
-  run: { id: string; organizationId: string; storeId: string }
+  run: { id: string; organizationId: string; storeId: string },
+  idempotencyKey: string = run.id
 ) =>
   provider.enqueue<FlowRunJobPayload>({
     concurrencyKey: storeConcurrencyKey(run.storeId),
-    idempotencyKey: run.id,
+    idempotencyKey,
     name: FLOW_RUN_JOB,
     payload: { flowRunId: run.id },
     scopeKey: createOrganizationJobScopeKey(run.organizationId),

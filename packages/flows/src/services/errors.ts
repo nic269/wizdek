@@ -9,6 +9,7 @@ export type FlowServiceFailure =
   | "STORE_NOT_AVAILABLE"
   | "INPUT_INVALID"
   | "RUN_NOT_CANCELABLE"
+  | "RUN_NOT_RESUMABLE"
   | "ACTIVATION_INVALID"
   | "UPLOAD_REJECTED";
 

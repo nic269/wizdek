@@ -72,6 +72,8 @@ After a flow has run once, the settings panel offers the field names it saw at t
 | **Switch** | Compares one value against named cases and sends the item to the first case it equals. Each case is an output; items matching none leave by `default`. | one per case, plus `default` |
 | **Set fields** | Renames fields, then adds or overwrites fields (as text, number, yes/no, or whatever the template gives), then removes fields. | `main` |
 | **GraphQL request** | Runs any Admin GraphQL query or mutation for each item. Variables are JSON whose text values may contain templates. The response, or the part named by the result path, is added to the item as `result`. `userErrors` fail the item. | `main` |
+| **Fetch customers** | Reads customers using configurable GraphQL fields, search query and sort key, following cursor pagination. Emits pages as `rows` arrays. | `main` |
+| **Export CSV** | Maps rows into ordered CSV columns and saves one private file per node/run. Download it from the run header later. | `main` |
 | **Bulk mutation** | Runs one mutation for all items as a single Shopify bulk operation: uploads every item's variables, starts the operation, waits for it, and records each item's result. Suited to tens of thousands of items. | `main` |
 
 ## Flows that start by themselves
@@ -175,3 +177,30 @@ Run items hold the rows of uploaded files, webhook payloads and the data read fr
 
 - [Architecture: flow engine](./architecture.md#flow-engine) covers the item model and how steps are added.
 - [Decision 0004](./decisions/0004-durable-jobs-on-pg-boss.md) covers the job queue runs execute on.
+
+## Customer CSV export
+
+The ready-made [customer export definition](./examples/customers-export.flow.json) connects **Manual trigger → Fetch customers → Export CSV**. To create it in another local workspace, run `pnpm exec dotenv -e .env -- pnpm exec tsx scripts/create-customer-export-flow.ts <organizationId> <actorId>` using an active Owner or Admin. This creates a flow only; it does not run it.
+
+In **Fetch customers**, choose the customer fields using a GraphQL selection, including nested objects. Configure **Customer search query**, for example:
+
+- Created in October: `created_at:>=2026-10-01 created_at:<2026-11-01`, with sort key `CREATED_AT`.
+- Updated since a date: `updated_at:>=2026-10-20`, with sort key `UPDATED_AT`.
+- A precise Vietnam-time interval: `updated_at:>='2026-10-20T00:00:00+07:00' updated_at:<'2026-10-21T00:00:00+07:00'`.
+- Dynamic input: declare a text input named `search` on Manual trigger and use `{{ $trigger.search }}` as the query.
+
+An empty query fetches all customers. The token needs `read_customers` and access to the selected customer fields. See Shopify's [customers query](https://shopify.dev/docs/api/admin-graphql/latest/queries/customers) and [pagination limits](https://shopify.dev/docs/api/usage/pagination-graphql).
+
+In **Export CSV**, keep rows as `{{ $json.rows }}`. Each column has an editable header and value template evaluated against one customer, e.g. `{{ $json.defaultEmailAddress.emailAddress }}`. The row order of the configuration controls the column order. For ordinary per-item inputs, leave rows empty. Arrays and objects serialize as JSON; missing values become empty cells. CSV uses UTF-8 with BOM, quoted cells and CRLF records. Formula-like text is prefixed with an apostrophe for spreadsheet safety.
+
+Files persist in the configured storage provider (local disk or S3) with organization and run metadata. Open **Runs → run → Download** to retrieve them later; each download requires `flows:read` in the run's organization. Files are private, are not automatically expired, and can contain customer data. A retry reuses the same file identity, and resuming partial batch checkpoints reuses the completed file rather than exporting only the remaining rows.
+
+Customer fetching follows Admin GraphQL cursors until `hasNextPage` is false, without a fixed 25,000-customer cap. Shopify’s [25,000-item pagination change](https://shopify.dev/changelog/posts/new-pagination-limits-for-liquid-storefront-graphql-api) applies to Liquid and Storefront GraphQL, not Admin GraphQL. Fetch data and CSV output each have a 50 MB limit. Each page must fit the engine's 1 MB item limit; reduce page size for large selections. Nested connections are **not** automatically paginated. An empty result still produces a header-only CSV. A canceled or failed fetch does not produce a CSV; data already persisted by an export remains downloadable. Fetching saves each successful page before advancing its cursor. A retry only rereads the page whose checkpoint was not committed; this is still not a point-in-time snapshot of a changing store.
+
+### Resuming customer exports
+
+Every fetched page is persisted in private storage, scoped to the organization, run, node and input item. Only after the write succeeds does the run save its cursor, number of batches and customer count in Postgres. The run header shows **batches saved** and **customers saved** while fetching. Temporary checkpoint data contains customer information and is retained with the run; it is not exposed as a downloadable export.
+
+If the process stops while fetching, the durable pg-boss worker resumes the active run using the last committed cursor. For a run that has finished as Failed, Partially failed or Canceled, open the run and choose **Resume run**. This requires `flows:run`, keeps the same run number, store, inputs and saved flow version, and records an audit event. Already completed steps and batches are reused. Failed items and skipped downstream steps are reopened. The final CSV is assembled from all saved batches, including those fetched before the failure. A new **Run** starts independently from the beginning.
+
+Manual resume currently supports the three-step customer export pipeline (manual/schedule/webhook trigger → Fetch customers → Export CSV). It is not a general retry button for flows that mutate Shopify. Repeated resume requests cannot queue an already-active run. If a failure is caused by credentials, permissions, a storage outage or the size limit, resolve that cause first; resume alone cannot fix it. Config edits do not change the version of an existing run. If Shopify rejects an old cursor, a new run may be necessary. Automatic recovery requires durable jobs and the same database/storage; the local in-memory job provider does not survive restarts.

@@ -48,6 +48,8 @@ const conditionSummary = (config: Record<string, unknown>) => {
 };
 
 const SUMMARIES: Record<string, (config: Record<string, unknown>) => string> = {
+  "data.exportCsv": (config) =>
+    `${list(config.columns).length} columns · saved CSV`,
   "data.parseCsv": (config) =>
     `${config.hasHeader === false ? "No header row" : "Header row"} · ${DELIMITERS[text(config.delimiter)] ?? "comma"}`,
   "data.setFields": (config) => {
@@ -65,6 +67,8 @@ const SUMMARIES: Record<string, (config: Record<string, unknown>) => string> = {
   "shopify.addTags": (config) => list(config.tags).filter(Boolean).join(", "),
   "shopify.bulkMutation": (config) =>
     OPERATION.exec(text(config.mutation))?.[2] ?? "",
+  "shopify.fetchCustomers": (config) =>
+    text(config.query) || "All customers · paginated",
   "shopify.findOrder": (config) =>
     text(config.value)
       ? `${text(config.by) || "name"} = ${text(config.value)}`

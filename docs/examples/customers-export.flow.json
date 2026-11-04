@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {
+      "id": "trigger",
+      "type": "trigger.manual",
+      "name": "Manual trigger",
+      "position": {
+        "x": 80,
+        "y": 160
+      },
+      "config": {
+        "inputs": []
+      }
+    },
+    {
+      "id": "customers",
+      "type": "shopify.fetchCustomers",
+      "name": "Fetch customers",
+      "position": {
+        "x": 400,
+        "y": 160
+      },
+      "config": {
+        "fields": "id\nfirstName\nlastName\ndefaultEmailAddress { emailAddress }\ndefaultPhoneNumber { phoneNumber }\ncreatedAt\nupdatedAt\ntags\ndefaultAddress { city country zip }",
+        "query": "",
+        "sortKey": "ID",
+        "pageSize": 100
+      }
+    },
+    {
+      "id": "csv",
+      "type": "data.exportCsv",
+      "name": "Export customers CSV",
+      "position": {
+        "x": 720,
+        "y": 160
+      },
+      "config": {
+        "fileName": "customers-{{ $run.id }}.csv",
+        "rows": "{{ $json.rows }}",
+        "delimiter": ",",
+        "columns": [
+          {
+            "header": "Customer ID",
+            "value": "{{ $json.id }}"
+          },
+          {
+            "header": "First name",
+            "value": "{{ $json.firstName }}"
+          },
+          {
+            "header": "Last name",
+            "value": "{{ $json.lastName }}"
+          },
+          {
+            "header": "Email",
+            "value": "{{ $json.defaultEmailAddress.emailAddress }}"
+          },
+          {
+            "header": "Phone",
+            "value": "{{ $json.defaultPhoneNumber.phoneNumber }}"
+          },
+          {
+            "header": "Created at",
+            "value": "{{ $json.createdAt }}"
+          },
+          {
+            "header": "Updated at",
+            "value": "{{ $json.updatedAt }}"
+          },
+          {
+            "header": "Tags",
+            "value": "{{ $json.tags }}"
+          },
+          {
+            "header": "City",
+            "value": "{{ $json.defaultAddress.city }}"
+          },
+          {
+            "header": "Country",
+            "value": "{{ $json.defaultAddress.country }}"
+          },
+          {
+            "header": "Postal code",
+            "value": "{{ $json.defaultAddress.zip }}"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "trigger-customers",
+      "source": "trigger",
+      "sourceHandle": "main",
+      "target": "customers"
+    },
+    {
+      "id": "customers-csv",
+      "source": "customers",
+      "sourceHandle": "main",
+      "target": "csv"
+    }
+  ]
+}

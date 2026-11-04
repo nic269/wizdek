@@ -11,5 +11,6 @@ export * from "./registry/registry";
 export * from "./services/activations";
 export * from "./services/errors";
 export * from "./services/flows";
+export * from "./services/resume";
 export * from "./services/runs";
 export * from "./services/uploads";

@@ -29,6 +29,7 @@ import {
   type NodeOutput,
 } from "../registry/define-node";
 import type { NodeRegistry } from "../registry/registry";
+import { createCheckpointStorage, writeRunAsset } from "./assets";
 import {
   assertItemSize,
   checkpointItem,
@@ -204,8 +205,20 @@ const createNodeContext = (
       },
     },
     storage: {
+      checkpoints: createCheckpointStorage({
+        nodeId: step.nodeId,
+        organizationId: run.organizationId,
+        runId: run.id,
+      }),
       readAsset: (assetId) =>
         context.deps.readAsset(run.organizationId, assetId),
+      writeAsset: (asset) =>
+        writeRunAsset({
+          asset,
+          nodeId: step.nodeId,
+          organizationId: run.organizationId,
+          runId: run.id,
+        }),
     },
     store: {
       apiVersion: storeClient.store.apiVersion,

@@ -12,6 +12,7 @@ import {
 } from "./database-backup-download-route";
 import { ApiError, type ApiErrorResponse } from "./errors";
 import { requireAuthEndpointEnabled } from "./feature-guards";
+import { handleFlowFileDownload } from "./flow-file-download-route";
 import { getOpenApiDocument } from "./openapi";
 import { requireAppOrigin } from "./origin-check";
 import { router } from "./routers";
@@ -169,6 +170,10 @@ export const createApiApp = () => {
   app.get(SHOPIFY_OAUTH_CALLBACK_PATH, handleShopifyOAuthCallback);
   // Streamed rather than returned as JSON, so it lives outside the contract.
   app.get(DATABASE_BACKUP_DOWNLOAD_PATH, handleDatabaseBackupDownload);
+  app.get(
+    "/api/flow-runs/:runId/files/:assetId/download",
+    handleFlowFileDownload
+  );
   // Enforced while the body streams in, so an oversized or endless request
   // is cut off instead of being buffered. The webhook route has no session.
   app.post(
