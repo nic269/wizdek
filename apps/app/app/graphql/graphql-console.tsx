@@ -48,11 +48,7 @@ import { useStores } from "../lib/queries";
 import { useAppTheme } from "../lib/use-app-theme";
 import type { Store } from "../stores/store-labels";
 import { createConsoleStorage } from "./console-storage";
-import {
-  type ApiVersion,
-  ConsoleToolbar,
-  ProductionBand,
-} from "./console-toolbar";
+import { type ApiVersion, ConsoleToolbar } from "./console-toolbar";
 import { EDITOR_THEME, WizdekEditorTheme } from "./editor-theme";
 import { type OperationKind, operationOf } from "./operation-kind";
 import { ResponseStatusBar } from "./response-status-bar";
@@ -310,7 +306,6 @@ function Console({
         stores={stores}
         versions={versions}
       />
-      {store && prod ? <ProductionBand store={store} /> : null}
       <div className="graphql-console min-h-0 flex-1" data-run-tone={runTone}>
         <GraphiQL
           defaultQuery={DEFAULT_QUERY}

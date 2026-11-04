@@ -96,9 +96,11 @@ Each delivery starts one run. Shopify may send the same delivery more than once;
 
 ## Running a flow
 
-In the builder, choose **Run…**. Pick the store, provide the trigger's inputs (a CSV file is uploaded first) and start. The dialog shows the store's environment, the rows in a chosen CSV file and, when the flow changes store data, up to how many items may be changed; for a Production store the start button is red. Run is unavailable while the flow has unsaved changes or problems. The run uses the saved version, and later edits to the flow do not change it.
+In the builder, choose **Run…**. Tick one or more stores, provide the trigger's inputs (a CSV file is uploaded first) and start. The dialog shows each store's environment badge and the rows in a chosen CSV file; for a Production store the start button is red. Run is unavailable while the flow has unsaved changes or problems. The run uses the saved version, and later edits to the flow do not change it.
 
-Runs for the same store go one at a time, in the order they were started. Runs for different stores go side by side.
+Each selected store gets a separate run with the same inputs; each CSV is uploaded once and shared across those runs. Selecting one store opens its run detail; selecting multiple stores opens the flow’s run list. If some starts fail, the dialog reports the errors and keeps only the failed stores selected for retry.
+
+Runs for the same store go one at a time, in the order they were started. Runs for different stores go side by side, with up to four flow workers per API process. This applies to manual, webhook and scheduled runs.
 
 The run page shows the flow as it was when the run started. Each step shows its status and how many items it received, how many succeeded and how many failed. Each connection shows how many items travelled along it. Select a step to list its items; filter by status, page through them, and open an item's input and output. The page refreshes by itself while the run is active.
 

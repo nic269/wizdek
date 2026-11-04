@@ -204,7 +204,10 @@ export const createPgBossJobProvider = (
   const startWorker = async (definition: JobDefinition) => {
     await boss.work<JobEnvelope>(
       definition.name,
-      { pollingIntervalSeconds: options.pollingIntervalSeconds ?? 2 },
+      {
+        localConcurrency: definition.workerConcurrency ?? 1,
+        pollingIntervalSeconds: options.pollingIntervalSeconds ?? 2,
+      },
       async (jobs) => {
         for (const job of jobs) {
           const task = runHandler(definition, job);

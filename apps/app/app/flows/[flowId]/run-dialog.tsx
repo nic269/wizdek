@@ -1,14 +1,7 @@
 "use client";
 
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
-import {
-  Button,
-  ErrorAlert,
-  InlineAlert,
-  Input,
-  Play,
-  toast,
-} from "@repo/design-system";
+import { Button, ErrorAlert, Input, Play, toast } from "@repo/design-system";
 import {
   Dialog,
   DialogBody,
@@ -23,9 +16,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { plural } from "../../lib/format";
-import { type Store, useStores } from "../../lib/queries";
+import { useStores } from "../../lib/queries";
 import { CategoryChip } from "../node-visuals";
-import { StorePicker } from "./store-picker";
+import { StoreMultiPicker } from "./store-multi-picker";
 
 export interface RunInput {
   key: string;
@@ -55,12 +48,6 @@ const previewCsv = async (file: File): Promise<CsvPreview> => {
     rows: Math.max(0, lines.length - 1),
   };
 };
-
-const ENVIRONMENT_TITLES = {
-  DEV: "Development store.",
-  PROD: "Production store.",
-  STAGING: "Staging store.",
-} as const;
 
 const FileInputRow = ({
   input,
@@ -119,40 +106,8 @@ const FileInputRow = ({
   );
 };
 
-const RiskCallout = ({
-  actionLabels,
-  maxItems,
-  store,
-}: {
-  actionLabels: string[];
-  maxItems: number | null;
-  store: Store;
-}) => {
-  const prod = store.environment === "PROD";
-  const writes =
-    actionLabels.length === 0
-      ? "No step in this flow changes data in"
-      : `${actionLabels.join(", ")} ${actionLabels.length === 1 ? "writes" : "write"} to`;
-  return (
-    <InlineAlert
-      className={prod ? undefined : "border-border bg-sunken text-foreground-2"}
-      title={ENVIRONMENT_TITLES[store.environment]}
-      tone={prod ? "danger" : "info"}
-    >
-      {writes} <span className="font-mono">{store.shopDomain}</span>.
-      {maxItems !== null && actionLabels.length > 0
-        ? ` Up to ${plural(maxItems, "item")} may be changed.`
-        : ""}
-    </InlineAlert>
-  );
-};
-
-/**
- * Starts a run: pick the store, fill the trigger's inputs, and see what the
- * run may change. A file is uploaded first and the run receives its id.
- */
+/** Starts one run per selected store with shared trigger inputs. */
 export function RunDialog({
-  actionLabels,
   flowId,
   flowName,
   inputs,
@@ -161,8 +116,6 @@ export function RunDialog({
   organizationId,
   version,
 }: {
-  /** Labels of the steps that write to the store, for the risk callout. */
-  actionLabels: string[];
   flowId: string;
   flowName: string;
   inputs: RunInput[];
@@ -176,7 +129,8 @@ export function RunDialog({
   const connected = (stores.data ?? []).filter(
     ({ status }) => status === "CONNECTED"
   );
-  const [storeId, setStoreId] = useState("");
+  const [storeIds, setStoreIds] = useState<string[] | null>(null);
+  const starting = useRef(false);
   const [values, setValues] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<Record<string, CsvPreview>>({});
   const [error, setError] = useState<string | null>(null);
@@ -188,24 +142,18 @@ export function RunDialog({
       setIsStarting(false);
     }
   }, [open]);
-  useEffect(() => {
-    if (!(storeId || connected.length === 0)) {
-      setStoreId(connected[0]?.id ?? "");
-    }
-  }, [connected, storeId]);
-
-  const store = connected.find(({ id }) => id === storeId);
-  const csvRows = Object.values(files).map(({ rows }) => rows);
-  const maxItems = csvRows.length > 0 ? Math.max(...csvRows) : null;
+  const selectedIds = storeIds ?? connected.slice(0, 1).map(({ id }) => id);
+  const selectedStores = connected.filter(({ id }) => selectedIds.includes(id));
   const missingInput = inputs.some((input) =>
     input.type === "file" ? !files[input.key] : !values[input.key]
   );
 
   const start = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!store) {
+    if (starting.current || selectedStores.length === 0) {
       return;
     }
+    starting.current = true;
     setError(null);
     setIsStarting(true);
     try {
@@ -225,24 +173,62 @@ export function RunDialog({
           runInputs[input.key] = values[input.key] ?? "";
         }
       }
-      const { data } = await apiClient.flows.runs.start({
-        flowId,
-        inputs: runInputs,
-        storeId: store.id,
-      });
-      toast.loading(`Run #${data.number} started`, {
-        description: `${store.name} · queued`,
-        duration: 4000,
-      });
-      router.push(`/flows/${flowId}/runs/${data.id}`);
+      const results = await Promise.allSettled(
+        selectedStores.map((store) =>
+          apiClient.flows.runs.start({
+            flowId,
+            inputs: runInputs,
+            storeId: store.id,
+          })
+        )
+      );
+      const failed = selectedStores.filter(
+        (_, index) => results[index]?.status === "rejected"
+      );
+      const succeeded = results.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value.data] : []
+      );
+      if (succeeded.length > 0) {
+        toast.success(`${plural(succeeded.length, "run")} queued`);
+      }
+      if (failed.length > 0) {
+        setStoreIds(failed.map(({ id }) => id));
+        setError(
+          `${results
+            .flatMap((result, index) =>
+              result.status === "rejected"
+                ? [
+                    `${selectedStores[index]?.name}: ${getApiErrorMessage(result.reason, "Could not start the run.")}`,
+                  ]
+                : []
+            )
+            .join(" ")} Only failed stores remain selected.`
+        );
+        return;
+      }
+      onOpenChange(false);
+      router.push(
+        succeeded.length === 1
+          ? `/flows/${flowId}/runs/${succeeded[0]?.id}`
+          : `/flows/${flowId}/runs`
+      );
     } catch (cause) {
       setError(getApiErrorMessage(cause, "Could not start the run."));
+    } finally {
+      starting.current = false;
       setIsStarting(false);
     }
   };
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog
+      onOpenChange={(nextOpen) => {
+        if (!starting.current) {
+          onOpenChange(nextOpen);
+        }
+      }}
+      open={open}
+    >
       <DialogContent className="top-[10vh] translate-y-0 sm:max-w-[520px]">
         <form className="flex min-h-0 flex-col" onSubmit={start}>
           <DialogHeader>
@@ -253,7 +239,7 @@ export function RunDialog({
           </DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-[13px]">Store</span>
+              <span className="font-medium text-[13px]">Stores</span>
               {stores.isPending ? (
                 <p className="text-muted-foreground text-sm">Loading stores…</p>
               ) : null}
@@ -269,14 +255,20 @@ export function RunDialog({
                   first.
                 </p>
               ) : (
-                <StorePicker
+                <StoreMultiPicker
+                  disabled={isStarting}
                   label="Store to run against"
-                  onChange={setStoreId}
-                  storeId={storeId}
+                  onChange={setStoreIds}
+                  storeIds={selectedIds}
                   stores={connected}
                 />
               )}
             </div>
+            <p className="text-muted-foreground text-xs">
+              Each selected store gets its own run with the same inputs.
+              Different stores run in parallel; runs for the same store are
+              queued in order.
+            </p>
             {inputs.map((input) =>
               input.type === "file" ? (
                 <FileInputRow
@@ -313,17 +305,13 @@ export function RunDialog({
                 </Field>
               )
             )}
-            {store ? (
-              <RiskCallout
-                actionLabels={actionLabels}
-                maxItems={maxItems}
-                store={store}
-              />
+            {error ? (
+              <ErrorAlert message={error} title="Could not start all runs." />
             ) : null}
-            {error ? <ErrorAlert message={error} title="Not started." /> : null}
           </DialogBody>
           <DialogFooter>
             <Button
+              disabled={isStarting}
               onClick={() => onOpenChange(false)}
               type="button"
               variant="outline"
@@ -331,12 +319,20 @@ export function RunDialog({
               Cancel
             </Button>
             <Button
-              disabled={isStarting || !store || missingInput}
+              disabled={
+                isStarting || selectedStores.length === 0 || missingInput
+              }
               type="submit"
-              variant={store?.environment === "PROD" ? "danger" : "default"}
+              variant={
+                selectedStores.some((store) => store.environment === "PROD")
+                  ? "danger"
+                  : "default"
+              }
             >
               <Play className="size-[13px]" />
-              {isStarting ? "Starting…" : `Run on ${store?.name ?? "store"}`}
+              {isStarting
+                ? "Starting…"
+                : `Run on ${selectedStores.length === 1 ? selectedStores[0]?.name : plural(selectedStores.length, "store")}`}
             </Button>
           </DialogFooter>
         </form>

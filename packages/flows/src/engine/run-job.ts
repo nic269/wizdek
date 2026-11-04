@@ -35,6 +35,7 @@ export const createFlowRunJob = (
   retry: { attempts: 25, delayMs: 5000 },
   serialPerKey: true,
   timeoutSeconds: 86_400,
+  workerConcurrency: 4,
 });
 
 export const enqueueFlowRun = (

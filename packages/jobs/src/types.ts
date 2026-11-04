@@ -22,6 +22,8 @@ export interface JobDefinition<TPayload extends JobPayload = JobPayload> {
   serialPerKey?: boolean;
   /** Longest a single attempt may run. Durable providers cap this at 24 hours. */
   timeoutSeconds?: number;
+  /** Number of independent workers for this job on each process. Defaults to 1. */
+  workerConcurrency?: number;
 }
 
 export interface EnqueueJobInput<TPayload extends JobPayload = JobPayload> {

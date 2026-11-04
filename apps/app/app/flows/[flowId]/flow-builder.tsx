@@ -46,7 +46,6 @@ import type { FlowBuilderProps } from "./flow-builder-loader";
 import { CANVAS_NODE_TYPE } from "./flow-definition-mapping";
 import { FlowNodeCard, NodeIssuesContext } from "./flow-node";
 import { NodeConfigPanel, NothingSelected } from "./node-config-panel";
-import { specsByType } from "./node-defaults";
 import { NodePalette, PALETTE_DRAG_TYPE } from "./node-palette";
 import { RunDialog, type RunInput } from "./run-dialog";
 import { type Flow, type FlowEditor, useFlowEditor } from "./use-flow-editor";
@@ -79,20 +78,6 @@ const triggerInputs = (definition: FlowDefinition): RunInput[] => {
   const inputs = trigger?.config.inputs;
   return Array.isArray(inputs) ? (inputs as RunInput[]) : [];
 };
-
-/** Labels of the steps that write to the store. */
-const actionLabels = (definition: FlowDefinition) => [
-  ...new Set(
-    definition.nodes
-      .filter(
-        // Find order only reads; every other action can change the store.
-        (node) =>
-          specsByType.get(node.type)?.category === "action" &&
-          node.type !== "shopify.findOrder"
-      )
-      .map((node) => specsByType.get(node.type)?.label ?? node.type)
-  ),
-];
 
 function BuilderHeader({
   canManage,
@@ -495,7 +480,6 @@ function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
         organizationId={editor.flow.organizationId}
       />
       <RunDialog
-        actionLabels={actionLabels(editor.definition)}
         flowId={flowId}
         flowName={editor.flow.name}
         inputs={triggerInputs(editor.definition)}

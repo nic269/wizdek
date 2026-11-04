@@ -10,7 +10,6 @@ import {
   describeStatus,
   EnvTag,
   IdentityChip,
-  TriangleAlert,
 } from "@repo/design-system";
 import {
   DropdownMenu,
@@ -24,7 +23,6 @@ import { Label } from "@repo/design-system/components/ui/label";
 import { Switch } from "@repo/design-system/components/ui/switch";
 import { OptionSelect } from "../lib/option-select";
 import type { Store } from "../stores/store-labels";
-import { isWriteScope } from "../stores/store-labels";
 
 export type ApiVersion = Awaited<
   ReturnType<typeof apiClient.shopifyGraphql.versions>
@@ -165,27 +163,6 @@ export function ConsoleToolbar({
         <CircleCheck className="size-3.5" />
         Saved queries sync to {organizationName}
       </span>
-    </div>
-  );
-}
-
-/** The red strip under the toolbar while a production store is selected. */
-export function ProductionBand({ store }: { store: Store }) {
-  const writes = store.scopes.filter(isWriteScope);
-  return (
-    <div className="flex items-center gap-2.5 border-(--alert-danger-border) border-b bg-(--prod-band-bg) px-4 py-[7px] text-(--prod-band-fg) text-[12.5px] leading-[1.4]">
-      <TriangleAlert className="size-3.5 shrink-0" />
-      <span className="flex-1">
-        <strong className="font-semibold">Production store.</strong> Mutations
-        run here change live data on{" "}
-        <span className="font-mono">{store.shopDomain}</span>.
-      </span>
-      {writes.length > 0 ? (
-        <span className="hidden font-medium font-mono text-[11.5px] opacity-80 md:inline">
-          {writes.slice(0, 2).join(" · ")}
-          {writes.length > 2 ? ` +${writes.length - 2}` : ""} granted
-        </span>
-      ) : null}
     </div>
   );
 }

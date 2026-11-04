@@ -150,7 +150,6 @@ test("a member runs the CSV flow and reads the failed row in the trace", async (
   await dialog.getByLabel("CSV file").setInputFiles(FIXTURE);
   // The CSV is read in the browser to say how many items the run may change.
   await expect(dialog).toContainText("6 rows · columns Order, Total");
-  await expect(dialog).toContainText("Up to 6 items may be changed.");
   await dialog.getByRole("button", { name: "Run on Fake Store" }).click();
 
   // The trace follows the run until it reaches a final status.

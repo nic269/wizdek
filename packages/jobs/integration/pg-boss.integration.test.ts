@@ -205,12 +205,10 @@ describe("pg-boss job provider", () => {
       },
       name,
       serialPerKey: true,
+      workerConcurrency: 2,
     };
     const provider = createProvider([track]);
-    // A second worker on the same queue, as a second API process would be.
-    const second = createProvider([track]);
     await provider.start();
-    await second.start();
 
     for (const sequence of [1, 2, 3]) {
       for (const key of ["a", "b"]) {
