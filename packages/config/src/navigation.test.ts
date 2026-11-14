@@ -40,6 +40,7 @@ describe("dashboard navigation groups", () => {
     expect(dashboardNavGroups[0]?.items.map(({ label }) => label)).toEqual([
       "Dashboard",
       "Stores",
+      "Shopify",
       "GraphQL",
       "Flows",
       "Database",

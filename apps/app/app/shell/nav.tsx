@@ -1,5 +1,6 @@
 import { dashboardNavGroups } from "@repo/config";
 import {
+  Boxes,
   Braces,
   Database,
   LayoutGrid,
@@ -30,6 +31,7 @@ const ICONS: Record<string, ReactNode> = {
   "/settings": <Settings />,
   "/settings/access": <Shield />,
   "/settings/members": <Users />,
+  "/shopify": <Boxes />,
   "/stores": <Store />,
 };
 

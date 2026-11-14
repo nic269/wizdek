@@ -18,6 +18,7 @@ export const createDashboardNavGroups = (
     items: [
       { href: "/dashboard", label: "Dashboard" },
       { href: "/stores", label: "Stores" },
+      { href: "/shopify", label: "Shopify" },
       { href: "/graphql", label: "GraphQL" },
       { href: "/flows", label: "Flows" },
       { href: "/database", label: "Database" },
