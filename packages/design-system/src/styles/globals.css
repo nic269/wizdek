@@ -28,6 +28,12 @@
     background-color: var(--background);
   }
 
+  /* Keys are UI text; only code and data use the mono face. */
+  kbd {
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+
   input::placeholder,
   textarea::placeholder {
     color: var(--muted-foreground);

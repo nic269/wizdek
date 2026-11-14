@@ -5,7 +5,7 @@ import { cn } from "../lib/cn";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 
 export interface SegmentedOption<Value extends string> {
-  /** A count shown in mono after the label. */
+  /** A count shown after the label. */
   count?: number | string | undefined;
   disabled?: boolean | undefined;
   icon?: ReactNode | undefined;
@@ -35,10 +35,7 @@ export const SegmentedControl = <Value extends string>({
 }) => (
   <ToggleGroup
     aria-label={ariaLabel}
-    className={cn(
-      "gap-0.5 rounded-[calc(var(--radius)+2px)] border border-border bg-sunken p-[3px]",
-      className
-    )}
+    className={cn("gap-0.5 rounded-lg bg-hover p-0.5", className)}
     onValueChange={([picked]) => {
       if (picked !== undefined) {
         onValueChange(picked as Value);
@@ -50,7 +47,7 @@ export const SegmentedControl = <Value extends string>({
     {options.map((option) => (
       <ToggleGroupItem
         className={cn(
-          "h-[26px] min-w-0 gap-1.5 rounded-lg! px-2.5! font-medium text-[12.5px] text-muted-foreground hover:bg-transparent hover:text-foreground data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(0,0,0,.05)] [&_svg:not([class*='size-'])]:size-3.5",
+          "h-[26px] min-w-0 gap-1.5 rounded-md! px-2.5! font-medium text-[12.5px] text-muted-foreground hover:bg-transparent hover:text-foreground data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(22,23,26,.06)] [&_svg:not([class*='size-'])]:size-3.5",
           size === "sm" && "h-[22px] px-2! text-xs"
         )}
         disabled={option.disabled}
@@ -60,7 +57,7 @@ export const SegmentedControl = <Value extends string>({
         {option.icon}
         {option.label}
         {option.count === undefined ? null : (
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground tabular-nums">
             {option.count}
           </span>
         )}

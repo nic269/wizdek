@@ -59,7 +59,7 @@ export function AddTagsForm({ config, disabled, onChange }: ConfigFormProps) {
             "m-0 flex min-h-[34px] min-w-0 flex-wrap items-center gap-[5px] rounded-lg border bg-card px-2 py-1",
             missing
               ? "border-[#e8c77c] shadow-[0_0_0_3px_#fdf3dc]"
-              : "border-input focus-within:border-accent focus-within:ring-3 focus-within:ring-accent-soft",
+              : "border-input focus-within:border-accent focus-within:ring-3 focus-within:ring-ring/15",
             disabled && "bg-sunken"
           )}
         >

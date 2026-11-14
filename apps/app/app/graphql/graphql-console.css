@@ -10,17 +10,17 @@
 
 .graphql-console .graphiql-container {
   --color-base: 0, 0%, 100%;
-  --color-neutral: 60, 4%, 11%;
-  --color-primary: 232, 45%, 45%;
-  --color-secondary: 232, 45%, 45%;
+  --color-neutral: 228, 8%, 9%;
+  --color-primary: 228, 66%, 53%;
+  --color-secondary: 228, 66%, 53%;
   --color-tertiary: 20, 70%, 45%;
   --color-info: 216, 72%, 55%;
   --color-success: 145, 54%, 40%;
   --color-warning: 40, 77%, 47%;
-  --color-error: 4, 61%, 52%;
+  --color-error: 5, 64%, 48%;
   --font-family: var(--font-sans);
   --font-family-mono: var(--font-mono);
-  --font-size-body: 13.5px;
+  --font-size-body: 13px;
   --border-radius-4: 4px;
   --border-radius-8: 6px;
   --border-radius-12: 8px;

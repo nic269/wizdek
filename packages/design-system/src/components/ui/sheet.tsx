@@ -50,7 +50,7 @@ function SheetContent({
       <SheetOverlay />
       <SheetPrimitive.Popup
         className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-popover-foreground text-sm shadow-lg transition duration-200 ease-in-out data-[side=left]:data-ending-style:translate-x-[-1.5rem] data-[side=left]:data-starting-style:translate-x-[-1.5rem] data-[side=right]:data-ending-style:translate-x-[1.5rem] data-[side=right]:data-starting-style:translate-x-[1.5rem] data-[side=bottom]:data-ending-style:translate-y-[2.5rem] data-[side=bottom]:data-starting-style:translate-y-[2.5rem] data-[side=top]:data-ending-style:translate-y-[-2.5rem] data-[side=top]:data-starting-style:translate-y-[-2.5rem] data-[side=bottom]:inset-x-0 data-[side=top]:inset-x-0 data-[side=left]:inset-y-0 data-[side=right]:inset-y-2 data-[side=top]:top-0 data-[side=right]:right-2 data-[side=bottom]:bottom-0 data-[side=left]:left-0 data-[side=bottom]:h-auto data-[side=left]:h-full data-[side=right]:h-auto data-[side=top]:h-auto data-[side=left]:w-3/4 data-[side=right]:w-3/4 data-[side=right]:rounded-panel data-[side=right]:border data-[side=bottom]:border-t data-[side=left]:border-r data-[side=top]:border-b data-ending-style:opacity-0 data-starting-style:opacity-0 data-[side=right]:shadow-[0_24px_60px_-16px_rgba(0,0,0,.3)] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
+          "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-popover-foreground text-sm shadow-lg transition duration-200 ease-in-out data-[side=left]:data-ending-style:translate-x-[-1.5rem] data-[side=left]:data-starting-style:translate-x-[-1.5rem] data-[side=right]:data-ending-style:translate-x-[1.5rem] data-[side=right]:data-starting-style:translate-x-[1.5rem] data-[side=bottom]:data-ending-style:translate-y-[2.5rem] data-[side=bottom]:data-starting-style:translate-y-[2.5rem] data-[side=top]:data-ending-style:translate-y-[-2.5rem] data-[side=top]:data-starting-style:translate-y-[-2.5rem] data-[side=bottom]:inset-x-0 data-[side=top]:inset-x-0 data-[side=left]:inset-y-0 data-[side=right]:inset-y-2 data-[side=top]:top-0 data-[side=right]:right-2 data-[side=bottom]:bottom-0 data-[side=left]:left-0 data-[side=bottom]:h-auto data-[side=left]:h-full data-[side=right]:h-auto data-[side=top]:h-auto data-[side=left]:w-3/4 data-[side=right]:w-3/4 data-[side=right]:rounded-panel data-[side=bottom]:border-t data-[side=left]:border-r data-[side=top]:border-b data-ending-style:opacity-0 data-starting-style:opacity-0 data-[side=right]:shadow-[0_24px_60px_-16px_rgba(0,0,0,.3)] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
           className
         )}
         data-side={side}
@@ -91,7 +91,10 @@ function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
 function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      className={cn(
+        "mt-auto flex flex-col gap-2 border-border border-t bg-sunken p-4",
+        className
+      )}
       data-slot="sheet-footer"
       {...props}
     />
@@ -101,7 +104,10 @@ function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
   return (
     <SheetPrimitive.Title
-      className={cn("font-medium text-base text-foreground", className)}
+      className={cn(
+        "font-semibold text-[15px] text-foreground tracking-[-0.01em]",
+        className
+      )}
       data-slot="sheet-title"
       {...props}
     />
@@ -114,7 +120,7 @@ function SheetDescription({
 }: SheetPrimitive.Description.Props) {
   return (
     <SheetPrimitive.Description
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-[13px] text-muted-foreground", className)}
       data-slot="sheet-description"
       {...props}
     />

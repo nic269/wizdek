@@ -31,7 +31,7 @@ export function ConsoleGate({ userId }: { userId: string }) {
           </h1>
           <p className="text-pretty text-muted-foreground text-sm leading-[1.55]">
             Running queries needs the{" "}
-            <span className="rounded bg-sunken px-[5px] py-0.5 font-medium font-mono text-[12.5px] text-foreground-2">
+            <span className="rounded bg-sunken px-[5px] py-0.5 font-medium text-[12.5px] text-foreground-2 tabular-nums">
               graphql:query
             </span>{" "}
             permission. Ask an Owner or Admin in {organization.name} to change

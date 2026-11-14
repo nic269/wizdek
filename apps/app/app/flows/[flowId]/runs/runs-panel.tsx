@@ -55,7 +55,7 @@ const RunTableRow = ({ flowId, run }: { flowId: string; run: RunRow }) => {
     <TableRow className="cursor-pointer" onClick={() => router.push(href)}>
       <TableCell className="h-[54px]">
         <Link
-          className="font-medium font-mono text-[12.5px] text-foreground-2 hover:underline"
+          className="font-medium text-[12.5px] text-foreground-2 tabular-nums hover:underline"
           href={href}
           onClick={(event) => event.stopPropagation()}
         >
@@ -77,13 +77,13 @@ const RunTableRow = ({ flowId, run }: { flowId: string; run: RunRow }) => {
       <TableCell className="text-[13px] text-foreground">
         {run.startedByName ?? "Automatic"}
       </TableCell>
-      <TableCell className="font-mono text-[12.5px]">
+      <TableCell className="text-[12.5px] tabular-nums">
         {run.startedAt ? formatDuration(run.startedAt, run.completedAt) : "—"}
       </TableCell>
       <TableCell>
         <span className="flex items-center gap-2.5">
           <RunItemsBar className="flex-1" counts={run.itemCounts} />
-          <span className="whitespace-nowrap font-medium font-mono text-muted-foreground text-xs">
+          <span className="whitespace-nowrap font-medium text-muted-foreground text-xs tabular-nums">
             {itemSummary(run.itemCounts)}
           </span>
         </span>

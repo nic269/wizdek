@@ -198,7 +198,7 @@ export function ActivationPanel({
           {selected?.environment === "PROD" ? (
             <InlineAlert title="Production store." tone="danger">
               Once active, this flow changes data on{" "}
-              <span className="font-mono">{selected.shopDomain}</span> by
+              <span className="tabular-nums">{selected.shopDomain}</span> by
               itself.
             </InlineAlert>
           ) : null}

@@ -11,28 +11,30 @@ export interface DashboardNavGroup {
   label: string;
 }
 
-/** The sidebar: the work itself under Workspace, administration under Organization. */
+/**
+ * The sidebar: Dashboard on its own, then one group per area. Every tool is
+ * one click away; groups of several items open a flyout on the collapsed rail.
+ */
 export const createDashboardNavGroups = (
   organizationInvitations: boolean
 ): readonly DashboardNavGroup[] => [
+  { items: [{ href: "/dashboard", label: "Dashboard" }], label: "" },
   {
     items: [
-      { href: "/dashboard", label: "Dashboard" },
       { href: "/stores", label: "Stores" },
-      { href: "/shopify", label: "Shopify" },
-      { href: "/graphql", label: "GraphQL" },
-      { href: "/flows", label: "Flows" },
-      { href: "/database", label: "Database" },
-      // OMS_NAV_START
-      {
-        children: [{ href: "/works/oms-management", label: "OMS management" }],
-        href: "/works",
-        label: "Works",
-      },
-      // OMS_NAV_END
+      { href: "/shopify/metafields", label: "Metafields" },
+      { href: "/graphql", label: "GraphQL console" },
     ],
-    label: "Workspace",
+    label: "Shopify",
   },
+  { items: [{ href: "/flows", label: "Flows" }], label: "Automation" },
+  { items: [{ href: "/database", label: "Database" }], label: "Data" },
+  // OMS_NAV_START
+  {
+    items: [{ href: "/works/oms-management", label: "OMS management" }],
+    label: "Works",
+  },
+  // OMS_NAV_END
   {
     items: [
       { href: "/settings", label: "Settings" },

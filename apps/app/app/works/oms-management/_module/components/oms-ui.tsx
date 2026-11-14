@@ -34,7 +34,9 @@ export function Panel({
   action,
   children,
   className,
+  bodyClassName,
 }: {
+  bodyClassName?: string | undefined;
   title?: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
@@ -44,17 +46,21 @@ export function Panel({
   return (
     <Card className={cn("gap-4", className)}>
       {title || description || action ? (
-        <CardHeader className="grid-cols-[1fr_auto] gap-x-4 border-border border-b pb-4">
-          {title ? <CardTitle>{title}</CardTitle> : null}
+        <CardHeader className="grid-cols-[1fr_auto] items-center gap-x-4 border-border border-b pb-3.5">
+          {title ? (
+            <CardTitle className="col-start-1">{title}</CardTitle>
+          ) : null}
           {description ? (
-            <CardDescription>{description}</CardDescription>
+            <CardDescription className="col-start-1">
+              {description}
+            </CardDescription>
           ) : null}
           {action ? (
             <div className="col-start-2 row-span-2 row-start-1">{action}</div>
           ) : null}
         </CardHeader>
       ) : null}
-      <CardContent>{children}</CardContent>
+      <CardContent className={bodyClassName}>{children}</CardContent>
     </Card>
   );
 }

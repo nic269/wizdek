@@ -152,7 +152,7 @@ export const CommandPalette = ({
       <Command>
         <CommandInput
           endAdornment={
-            <kbd className="rounded border border-border px-[5px] py-[3px] font-medium font-mono text-[10.5px] text-muted-foreground leading-none">
+            <kbd className="rounded border border-border px-[5px] py-[3px] font-medium text-[10.5px] text-muted-foreground tabular-nums leading-none">
               esc
             </kbd>
           }

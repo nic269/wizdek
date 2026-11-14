@@ -111,7 +111,7 @@ const VersionRow = ({
       current && "bg-hover"
     )}
   >
-    <span className="w-[26px] font-mono font-semibold text-[11.5px] text-foreground-2">
+    <span className="w-[26px] font-semibold text-[11.5px] text-foreground-2 tabular-nums">
       v{version}
     </span>
     <span className="min-w-0 flex-1">

@@ -101,7 +101,7 @@ const RoleCard = ({
     <button
       aria-pressed={active}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-accent-soft",
+        "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/15",
         active
           ? "border-accent bg-card shadow-[0_0_0_3px_var(--accent-soft)]"
           : "border-border bg-transparent hover:bg-hover"
@@ -119,7 +119,7 @@ const RoleCard = ({
         <Icon className="size-[13px]" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold text-[13.5px] leading-[1.25]">
+        <span className="block truncate font-semibold text-[13px] leading-[1.25]">
           {name}
         </span>
         <span className="block truncate text-muted-foreground text-xs leading-[1.3]">
@@ -154,7 +154,7 @@ const PermissionGrid = ({
               <span className="flex-1 font-semibold text-[13px] leading-none">
                 {group.group}
               </span>
-              <span className="font-medium font-mono text-[11px] text-muted-foreground leading-none">
+              <span className="font-medium text-[11px] text-muted-foreground tabular-nums leading-none">
                 {on}/{group.items.length}
               </span>
             </span>
@@ -179,7 +179,7 @@ const PermissionGrid = ({
                 onCheckedChange={() => onToggle(item.key)}
               />
               <span className="flex-1">{item.label}</span>
-              <span className="font-mono text-[11px] text-faint leading-none">
+              <span className="text-[11px] text-faint tabular-nums leading-none">
                 {item.key}
               </span>
             </Label>
@@ -196,7 +196,7 @@ const RoleDetail = ({ role }: { role: Role }) => {
     role.permissions.map(({ action, module }) => `${module}:${action}`)
   );
   return (
-    <div className="overflow-hidden rounded-card border border-border bg-card">
+    <div className="overflow-hidden rounded-card bg-card shadow-card">
       <div className="flex flex-wrap items-center gap-3 border-border border-b px-4 py-3.5">
         <div className="min-w-[200px] flex-1">
           <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ const RoleDetail = ({ role }: { role: Role }) => {
               "A custom role for this organization."}
           </p>
         </div>
-        <span className="font-medium font-mono text-[12.5px] text-muted-foreground">
+        <span className="font-medium text-[12.5px] text-muted-foreground tabular-nums">
           {plural(role._count.memberships, "member")}
         </span>
       </div>
@@ -285,7 +285,7 @@ const DraftDetail = ({
   };
   return (
     <form
-      className="overflow-hidden rounded-card border border-border bg-card"
+      className="overflow-hidden rounded-card bg-card shadow-card"
       onSubmit={submit}
     >
       <div className="flex flex-wrap items-end gap-3 border-border border-b px-4 py-3.5">

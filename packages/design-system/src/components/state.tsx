@@ -68,7 +68,7 @@ export const InlineAlert = ({
     <span className="mt-px shrink-0 [&_svg]:size-[17px]">
       {icon ?? ALERT_ICONS[tone]}
     </span>
-    <div className="min-w-0 flex-1 text-[13.5px] leading-normal">
+    <div className="min-w-0 flex-1 text-[13px] leading-normal">
       {title ? <strong className="font-semibold">{title}</strong> : null}
       {title && children ? " " : null}
       {children}

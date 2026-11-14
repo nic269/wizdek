@@ -6,11 +6,63 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { hostname } from "node:os";
 import { dirname, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { Config } from "../config";
 import { invariant, ManagementError } from "../errors";
 import { Vault } from "../profiles/crypto";
+
+// Only local development can reclaim a confirmed dead process. Production,
+// legacy metadata and ambiguous owners retain the operator recovery procedure.
+function acquireOwnerLock(lock: string): boolean {
+  try {
+    mkdirSync(lock, { mode: 0o700 });
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+      throw error;
+    }
+  }
+  if (process.env.NODE_ENV !== "development") {
+    return false;
+  }
+  const recovery = `${lock}.recovery`;
+  try {
+    mkdirSync(recovery, { mode: 0o700 });
+  } catch {
+    return false;
+  }
+  try {
+    // Re-read under the recovery mutex: another contender may have recovered
+    // the store since our initial mkdir failed.
+    const owner = JSON.parse(readFileSync(`${lock}/owner.json`, "utf8"));
+    if (
+      owner.hostname !== hostname() ||
+      owner.runtime !== "development" ||
+      !Number.isSafeInteger(owner.pid) ||
+      owner.pid <= 0
+    ) {
+      return false;
+    }
+    try {
+      process.kill(owner.pid, 0);
+      return false;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+        return false;
+      }
+    }
+    rmSync(lock, { recursive: true });
+    // An ordinary starter can win this mkdir; in that case it owns the store.
+    mkdirSync(lock, { mode: 0o700 });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(recovery, { recursive: true });
+  }
+}
 
 export class ControlStore {
   readonly db: DatabaseSync;
@@ -22,10 +74,7 @@ export class ControlStore {
     const absolute = resolve(path);
     mkdirSync(dirname(absolute), { mode: 0o700, recursive: true });
     this.lock = `${absolute}.owner`;
-    try {
-      mkdirSync(this.lock, { mode: 0o700 });
-    } catch {
-      // Never steal a live or ambiguous lock; a stale lock requires operator recovery.
+    if (!acquireOwnerLock(this.lock)) {
       throw new ManagementError(
         "control_store_owned",
         "Another instance owns the control store. Follow the recovery runbook.",
@@ -38,6 +87,8 @@ export class ControlStore {
         JSON.stringify({
           owner: this.owner,
           pid: process.pid,
+          hostname: hostname(),
+          runtime: process.env.NODE_ENV,
           startedAt: new Date().toISOString(),
         }),
         { mode: 0o600 }

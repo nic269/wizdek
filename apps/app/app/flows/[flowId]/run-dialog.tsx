@@ -1,7 +1,14 @@
 "use client";
 
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
-import { Button, ErrorAlert, Input, Play, toast } from "@repo/design-system";
+import {
+  Button,
+  ErrorAlert,
+  Input,
+  Play,
+  TriangleAlert,
+  toast,
+} from "@repo/design-system";
 import {
   Dialog,
   DialogBody,
@@ -144,6 +151,9 @@ export function RunDialog({
   }, [open]);
   const selectedIds = storeIds ?? connected.slice(0, 1).map(({ id }) => id);
   const selectedStores = connected.filter(({ id }) => selectedIds.includes(id));
+  const liveStores = selectedStores.filter(
+    (store) => store.environment === "PROD"
+  );
   const missingInput = inputs.some((input) =>
     input.type === "file" ? !files[input.key] : !values[input.key]
   );
@@ -229,7 +239,7 @@ export function RunDialog({
       }}
       open={open}
     >
-      <DialogContent className="top-[10vh] translate-y-0 sm:max-w-[520px]">
+      <DialogContent className="top-[10vh] translate-y-0 sm:max-w-[600px]">
         <form className="flex min-h-0 flex-col" onSubmit={start}>
           <DialogHeader>
             <DialogTitle>Run “{flowName}”</DialogTitle>
@@ -305,6 +315,18 @@ export function RunDialog({
                 </Field>
               )
             )}
+            {liveStores.length > 0 ? (
+              <div className="flex gap-2.5 rounded-[10px] bg-(--alert-warning-bg) px-3.5 py-3 text-(--alert-warning-fg) text-[13px] shadow-[inset_0_0_0_1px_var(--alert-warning-border)]">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  <strong className="font-semibold">
+                    {plural(liveStores.length, "run")} on live stores.
+                  </strong>{" "}
+                  The flow writes to{" "}
+                  {liveStores.map((store) => store.name).join(", ")}.
+                </span>
+              </div>
+            ) : null}
             {error ? (
               <ErrorAlert message={error} title="Could not start all runs." />
             ) : null}
@@ -323,11 +345,7 @@ export function RunDialog({
                 isStarting || selectedStores.length === 0 || missingInput
               }
               type="submit"
-              variant={
-                selectedStores.some((store) => store.environment === "PROD")
-                  ? "danger"
-                  : "default"
-              }
+              variant={liveStores.length > 0 ? "danger" : "default"}
             >
               <Play className="size-[13px]" />
               {isStarting

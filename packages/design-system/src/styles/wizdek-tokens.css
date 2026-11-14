@@ -5,90 +5,125 @@
  * `rounded-panel` and `shadow-popover` work in components.
  */
 :root {
-  --foreground-2: #3a3a37;
-  --faint: #93938b;
-  --sunken: #f8f8f6;
-  --hover: #f3f3f0;
-  --accent-soft: oklch(0.955 0.025 265);
-  --accent-ink: oklch(0.43 0.16 265);
+  --foreground-2: #393b41;
+  --faint: #6f7178;
+  --ghost: #b4b6bb;
+  --sunken: #fafaf9;
+  --hover: #f3f3f1;
+  --selected: #eef1fd;
+  --accent-soft: #eef1fd;
+  --accent-ink: #2a44ae;
+  --panel-ring: rgba(22, 23, 26, 0.07);
 
-  --sidebar-muted: #6c6c65;
-  --sidebar-hover: #e9e9e5;
+  --sidebar-muted: #5d6068;
+  --sidebar-hover: rgba(22, 23, 26, 0.045);
   --sidebar-active: #ffffff;
-  --sidebar-active-shadow: 0 0 0 1px #e3e2dd, 0 1px 2px rgba(0, 0, 0, 0.05);
-  --sidebar-field: #fbfbfa;
-  --brand-mark: #1d1d1b;
+  --sidebar-active-shadow: 0 0 0 1px #ececea, 0 1px 2px rgba(22, 23, 26, 0.05);
+  --sidebar-field: #ffffff;
+  /* The dark surface of rail flyouts and tooltips. */
+  --flyout-bg: #0f1115;
+  --flyout-fg: #d5d6da;
+  --flyout-muted: #8b8d94;
+  --brand-ink: #0f1115;
 
-  /* Section labels: Albert Sans 11.5px/500, sentence case. */
+  /* Section labels: Albert Sans 11px/600 caps, slightly tracked. */
   --label-font: var(--font-sans);
-  --label-size: 11.5px;
-  --label-transform: none;
-  --label-tracking: 0;
+  --label-size: 11px;
+  --label-transform: uppercase;
+  --label-tracking: 0.06em;
 
-  --radius-card: 10px;
-  --radius-panel: 12px;
-  --radius-menu: 8px;
+  --radius-card: 12px;
+  --radius-panel: 14px;
+  --radius-menu: 10px;
 
-  --shadow-node: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-popover: 0 14px 34px -10px rgba(0, 0, 0, 0.2);
-  --shadow-dialog: 0 24px 60px -12px rgba(0, 0, 0, 0.3);
-  --shadow-toast: 0 12px 30px -8px rgba(0, 0, 0, 0.35);
+  --shadow-panel:
+    0 0 0 1px var(--panel-ring), 0 1px 2px rgba(22, 23, 26, 0.04),
+    0 12px 32px -18px rgba(22, 23, 26, 0.12);
+  --shadow-card: 0 0 0 1px #ececea, 0 1px 1px rgba(22, 23, 26, 0.02);
+  --shadow-node: 0 0 0 1px #ececea, 0 1px 2px rgba(22, 23, 26, 0.05);
+  --shadow-popover:
+    0 0 0 1px var(--panel-ring), 0 16px 36px -12px rgba(22, 23, 26, 0.22);
+  --shadow-dialog:
+    0 0 0 1px var(--panel-ring), 0 32px 72px -20px rgba(22, 23, 26, 0.36);
+  --shadow-toast: 0 16px 36px -10px rgba(0, 0, 0, 0.4);
 
   /* Status palette, shared by every entity state. */
-  --status-success-bg: #e8f4ec;
-  --status-success-fg: #1f6b3f;
-  --status-success-dot: #2f9e5c;
-  --status-warning-bg: #fbf1db;
-  --status-warning-fg: #7a5410;
-  --status-warning-dot: #d39a1c;
-  --status-danger-bg: #fbeceb;
-  --status-danger-fg: #9b231c;
-  --status-danger-dot: #d1453b;
-  --status-info-bg: #e9f0fb;
-  --status-info-fg: #1f4f99;
-  --status-info-dot: #3b7be0;
-  --status-neutral-bg: #f0f0ed;
-  --status-neutral-fg: #55554f;
-  --status-neutral-dot: #a3a39c;
-  --status-unknown-bg: #e8590c;
+  --status-success-bg: #eaf5ee;
+  --status-success-fg: #1c6a3e;
+  --status-success-dot: #2b9a5a;
+  --status-warning-bg: #fbf2dc;
+  --status-warning-fg: #79520c;
+  --status-warning-dot: #d49a17;
+  --status-danger-bg: #fcecea;
+  --status-danger-fg: #9d2419;
+  --status-danger-dot: #d4473a;
+  --status-info-bg: #ebf1fc;
+  --status-info-fg: #234f9c;
+  --status-info-dot: #3a7be0;
+  --status-neutral-bg: #f0f0ee;
+  --status-neutral-fg: #54565c;
+  --status-neutral-dot: #a5a7ac;
+  --status-unknown-bg: #e3600f;
   --status-unknown-fg: #ffffff;
   --status-unknown-dot: #ffffff;
 
   /* Alerts. */
-  --alert-danger-bg: #fdf3f2;
-  --alert-danger-border: #f0c9c5;
-  --alert-danger-fg: #7d1d17;
-  --alert-warning-bg: #fdf7e8;
-  --alert-warning-border: #ecd8a8;
-  --alert-warning-fg: #6a490c;
-  --alert-unknown-bg: #fff4ec;
-  --alert-unknown-border: #f6c7a7;
+  --alert-danger-bg: #fdf3f1;
+  --alert-danger-border: #f0c6bf;
+  --alert-danger-fg: #8f2216;
+  --alert-warning-bg: #fdf8ea;
+  --alert-warning-border: #efdcaa;
+  --alert-warning-fg: #6a480b;
+  --alert-unknown-bg: #fff4eb;
+  --alert-unknown-border: #f6c7a3;
   --alert-unknown-fg: #8a3507;
+  --alert-info-bg: #ebf1fc;
+  --alert-info-border: #cbdaf5;
+  --alert-info-fg: #234f9c;
 
-  /* Production risk: tinted borders and backgrounds around a PROD target. */
-  --danger-solid: #a3211a;
-  --danger-outline: #e3b0aa;
-  --prod-border: #e9b7b2;
-  --prod-bg: #fffafa;
-  --prod-band-bg: #fbeceb;
-  --prod-band-fg: #7d1d17;
+  /* Production risk: solid red tag, red ring around the panel, a strip under the header. */
+  --danger-solid: #c93a2c;
+  --danger-outline: #f0c6bf;
+  --prod: #c93a2c;
+  --prod-ink: #8f2216;
+  --prod-soft: #fdf3f1;
+  --prod-line: #f0c6bf;
+  --prod-border: #f0c6bf;
+  --prod-bg: #fdf3f1;
+  --prod-band-bg: #fdf3f1;
+  --prod-band-fg: #8f2216;
+
+  /* Staging: tinted teal, calm but not neutral. */
+  --stg: #1f7a6c;
+  --stg-soft: #ecf6f3;
+  --stg-line: #bfe0d8;
 
   /* Environment tags. */
-  --env-prod-bg: #fbeceb;
-  --env-prod-fg: #9b231c;
-  --env-staging-bg: #e9f0fb;
-  --env-staging-fg: #1f4f99;
-  --env-dev-bg: #f0f0ed;
-  --env-dev-fg: #55554f;
+  --env-prod-bg: #c93a2c;
+  --env-prod-fg: #ffffff;
+  --env-staging-bg: #ecf6f3;
+  --env-staging-fg: #1f7a6c;
+  --env-staging-ring: #bfe0d8;
+  --env-dev-bg: #f0f0ee;
+  --env-dev-fg: #54565c;
 
-  /* Flow node categories, as hues for oklch(). */
+  /* Flow node categories. */
+  --cat-trigger: #7a4fd6;
+  --cat-shopify: #2b8a55;
+  --cat-data: #2f6fd0;
+  --cat-logic: #c27c0e;
+  --cat-trigger-tint: #f1ecfc;
+  --cat-shopify-tint: #e8f4ec;
+  --cat-data-tint: #ebf1fc;
+  --cat-logic-tint: #fbf2dc;
+  /* Hues kept for oklch() tints derived from the categories above. */
   --category-trigger: 300;
-  --category-data: 230;
-  --category-logic: 75;
-  --category-action: 160;
+  --category-data: 255;
+  --category-logic: 70;
+  --category-action: 150;
 
   /* Toasts. */
-  --toast-bg: #1d1d1b;
+  --toast-bg: #16171a;
   --toast-fg: #f4f4f2;
   --toast-muted: #b9b9b2;
   --toast-success: #6fcf97;
@@ -168,5 +203,5 @@
 }
 
 ::selection {
-  background: oklch(0.88 0.06 265);
+  background: #d6defa;
 }

@@ -30,7 +30,7 @@ export const SecretInput = ({
       <Input
         aria-describedby={helper && helperId ? helperId : undefined}
         autoComplete="off"
-        className={cn("pl-[30px] font-mono text-[13px]", className)}
+        className={cn("pl-[30px] text-[13px] tabular-nums", className)}
         spellCheck={false}
         type="password"
         {...props}

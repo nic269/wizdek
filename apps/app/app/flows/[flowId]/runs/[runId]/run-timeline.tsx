@@ -150,21 +150,21 @@ const StepCard = ({
           size={26}
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold text-[13.5px] leading-[1.25]">
+          <span className="block truncate font-semibold text-[13px] leading-[1.25]">
             {node.name || spec?.label || node.type}
           </span>
           <span className="block truncate text-muted-foreground text-xs leading-[1.35]">
             {summarizeNode(node.type, node.config) || spec?.description}
           </span>
         </span>
-        <span className="font-medium font-mono text-muted-foreground text-xs">
+        <span className="font-medium text-muted-foreground text-xs tabular-nums">
           {step?.startedAt
             ? formatDuration(step.startedAt, step.completedAt)
             : "—"}
         </span>
       </span>
       <span className="flex w-full flex-wrap items-center gap-1.5">
-        <span className="mr-1 font-medium font-mono text-[11.5px] text-muted-foreground">
+        <span className="mr-1 font-medium text-[11.5px] text-muted-foreground tabular-nums">
           {received === sent || sent === 0
             ? `${received.toLocaleString()} in`
             : `${received.toLocaleString()} in → ${sent.toLocaleString()} out`}

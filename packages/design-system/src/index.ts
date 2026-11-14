@@ -1,14 +1,17 @@
 export { toast } from "sonner";
 export * from "./components/app-shell";
+export * from "./components/brand-logo";
 export * from "./components/button";
 export * from "./components/card";
 export * from "./components/empty-state";
 export * from "./components/env-tag";
 export * from "./components/identity-chip";
 export * from "./components/input";
+export * from "./components/nav-tabs";
 export * from "./components/page-header";
 export * from "./components/secret-input";
 export * from "./components/segmented-control";
+export * from "./components/shell-header";
 export * from "./components/state";
 export * from "./components/status-badge";
 export * from "./icons";

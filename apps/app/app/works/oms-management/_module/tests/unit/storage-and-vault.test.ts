@@ -1,7 +1,8 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { hostname, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Vault } from "../../server/profiles/crypto";
 import { ControlStore } from "../../server/storage/control-store";
 
@@ -36,6 +37,7 @@ describe("ControlStore ownership and restart", () => {
   const stores: ControlStore[] = [];
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     for (const store of stores.splice(0)) {
       try {
         store.close();
@@ -59,6 +61,45 @@ describe("ControlStore ownership and restart", () => {
     const first = new ControlStore(path, KEY);
     stores.push(first);
 
+    expect(() => new ControlStore(path, KEY)).toThrowError(
+      expect.objectContaining({ code: "control_store_owned" })
+    );
+  });
+
+  it("recovers after a dev process is killed, retaining committed data", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const path = createPath();
+    const modulePath = resolve(
+      "app/works/oms-management/_module/server/storage/control-store.ts"
+    );
+    const child = spawnSync(process.execPath, [
+      "--import", "tsx", "--input-type=module", "-e",
+      `import { ControlStore } from ${JSON.stringify(modulePath)};
+       const store = new ControlStore(${JSON.stringify(path)}, ${JSON.stringify(KEY)});
+       store.db.prepare("INSERT INTO metadata VALUES ('crash-fixture', 'retained')").run();
+       process.kill(process.pid, "SIGKILL");`,
+    ], { env: { ...process.env, NODE_ENV: "development" } });
+    expect(child.signal, child.stderr.toString()).toBe("SIGKILL");
+    const restarted = new ControlStore(path, KEY);
+    stores.push(restarted);
+    expect(restarted.db.prepare("SELECT value FROM metadata WHERE key='crash-fixture'").get())
+      .toEqual({ value: "retained" });
+    expect(() => new ControlStore(path, KEY)).toThrowError(
+      expect.objectContaining({ code: "control_store_owned" })
+    );
+  });
+
+  it.each([
+    ["production", { hostname: hostname(), runtime: "development", pid: 2147483647 }],
+    ["development", { hostname: "another-host", runtime: "development", pid: 2147483647 }],
+    ["development", { pid: 2147483647 }],
+    ["development", { hostname: hostname(), runtime: "development", pid: process.pid }],
+    ["development", { hostname: hostname(), runtime: "development", pid: -1 }],
+  ])("preserves live or ambiguous owners in %s", (runtime, metadata) => {
+    vi.stubEnv("NODE_ENV", runtime);
+    const path = createPath();
+    mkdirSync(`${path}.owner`);
+    writeFileSync(`${path}.owner/owner.json`, JSON.stringify(metadata));
     expect(() => new ControlStore(path, KEY)).toThrowError(
       expect.objectContaining({ code: "control_store_owned" })
     );

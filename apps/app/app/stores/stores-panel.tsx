@@ -2,7 +2,6 @@
 
 import {
   Activity,
-  Boxes,
   Button,
   buttonVariants,
   ChevronRight,
@@ -48,6 +47,7 @@ import {
   type Store,
   usesOwnWebhookSecret,
 } from "./store-labels";
+import { StoresTabs } from "./stores-tabs";
 
 type Filter = "all" | "attention" | "prod";
 
@@ -104,12 +104,12 @@ const StoreRow = ({
         />
         <div className="min-w-0">
           <div className="flex items-center gap-[7px]">
-            <span className="truncate font-semibold text-[13.5px] text-foreground leading-[1.3]">
+            <span className="truncate font-semibold text-[13px] text-foreground leading-[1.3]">
               {store.name}
             </span>
             <EnvTag environment={store.environment} />
           </div>
-          <div className="truncate font-mono text-muted-foreground text-xs leading-[1.4]">
+          <div className="truncate text-muted-foreground text-xs tabular-nums leading-[1.4]">
             {store.shopDomain}
           </div>
         </div>
@@ -129,7 +129,7 @@ const StoreRow = ({
         </span>
       </div>
     </TableCell>
-    <TableCell className="font-medium font-mono text-[13px]">
+    <TableCell className="font-medium text-[13px] tabular-nums">
       {store.scopes.length > 0 ? store.scopes.length : "—"}
     </TableCell>
     <TableCell>
@@ -186,37 +186,28 @@ const StoresHeader = ({
   appCount,
   canManage,
   organizationName,
+  storeCount,
 }: {
   appCount: number | undefined;
+  storeCount: number | undefined;
   canManage: boolean;
   organizationName: string | undefined;
 }) => (
-  <PageHeader
-    actions={
-      <>
-        <Link
-          className={buttonVariants({ variant: "outline" })}
-          href="/stores/apps"
-        >
-          <Boxes />
-          Shopify apps
-          {appCount === undefined ? null : (
-            <span className="rounded bg-sunken px-[5px] py-0.5 font-medium font-mono text-[11px] text-muted-foreground">
-              {appCount}
-            </span>
-          )}
-        </Link>
-        {canManage ? (
+  <>
+    <PageHeader
+      actions={
+        canManage ? (
           <Link className={buttonVariants()} href="/stores/new">
             <Plus />
             Connect store
           </Link>
-        ) : null}
-      </>
-    }
-    description={`Shopify stores connected to ${organizationName ?? "this organization"}. Open a store for health, scopes and webhook settings.`}
-    title="Stores"
-  />
+        ) : null
+      }
+      description={`Shopify stores connected to ${organizationName ?? "this organization"}. Open a store for health, scopes and webhook settings.`}
+      title="Stores"
+    />
+    <StoresTabs appCount={appCount} current="stores" storeCount={storeCount} />
+  </>
 );
 
 const StoresTable = ({
@@ -265,7 +256,7 @@ const StoresTable = ({
         <TableRow className="hover:bg-transparent">
           <TableCell
             className={cn(
-              "h-auto py-8 text-center text-[13.5px] text-muted-foreground"
+              "h-auto py-8 text-center text-[13px] text-muted-foreground"
             )}
             colSpan={6}
           >
@@ -330,6 +321,7 @@ export function StoresPanel() {
         appCount={apps.data?.length}
         canManage={canManage}
         organizationName={organization?.name}
+        storeCount={stores.data?.length}
       />
 
       {permissionsLoading || canManage ? null : (

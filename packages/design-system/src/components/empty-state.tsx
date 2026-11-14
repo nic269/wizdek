@@ -35,7 +35,7 @@ export const EmptyState = ({
     ) : null}
     <h2 className="font-semibold text-base leading-[1.3]">{title}</h2>
     {description ? (
-      <p className="max-w-[420px] text-pretty text-[13.5px] text-muted-foreground leading-normal">
+      <p className="max-w-[420px] text-pretty text-[13px] text-muted-foreground leading-normal">
         {description}
       </p>
     ) : null}

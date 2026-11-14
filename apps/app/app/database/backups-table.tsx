@@ -57,7 +57,7 @@ const StatusCell = ({ backup }: { backup: DatabaseBackup }) => {
           <div className="relative h-[5px] flex-1 overflow-hidden rounded-full bg-border">
             <div className="absolute inset-y-0 w-2/5 animate-[wz-indeterminate_1s_ease-in-out_infinite] rounded-full bg-(--status-info-dot)" />
           </div>
-          <span className="font-medium font-mono text-[11.5px] text-muted-foreground">
+          <span className="font-medium text-[11.5px] text-muted-foreground tabular-nums">
             {backup.status === "QUEUED"
               ? "waiting"
               : formatDuration(backup.startedAt ?? backup.createdAt)}
@@ -191,10 +191,10 @@ export function BackupsTable({
               <TableCell className="whitespace-normal">
                 <StatusCell backup={backup} />
               </TableCell>
-              <TableCell className="font-mono text-[12.5px]">
+              <TableCell className="text-[12.5px] tabular-nums">
                 {formatBytes(backup.sizeBytes)}
               </TableCell>
-              <TableCell className="font-mono text-[12.5px]">
+              <TableCell className="text-[12.5px] tabular-nums">
                 {backup.startedAt && !active
                   ? formatDuration(backup.startedAt, backup.completedAt)
                   : "—"}

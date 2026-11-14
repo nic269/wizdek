@@ -44,7 +44,7 @@ export function AccessPanel({ currentUserId }: { currentUserId: string }) {
 
   const canManageMembers = can("members:manage");
   return (
-    <div className="flex flex-col gap-[26px]">
+    <div className="flex flex-col gap-6">
       {canManageMembers && can("roles:manage") ? null : (
         <ReadOnlyBanner>
           You can view access settings but not change them. Changing roles needs{" "}
@@ -52,27 +52,33 @@ export function AccessPanel({ currentUserId }: { currentUserId: string }) {
           <strong>roles:manage</strong>.
         </ReadOnlyBanner>
       )}
-      {canReadRoles ? (
-        <RolesSection
-          canManage={can("roles:manage")}
-          organizationId={organizationId}
-        />
-      ) : null}
-      {canReadMembers ? (
-        <RoleAssignments
-          canManage={canManageMembers && canReadRoles}
-          currentUserId={currentUserId}
-          organizationId={organizationId}
-          roles={roles.data ?? []}
-        />
-      ) : null}
-      {canReadAudit ? (
-        <AuditLog organizationId={organizationId} />
-      ) : (
-        <ReadOnlyBanner>
-          The audit log needs <strong>audit:read</strong>.
-        </ReadOnlyBanner>
-      )}
+      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {canReadMembers ? (
+            <RoleAssignments
+              canManage={canManageMembers && canReadRoles}
+              currentUserId={currentUserId}
+              organizationId={organizationId}
+              roles={roles.data ?? []}
+            />
+          ) : null}
+          {canReadRoles ? (
+            <RolesSection
+              canManage={can("roles:manage")}
+              organizationId={organizationId}
+            />
+          ) : null}
+        </div>
+        <div className="min-w-0">
+          {canReadAudit ? (
+            <AuditLog organizationId={organizationId} />
+          ) : (
+            <ReadOnlyBanner>
+              The audit log needs <strong>audit:read</strong>.
+            </ReadOnlyBanner>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -166,7 +166,7 @@ export function AddConnection({
               }}
               value={environment}
             />
-            <details className="rounded-card border border-border p-4">
+            <details className="rounded-card p-4 shadow-card">
               <summary className="cursor-pointer font-medium text-sm">
                 Optional OMS API connection
               </summary>

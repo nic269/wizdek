@@ -141,7 +141,7 @@ const DomainInput = ({
       <InputGroupInput
         aria-label={label}
         autoComplete="off"
-        className="font-mono text-[13.5px]"
+        className="text-[13px] tabular-nums"
         id={id}
         onChange={(event) => onChange(event.target.value)}
         placeholder="your-store"
@@ -151,7 +151,7 @@ const DomainInput = ({
       />
       <InputGroupAddon
         align="inline-end"
-        className="h-full self-stretch rounded-none border-input border-l bg-sunken px-2.5 font-mono text-[13px] text-muted-foreground"
+        className="h-full self-stretch rounded-none border-input border-l bg-sunken px-2.5 text-[13px] text-muted-foreground tabular-nums"
       >
         {SHOPIFY_SUFFIX}
       </InputGroupAddon>
@@ -281,7 +281,7 @@ const MethodGuide = ({
   method: Method;
   onPick: (method: Method) => void;
 }) => (
-  <aside className="sticky top-5 flex flex-col gap-3 rounded-card border border-border bg-sunken p-4">
+  <aside className="sticky top-5 flex flex-col gap-3 rounded-card bg-sunken p-4 shadow-card">
     <h2 className="flex items-center gap-2 font-semibold text-sm leading-[1.2]">
       <Info className="size-4 text-muted-foreground" />
       Which method?
@@ -323,7 +323,7 @@ const ResultList = ({ results }: { results: ConnectResult[] }) => (
         ) : (
           <CircleX className="size-[15px] text-(--status-danger-dot)" />
         )}
-        <span className="flex-1 font-mono text-[13px]">
+        <span className="flex-1 text-[13px] tabular-nums">
           {result.shopDomain}
         </span>
         <span className="text-[12.5px] text-muted-foreground leading-[1.3]">
@@ -408,7 +408,7 @@ const TokenForm = ({
     <form className="flex flex-col gap-4" onSubmit={submit}>
       <FormIntro title="Paste an Admin API access token">
         From a custom app created in the store's own admin:{" "}
-        <span className="font-mono text-xs">
+        <span className="text-xs tabular-nums">
           Settings → Apps → Develop apps
         </span>
         .
@@ -497,7 +497,7 @@ const CredentialsForm = ({
         </FieldLabel>
         <Textarea
           aria-label="Shop domains"
-          className="font-mono text-[13px] leading-[1.6]"
+          className="text-[13px] tabular-nums leading-[1.6]"
           id="shop-domains"
           onChange={(event) => setDomainList(event.target.value)}
           placeholder={"store-one.myshopify.com\nstore-two.myshopify.com"}
@@ -668,7 +668,7 @@ export function ConnectStoreForm() {
         <SectionLabel>1 · Method</SectionLabel>
         <MethodCards method={method} onChange={setMethod} />
         <SectionLabel className="mt-1.5">2 · Details</SectionLabel>
-        <div className="flex flex-col gap-4 rounded-card border border-border p-5">
+        <div className="flex flex-col gap-4 rounded-card p-5 shadow-card">
           {organizationId ? (
             <MethodForm
               appId={appId}

@@ -1,147 +1,110 @@
 import { appConfig } from "@repo/config";
 import {
-  BrandMark,
+  BrandLogo,
+  ContextChip,
   cn,
   EnvTag,
-  FileSpreadsheet,
-  type LucideIcon,
-  PackageSearch,
-  SectionLabel,
-  Split,
-  Tag,
+  IdentityChip,
+  StatusBadge,
 } from "@repo/design-system";
 import type { ReactNode } from "react";
 
-type ChipTone = "success" | "danger" | "info" | "unknown";
+const RUN_SEGMENTS = [
+  { color: "var(--status-success-dot)", size: 290 },
+  { color: "var(--status-danger-dot)", size: 9 },
+  { color: "var(--status-unknown-bg)", size: 3 },
+  { color: "var(--border)", size: 16 },
+] as const;
 
-const CHIP_CLASSES: Record<ChipTone, string> = {
-  danger: "bg-(--status-danger-bg) text-(--status-danger-fg)",
-  info: "bg-(--status-info-bg) text-(--status-info-fg)",
-  success: "bg-(--status-success-bg) text-(--status-success-fg)",
-  unknown: "bg-(--status-unknown-bg) text-(--status-unknown-fg)",
-};
+const PREVIEW_CARD =
+  "flex flex-col rounded-card bg-card px-4 py-3.5 shadow-[0_0_0_1px_var(--border),0_24px_48px_-24px_rgba(22,23,26,0.2)]";
 
-const PREVIEW_STEPS: {
-  chips: { label: string; tone: ChipTone }[];
-  hue: number;
-  icon: LucideIcon;
-  name: string;
-}[] = [
-  {
-    chips: [{ label: "240 ✓", tone: "success" }],
-    hue: 230,
-    icon: FileSpreadsheet,
-    name: "Parse CSV",
-  },
-  {
-    chips: [
-      { label: "236 ✓", tone: "success" },
-      { label: "4 ✗", tone: "danger" },
-    ],
-    hue: 160,
-    icon: PackageSearch,
-    name: "Find order",
-  },
-  {
-    chips: [{ label: "61 true", tone: "info" }],
-    hue: 75,
-    icon: Split,
-    name: "If total > 1000",
-  },
-  {
-    chips: [
-      { label: "53 ✓", tone: "success" },
-      { label: "5 ✗", tone: "danger" },
-      { label: "3 ?", tone: "unknown" },
-    ],
-    hue: 160,
-    icon: Tag,
-    name: "Add tags",
-  },
-];
-
-/** A static run trace, as an illustration of what the product does. */
-const RunTracePreview = () => (
-  <div
-    aria-hidden="true"
-    className="max-w-[460px] overflow-hidden rounded-xl border border-sidebar-border bg-white text-[#1d1d1b] shadow-[0_30px_60px_-30px_rgba(0,0,0,0.35)]"
-  >
-    <div className="flex items-center gap-2 border-[#ecebe7] border-b px-3.5 py-3">
-      <span className="flex-1 font-semibold text-[13px] leading-none">
-        Run #128 · Tag high-value orders
-      </span>
-      <EnvTag environment="PROD" />
+/** A static target and run, as an illustration of what the product does. */
+const ProductPreview = () => (
+  <div className="relative flex w-full max-w-[440px] flex-col gap-3.5">
+    <div className={`${PREVIEW_CARD} gap-2.5`}>
+      <div className="flex items-center">
+        <span className="flex-1 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+          Target
+        </span>
+        <span className="font-mono text-[11px] text-faint">always visible</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <ContextChip>
+          <IdentityChip id="atelier-uk" name="atelier-uk" size={18} />
+          atelier-uk
+        </ContextChip>
+        <ContextChip risk="staging">
+          <EnvTag environment="STAGING" />
+          OMS
+        </ContextChip>
+        <ContextChip risk="production">
+          <EnvTag environment="PROD" />
+          OMS
+        </ContextChip>
+      </div>
     </div>
-    {PREVIEW_STEPS.map((step) => {
-      const Icon = step.icon;
-      return (
-        <div
-          className="flex items-center gap-2.5 border-[#f1f0ec] border-b px-3.5 py-2.5 last:border-b-0"
-          key={step.name}
-        >
+    <div className={`${PREVIEW_CARD} ml-12 gap-2`}>
+      <div className="flex items-center">
+        <span className="flex-1 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+          Run · Add tags
+        </span>
+        <StatusBadge tone="info">Running</StatusBadge>
+      </div>
+      <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-[3px] bg-muted">
+        {RUN_SEGMENTS.map((segment) => (
           <span
-            className="grid size-6 place-items-center rounded-md"
-            style={{
-              background: `oklch(0.95 0.035 ${step.hue})`,
-              color: `oklch(0.5 0.14 ${step.hue})`,
-            }}
-          >
-            <Icon className="size-3" />
-          </span>
-          <span className="flex-1 font-medium text-[12.5px] leading-[1.2]">
-            {step.name}
-          </span>
-          {step.chips.map((chip) => (
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-1 font-semibold text-[10.5px] leading-none",
-                CHIP_CLASSES[chip.tone]
-              )}
-              key={chip.label}
-            >
-              {chip.label}
-            </span>
-          ))}
-        </div>
-      );
-    })}
+            key={segment.color}
+            style={{ background: segment.color, flex: segment.size }}
+          />
+        ))}
+      </div>
+      <div className="flex gap-1.5">
+        <StatusBadge tone="success">290</StatusBadge>
+        <StatusBadge tone="danger">9</StatusBadge>
+        <StatusBadge tone="unknown">3 unknown</StatusBadge>
+      </div>
+    </div>
+    <p className="mt-6 text-pretty font-[550] text-[22px] text-foreground-2 leading-[30px] tracking-[-0.02em]">
+      Every store, every run, every environment —{" "}
+      <span className="text-foreground">
+        and always the one you're about to change.
+      </span>
+    </p>
   </div>
 );
 
 /**
  * The auth pages: a form column with the brand and a footer, beside a
- * sidebar-coloured panel that says what the product is for.
+ * quiet panel that shows what the product keeps in view.
  */
 export function AuthSplit({ children }: { children: ReactNode }) {
   return (
-    <div className="grid min-h-screen bg-card text-foreground md:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <div className="flex min-h-screen flex-col px-4 py-[22px] sm:px-7">
-        <div className="flex items-center gap-2.5">
-          <BrandMark />
-          <span className="font-semibold text-[14.5px] leading-none tracking-[-0.01em]">
-            {appConfig.name}
+    <div className="grid min-h-screen bg-card text-foreground md:grid-cols-2">
+      <div className="flex min-h-screen flex-col px-4 py-8 sm:px-10">
+        <div className="flex items-center gap-2.5 self-start">
+          <BrandLogo height={22} label={appConfig.name} />
+          <span className="inline-flex h-5 items-center rounded-[5px] bg-hover px-1.5 font-medium text-[11px] text-foreground-2">
+            devkit
           </span>
         </div>
         <main className="flex flex-1 items-center justify-center py-10">
-          <div className="flex w-full max-w-[380px] flex-col gap-[22px]">
+          <div className="flex w-full max-w-[360px] flex-col gap-5">
             {children}
           </div>
         </main>
-        <footer className="text-faint text-xs leading-[1.4]">
-          © {new Date().getFullYear()} Wizloft · Internal developer tool
+        <footer className="flex items-center font-mono text-[11px] text-faint">
+          <span>{appConfig.versionLabel}</span>
+          <span className="flex-1" />
+          <span>© {new Date().getFullYear()} Wizloft</span>
         </footer>
       </div>
-      <aside className="hidden flex-col justify-center gap-[30px] overflow-hidden border-sidebar-border border-l bg-sidebar p-12 text-sidebar-foreground md:flex">
-        <div className="max-w-[460px]">
-          <SectionLabel className="mb-3.5 text-sidebar-muted">
-            For teams running many Shopify stores
-          </SectionLabel>
-          <p className="text-pretty font-semibold text-[30px] leading-[1.15] tracking-[-0.025em]">
-            Query any store, automate per-item work, and see exactly what
-            happened.
-          </p>
-        </div>
-        <RunTracePreview />
+      <aside
+        aria-hidden="true"
+        className="relative hidden items-center justify-center overflow-hidden bg-background p-12 md:flex"
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-size-[48px_48px] opacity-60" />
+        <ProductPreview />
       </aside>
     </div>
   );
@@ -156,11 +119,11 @@ export const AuthHeading = ({
   title: string;
 }) => (
   <div>
-    <h1 className="m-0 font-semibold text-[26px] leading-[1.15] tracking-[-0.02em]">
+    <h1 className="m-0 font-semibold text-[28px] leading-[1.15] tracking-[-0.02em]">
       {title}
     </h1>
     {children ? (
-      <p className="mt-2 text-muted-foreground text-sm leading-normal [&_strong]:font-semibold [&_strong]:text-foreground">
+      <p className="mt-1.5 text-muted-foreground text-sm leading-normal [&_strong]:font-semibold [&_strong]:text-foreground">
         {children}
       </p>
     ) : null}

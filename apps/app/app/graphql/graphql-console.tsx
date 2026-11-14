@@ -130,8 +130,8 @@ const MutationConfirm = ({
           </span>
           <AlertDialogTitle>Run mutation on production?</AlertDialogTitle>
         </div>
-        <AlertDialogDescription className="text-[13.5px]">
-          <span className="font-mono text-foreground">
+        <AlertDialogDescription className="text-[13px]">
+          <span className="text-foreground tabular-nums">
             {pending?.operationName ?? "This mutation"}
           </span>{" "}
           will write to live data. This can't be undone from wizdek.
@@ -145,11 +145,11 @@ const MutationConfirm = ({
               <span className="block truncate font-semibold text-[13px] leading-[1.3]">
                 {store.name}
               </span>
-              <span className="block truncate font-mono text-muted-foreground text-xs leading-[1.3]">
+              <span className="block truncate text-muted-foreground text-xs tabular-nums leading-[1.3]">
                 {store.shopDomain}
               </span>
             </span>
-            <span className="rounded-[3px] bg-(--status-danger-fg) px-[5px] py-[3px] font-mono font-semibold text-[9.5px] text-white leading-none tracking-[0.06em]">
+            <span className="rounded-[3px] bg-(--status-danger-fg) px-[5px] py-[3px] font-semibold text-[9.5px] text-white tabular-nums leading-none tracking-[0.06em]">
               PROD
             </span>
           </div>

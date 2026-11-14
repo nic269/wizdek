@@ -1,7 +1,12 @@
 "use client";
 
-import { Button, Copy, Download, RefreshCw } from "@repo/design-system";
-import { Badge } from "@repo/design-system/components/ui/badge";
+import {
+  Button,
+  Copy,
+  Download,
+  RefreshCw,
+  StatusBadge,
+} from "@repo/design-system";
 import { Skeleton } from "@repo/design-system/components/ui/skeleton";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Actor, PublicProfile, TargetRef } from "../lib/contracts";
@@ -12,10 +17,10 @@ import { useWorkflowActions } from "./workflow-actions";
 import {
   formatDuration,
   formatLogDate,
+  formatLogLabel,
   type WorkflowDetail,
   type WorkflowLog,
   type WorkflowRun,
-  workflowBadgeVariant,
 } from "./workflow-types";
 
 const json = (value: unknown) => JSON.stringify(value ?? {}, null, 2);
@@ -98,18 +103,23 @@ export function WorkflowRunDetailPanel({
   return (
     <section
       aria-label="Workflow detail"
-      className="min-w-0 overflow-hidden rounded-xl border bg-card"
+      className="min-w-0 overflow-hidden rounded-card bg-card shadow-card"
     >
-      <header className="border-b p-5">
+      <header className="border-border border-b px-6 pt-4 pb-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider">
+            <p className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
               {run.module}
             </p>
-            <h2 className="mt-1 break-words font-semibold text-lg">
-              {run.title || run.id}
-            </h2>
-            <p className="mt-1 break-all font-mono text-muted-foreground text-xs">
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2 className="break-words font-semibold text-[15px] leading-[22px] tracking-[-0.01em]">
+                {run.title || run.id}
+              </h2>
+              <StatusBadge status={run.status.toUpperCase()}>
+                {formatLogLabel(run.status)}
+              </StatusBadge>
+            </div>
+            <p className="mt-1 break-all text-muted-foreground text-xs tabular-nums">
               {run.id}
             </p>
           </div>
@@ -153,10 +163,10 @@ export function WorkflowRunDetailPanel({
         <ActionNotice error={error} notice={notice} queryError={query.error} />
       </header>
       <div className="grid min-w-0 2xl:grid-cols-[minmax(0,1fr)_270px]">
-        <div className="min-w-0 p-4">
-          <h3 className="mb-4 font-semibold text-sm">
+        <div className="min-w-0 px-6 py-5">
+          <h3 className="mb-3 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
             Timeline{" "}
-            <span className="font-normal text-muted-foreground">
+            <span className="normal-case tracking-normal">
               · {logs.length} loaded
             </span>
           </h3>
@@ -187,6 +197,19 @@ export function WorkflowRunDetailPanel({
     </section>
   );
 }
+const LEVEL_DOTS: Record<string, string> = {
+  ERROR: "bg-(--status-danger-dot)",
+  WARN: "bg-(--status-warning-dot)",
+};
+const LEVEL_SURFACES: Record<string, string> = {
+  ERROR: "bg-prod-soft",
+  WARN: "bg-(--alert-warning-bg)",
+};
+const LEVEL_TEXT: Record<string, string> = {
+  ERROR: "text-(--status-danger-fg)",
+  WARN: "text-(--status-warning-fg)",
+};
+
 function Metric({
   label,
   value,
@@ -197,10 +220,12 @@ function Metric({
   danger?: boolean;
 }) {
   return (
-    <div className="min-w-0 rounded-md border bg-muted/30 px-3 py-2">
-      <p className="text-muted-foreground text-xs">{label}</p>
+    <div className="flex min-w-0 flex-col gap-0.5 bg-card px-3.5 py-2.5">
+      <p className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+        {label}
+      </p>
       <p
-        className={`mt-1 break-words font-semibold text-sm ${danger ? "text-destructive" : ""}`}
+        className={`break-words text-[13px] tabular-nums ${danger ? "text-(--status-danger-fg)" : ""}`}
       >
         {value}
       </p>
@@ -210,8 +235,12 @@ function Metric({
 function ContextRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-1 break-all font-medium">{value || "—"}</dd>
+      <dt className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+        {label}
+      </dt>
+      <dd className="mt-1 break-all text-[12.5px] tabular-nums">
+        {value || "—"}
+      </dd>
     </div>
   );
 }
@@ -226,11 +255,17 @@ function TimelineLog({
   return (
     <article className="relative border-border border-l-2 pl-4">
       <span
-        className={`absolute top-3 -left-[5px] size-2 rounded-full ${log.level === "ERROR" ? "bg-destructive" : "bg-primary"}`}
+        className={`absolute top-3 -left-[5px] size-2 rounded-full ${LEVEL_DOTS[log.level] ?? "bg-ghost"}`}
       />
-      <div className="rounded-lg border p-3">
+      <div
+        className={`rounded-[10px] p-3 shadow-[inset_0_0_0_1px_var(--border)] ${LEVEL_SURFACES[log.level] ?? "bg-card"}`}
+      >
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant={workflowBadgeVariant(log.level)}>{log.level}</Badge>
+          <span
+            className={`font-mono font-semibold text-[11px] ${LEVEL_TEXT[log.level] ?? "text-muted-foreground"}`}
+          >
+            {log.level}
+          </span>
           <span className="font-semibold text-xs">{log.stage}</span>
           <span className="text-muted-foreground text-xs">#{log.sequence}</span>
           <time
@@ -273,7 +308,7 @@ function TimelineLog({
             <summary className="cursor-pointer font-medium text-xs">
               Payload
             </summary>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-md bg-muted p-3 text-[11px] leading-5">
+            <pre className="mt-2 max-h-72 overflow-auto rounded-[10px] bg-card p-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
               {json({ errorDetails: log.errorDetails, metadata: log.metadata })}
             </pre>
           </details>
@@ -285,7 +320,7 @@ function TimelineLog({
 
 function RunMetrics({ run, logs }: { run: WorkflowRun; logs: WorkflowLog[] }) {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-card bg-border shadow-[0_0_0_1px_var(--border)] lg:grid-cols-4">
       <Metric label="Status" value={run.status} />
       <Metric label="Logs" value={String(run.logCount ?? logs.length)} />
       <Metric
@@ -313,8 +348,10 @@ function RunContext({
   timeZone?: string | undefined;
 }) {
   return (
-    <aside className="min-w-0 border-t bg-muted/30 p-4 2xl:border-t-0 2xl:border-l">
-      <h3 className="font-semibold text-sm">Run Context</h3>
+    <aside className="min-w-0 border-border border-t bg-sunken p-4 2xl:border-t-0 2xl:border-l">
+      <h3 className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+        Run context
+      </h3>
       <dl className="mt-3 space-y-3 text-xs">
         <ContextRow label="Feature" value={run.featureKey} />
         <ContextRow label="Workflow" value={run.workflowKey} />
@@ -340,8 +377,10 @@ function RunContext({
         />
         <ContextRow label="Duration" value={formatDuration(run.durationMs)} />
       </dl>
-      <h3 className="mt-6 font-semibold text-sm">Summary</h3>
-      <pre className="mt-3 max-h-80 overflow-auto rounded-md border bg-background p-3 text-[11px] leading-5">
+      <h3 className="mt-6 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+        Summary
+      </h3>
+      <pre className="mt-3 max-h-80 overflow-auto rounded-[10px] bg-card p-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
         {json(run.summary)}
       </pre>
     </aside>

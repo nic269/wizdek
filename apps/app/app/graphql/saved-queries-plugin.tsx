@@ -59,7 +59,7 @@ export const KindBadge = ({ query }: { query: string }) => {
   return (
     <span
       className={cn(
-        "flex-none rounded-[3px] px-1 font-mono font-semibold text-[9.5px] leading-4",
+        "flex-none rounded-[3px] px-1 font-semibold text-[9.5px] tabular-nums leading-4",
         KIND_BADGES[kind]
       )}
       title={kind}
@@ -118,7 +118,7 @@ const SavedRow = ({
       >
         <KindBadge query={savedQuery.query} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium font-mono text-[12.5px] leading-[1.3]">
+          <span className="block truncate font-medium text-[12.5px] tabular-nums leading-[1.3]">
             {savedQuery.name}
           </span>
           <span className="block text-[11.5px] text-muted-foreground leading-[1.35]">

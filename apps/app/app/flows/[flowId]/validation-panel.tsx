@@ -37,7 +37,7 @@ export function ValidationPopover({
   return (
     <section
       aria-label="Validation"
-      className="fade-in-0 slide-in-from-bottom-2 absolute bottom-3.5 left-4 z-10 w-[330px] animate-in overflow-hidden rounded-card border border-border bg-card shadow-popover duration-150"
+      className="fade-in-0 slide-in-from-bottom-2 absolute bottom-3.5 left-4 z-10 w-[330px] animate-in overflow-hidden rounded-card bg-card shadow-card shadow-popover duration-150"
     >
       <div className="flex items-center gap-2 border-border border-b px-3.5 py-[11px]">
         {count > 0 ? (

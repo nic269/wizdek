@@ -233,7 +233,7 @@ export const AuthForm = ({
         {error ? <InlineAlert tone="danger">{error}</InlineAlert> : null}
         <AuthSubmit pending={isPending}>{text.submit}</AuthSubmit>
       </form>
-      <p className="text-[13.5px] text-muted-foreground leading-normal">
+      <p className="text-[13px] text-muted-foreground leading-normal">
         {text.switchLabel}{" "}
         <AuthLink
           href={`${text.switchHref}?callbackUrl=${encodeURIComponent(callbackUrl)}`}

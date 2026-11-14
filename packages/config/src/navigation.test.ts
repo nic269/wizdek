@@ -22,7 +22,10 @@ describe("dashboard navigation", () => {
 
   it("links the store connections and console surfaces", () => {
     expect(dashboardNav).toContainEqual({ href: "/stores", label: "Stores" });
-    expect(dashboardNav).toContainEqual({ href: "/graphql", label: "GraphQL" });
+    expect(dashboardNav).toContainEqual({
+      href: "/graphql",
+      label: "GraphQL console",
+    });
     expect(dashboardNav).toContainEqual({ href: "/flows", label: "Flows" });
     expect(dashboardNav).toContainEqual({
       href: "/database",
@@ -32,27 +35,32 @@ describe("dashboard navigation", () => {
 });
 
 describe("dashboard navigation groups", () => {
-  it("puts the work under Workspace and administration under Organization", () => {
+  it("groups every tool by area, with Dashboard on its own", () => {
     expect(dashboardNavGroups.map(({ label }) => label)).toEqual([
-      "Workspace",
+      "",
+      "Shopify",
+      "Automation",
+      "Data",
+      "Works",
       "Organization",
     ]);
-    expect(dashboardNavGroups[0]?.items.map(({ label }) => label)).toEqual([
-      "Dashboard",
-      "Stores",
-      "Shopify",
-      "GraphQL",
-      "Flows",
-      "Database",
-      "Works",
+    expect(
+      dashboardNavGroups.map(({ items }) => items.map(({ label }) => label))
+    ).toEqual([
+      ["Dashboard"],
+      ["Stores", "Metafields", "GraphQL console"],
+      ["Flows"],
+      ["Database"],
+      ["OMS management"],
+      ["Settings", "Members", "Access"],
     ]);
   });
 });
 
 // OMS_NAV_TEST_START
-it("nests OMS management under Works", () => {
-  const works = dashboardNav.find((item) => item.href === "/works");
-  expect(works?.children).toEqual([
+it("lists OMS management under Works", () => {
+  const works = dashboardNavGroups.find(({ label }) => label === "Works");
+  expect(works?.items).toEqual([
     { href: "/works/oms-management", label: "OMS management" },
   ]);
 });

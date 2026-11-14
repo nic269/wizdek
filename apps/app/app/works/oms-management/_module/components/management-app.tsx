@@ -1,12 +1,14 @@
 "use client";
 import {
   Button,
-  Database,
+  EnvTag,
+  NavTabs,
   PageHeader,
   Plus,
   RefreshCw,
+  ShellHeader,
+  SlidersHorizontal,
 } from "@repo/design-system";
-import { Badge } from "@repo/design-system/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -21,6 +23,7 @@ import {
 } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type React from "react";
 import { useEffect, useState } from "react";
 import type { Actor, PublicProfile } from "../lib/contracts";
 import {
@@ -37,9 +40,23 @@ const SECTION_TITLES: Record<ManagementSection, string> = {
   cron: "Scheduled jobs",
   logs: "Debug logs",
   maintenance: "Site config",
-  overview: "OMS management",
+  overview: "Diagnostics",
   tools: "Management tools",
 };
+
+const ShellLink = ({
+  children,
+  className,
+  href,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  href: string;
+}) => (
+  <Link className={className} href={href}>
+    {children}
+  </Link>
+);
 function confirmDiscard(message: string) {
   const ask = window.confirm;
   return ask(message);
@@ -204,7 +221,7 @@ function ManagementContent({
   }
   if (expired) {
     return (
-      <div className="mx-auto max-w-lg p-8">
+      <div className="mx-auto flex max-w-lg flex-col gap-4 p-8">
         <PageHeader
           description="Your Wizdek session could not be verified."
           title="Sign in to continue"
@@ -223,176 +240,188 @@ function ManagementContent({
     );
   }
   const settings = ["maintenance", "cron", "tools"].includes(section);
+  const production = profile?.safetyClass === "production";
+  let shellRisk: "production" | "staging" | undefined;
+  if (production) {
+    shellRisk = "production";
+  } else if (profile) {
+    shellRisk = "staging";
+  }
+  const enabledProfiles = (catalog.data?.profiles ?? []).filter(
+    (p) => p.enabled
+  );
   return (
-    <section className="space-y-6 p-6 lg:p-8">
-      <div className="text-muted-foreground text-sm">
-        <Link href="/works">Works</Link>
-        <span className="mx-2">/</span>
-        <Link href={MANAGEMENT_ROOT}>OMS management</Link>
-        {settings && (
+    <section className="flex min-h-0 flex-1 flex-col">
+      <ShellHeader
+        actions={
           <>
-            <span className="mx-2">/</span>Settings
-            <span className="mx-2">/</span>Site config
+            <Button
+              onClick={() => setEditing("new")}
+              size="sm"
+              variant="outline"
+            >
+              <Plus className="size-4" />
+              Add connection
+            </Button>
+            {profile?.capabilities.includes("profiles:edit") && (
+              <Button
+                aria-label="Connection settings"
+                onClick={() => setEditing(profile)}
+                size="icon-sm"
+                title="Connection settings"
+                variant="outline"
+              >
+                <SlidersHorizontal className="size-4" />
+              </Button>
+            )}
+            <Button
+              aria-label="Refresh OMS data"
+              disabled={dirty}
+              onClick={() => client.invalidateQueries()}
+              size="icon-sm"
+              title={
+                dirty
+                  ? "Save or discard changes before refreshing"
+                  : "Refresh OMS data"
+              }
+              variant="ghost"
+            >
+              <RefreshCw className="size-4" />
+            </Button>
           </>
-        )}
-      </div>
-      <PageHeader
-        description={
-          profile
-            ? profile.databaseLabel
-            : "Choose an OMS connection to inspect logs and manage site configuration."
         }
-        title={SECTION_TITLES[section]}
-      />
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
-        <Database className="size-4 text-muted-foreground" />
-        <Select
-          items={(catalog.data?.profiles ?? [])
-            .filter((p) => p.enabled)
-            .map((p) => ({ label: p.name, value: p.id }))}
-          onValueChange={(id, details) => {
-            if (dirty && !confirmDiscard("Discard unsaved changes?")) {
-              details.cancel();
-              return;
-            }
-            if (id) {
-              navigate(section, id, true);
-            }
-          }}
-          value={profileId ?? ""}
-        >
-          <SelectTrigger aria-label="Environment" className="w-56">
-            <SelectValue placeholder="Select environment" />
-          </SelectTrigger>
-          <SelectContent>
-            {catalog.data?.profiles
-              .filter((p) => p.enabled)
-              .map((p) => (
+        context={
+          <Select
+            items={enabledProfiles.map((p) => ({ label: p.name, value: p.id }))}
+            onValueChange={(id, details) => {
+              if (dirty && !confirmDiscard("Discard unsaved changes?")) {
+                details.cancel();
+                return;
+              }
+              if (id) {
+                navigate(section, id, true);
+              }
+            }}
+            value={profileId ?? ""}
+          >
+            <SelectTrigger
+              aria-label="Environment"
+              className={
+                production
+                  ? "h-[30px] min-w-48 gap-2 rounded-lg border-0 bg-card text-[12.5px] shadow-[0_0_0_1px_var(--prod-line),0_0_0_3px_rgba(201,58,44,0.08)]"
+                  : "h-[30px] min-w-48 gap-2 rounded-lg border-0 bg-card text-[12.5px] shadow-[0_0_0_1px_var(--input)]"
+              }
+              size="sm"
+            >
+              {profile ? (
+                <EnvTag environment={production ? "PROD" : "STAGING"} />
+              ) : null}
+              <SelectValue placeholder="Select environment" />
+            </SelectTrigger>
+            <SelectContent>
+              {enabledProfiles.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   {p.name}
                 </SelectItem>
               ))}
-          </SelectContent>
-        </Select>
-        {profile && (
-          <Badge
-            variant={
-              profile.safetyClass === "production" ? "destructive" : "secondary"
-            }
-          >
-            {profile.safetyClass} · revision {profile.revision}
-          </Badge>
-        )}
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button onClick={() => setEditing("new")} variant="outline">
-            <Plus className="size-4" />
-            Add connection
-          </Button>
-          {profile?.capabilities.includes("profiles:edit") && (
-            <Button onClick={() => setEditing(profile)} variant="outline">
-              Connection settings
-            </Button>
-          )}
-          <Button
-            aria-label="Refresh OMS data"
-            disabled={dirty}
-            onClick={() => client.invalidateQueries()}
-            title={
-              dirty
-                ? "Save or discard changes before refreshing"
-                : "Refresh OMS data"
-            }
-            variant="outline"
-          >
-            <RefreshCw className="size-4" />
-          </Button>
-        </div>
-      </div>
-      <nav
-        aria-label="OMS management"
-        className="flex gap-2 border-border border-b pb-3"
-      >
-        {(
-          [
-            ["overview", "Overview"],
-            ["logs", "Debug logs"],
-            ["maintenance", "Settings"],
-          ] as const
-        ).map(([id, label]) => (
-          <Button
-            aria-current={
-              section === id || (id === "maintenance" && settings)
-                ? "page"
-                : undefined
-            }
-            key={id}
-            onClick={() => navigate(id)}
-            variant={
-              section === id || (id === "maintenance" && settings)
-                ? "secondary"
-                : "ghost"
-            }
-          >
-            {label}
-          </Button>
-        ))}
-      </nav>
-      {settings && (
-        <nav aria-label="Site config" className="flex flex-wrap gap-2">
-          {(
-            [
-              ["maintenance", "Site configuration"],
-              ["cron", "Scheduled jobs"],
-              ["tools", "Management tools"],
-            ] as const
-          ).map(([id, label]) => (
-            <Button
-              key={id}
-              onClick={() => navigate(id)}
-              variant={section === id ? "secondary" : "ghost"}
-            >
-              {label}
-            </Button>
-          ))}
-        </nav>
-      )}
-      {profile?.safetyClass === "production" && (
-        <div
-          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm"
-          role="status"
-        >
-          <strong>Production environment.</strong> All data and operations
-          belong to production.
-        </div>
-      )}
-      <ManagementView
-        actor={catalog.data?.actor}
-        error={catalog.error}
-        onSelect={(id) => navigate(section, id)}
-        pending={catalog.isPending}
-        profile={profile}
-        profiles={catalog.data?.profiles ?? []}
-        section={section}
-        setDirty={setDirty}
+            </SelectContent>
+          </Select>
+        }
+        crumbs={[
+          { href: "/works/oms-management", label: "Works" },
+          ...(section === "overview"
+            ? [{ label: "OMS management" }]
+            : [
+                { href: MANAGEMENT_ROOT, label: "OMS management" },
+                { label: settings ? "Site config" : SECTION_TITLES[section] },
+              ]),
+        ]}
+        lead={
+          <>
+            <span aria-hidden="true" className="h-5 w-px bg-border" />
+            <NavTabs
+              aria-label="OMS management"
+              tabs={(
+                [
+                  ["overview", "Overview"],
+                  ["logs", "Debug logs"],
+                  ["maintenance", "Site config"],
+                ] as const
+              ).map(([id, label]) => ({
+                current: section === id || (id === "maintenance" && settings),
+                key: id,
+                label,
+                onSelect: () => navigate(id),
+              }))}
+              variant="header"
+            />
+          </>
+        }
+        linkComponent={ShellLink}
+        productionNote={
+          <>
+            <strong>Production environment.</strong> All data and operations
+            belong to production.
+          </>
+        }
+        risk={shellRisk}
       />
-      {editing !== null && (
-        <ConnectionEditor
-          onClose={() => {
-            setEditing(null);
-            setDirty(false);
-          }}
-          onDirty={() => setDirty(true)}
-          onSaved={async (savedProfileId) => {
-            setDirty(false);
-            setEditing(null);
-            await catalog.refetch();
-            if (savedProfileId) {
-              navigate("overview", savedProfileId, true);
-            }
-          }}
-          profile={editing === "new" ? null : editing}
+      <div className="flex flex-col gap-6 px-4 pt-6 pb-12 sm:px-8 sm:pt-7">
+        <PageHeader
+          description={
+            profile
+              ? `${profile.name} · ${profile.databaseLabel} · revision ${profile.revision}`
+              : "Choose an OMS connection to inspect logs and manage site configuration."
+          }
+          title={SECTION_TITLES[section]}
         />
-      )}
+        {settings && (
+          <NavTabs
+            aria-label="Site config"
+            tabs={(
+              [
+                ["maintenance", "Maintenance"],
+                ["cron", "Cron jobs"],
+                ["tools", "Tools"],
+              ] as const
+            ).map(([id, label]) => ({
+              current: section === id,
+              key: id,
+              label,
+              onSelect: () => navigate(id),
+            }))}
+            variant="segmented"
+          />
+        )}
+        <ManagementView
+          actor={catalog.data?.actor}
+          error={catalog.error}
+          onSelect={(id) => navigate(section, id)}
+          pending={catalog.isPending}
+          profile={profile}
+          profiles={catalog.data?.profiles ?? []}
+          section={section}
+          setDirty={setDirty}
+        />
+        {editing !== null && (
+          <ConnectionEditor
+            onClose={() => {
+              setEditing(null);
+              setDirty(false);
+            }}
+            onDirty={() => setDirty(true)}
+            onSaved={async (savedProfileId) => {
+              setDirty(false);
+              setEditing(null);
+              await catalog.refetch();
+              if (savedProfileId) {
+                navigate("overview", savedProfileId, true);
+              }
+            }}
+            profile={editing === "new" ? null : editing}
+          />
+        )}
+      </div>
     </section>
   );
 }
@@ -463,7 +492,7 @@ function ManagementView({
         .filter((p) => p.enabled)
         .map((p) => (
           <Button
-            className="h-auto flex-col items-start rounded-xl p-5 text-left"
+            className="h-auto flex-col items-start gap-1 rounded-card p-4 text-left"
             key={p.id}
             onClick={() => onSelect(p.id)}
             variant="outline"
@@ -472,13 +501,14 @@ function ManagementView({
             <span className="mt-2 text-muted-foreground text-sm">
               {p.databaseLabel}
             </span>
-            <Badge className="mt-3" variant="secondary">
-              {p.safetyClass}
-            </Badge>
+            <EnvTag
+              className="mt-2"
+              environment={p.safetyClass === "production" ? "PROD" : "STAGING"}
+            />
           </Button>
         ))}
       {profiles.length === 0 && (
-        <div className="rounded-xl border border-dashed p-8 text-muted-foreground text-sm">
+        <div className="rounded-card border border-dashed p-8 text-center text-[13px] text-muted-foreground">
           No OMS connections configured yet. Add a connection or configure the
           staging and production presets.
         </div>

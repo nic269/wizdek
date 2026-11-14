@@ -35,7 +35,7 @@ export function CronControls({
   const lastRun = job.lastRun as Record<string, unknown> | null;
   const logHref = `${managementHref("logs", profile.id)}&featureKey=${encodeURIComponent(`scheduled-job.${jobKey}`)}`;
   return (
-    <div className="rounded-xl border border-border p-5">
+    <div className="rounded-card p-5 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export function CronControls({
               {String(job.description)}
             </p>
           ) : null}
-          <p className="mt-1 font-mono text-muted-foreground text-xs">
+          <p className="mt-1 text-muted-foreground text-xs tabular-nums">
             {jobKey}
           </p>
         </div>

@@ -4,6 +4,7 @@ import { apiClient, getApiErrorMessage } from "@repo/api/client";
 import {
   Activity,
   Button,
+  ContextChip,
   EmptyState,
   type Environment,
   EnvTag,
@@ -16,6 +17,7 @@ import {
   PencilLine,
   RefreshCw,
   SegmentedControl,
+  ShellHeader,
   ShieldCheck,
   Shimmer,
   SkeletonRows,
@@ -35,9 +37,9 @@ import {
 } from "@repo/design-system/components/ui/alert-dialog";
 import { Field, FieldLabel } from "@repo/design-system/components/ui/field";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { BackLink } from "../../lib/back-link";
 import {
   formatBytes,
   formatDateTime,
@@ -158,7 +160,7 @@ function EditConnectionForm({
 
   return (
     <form
-      className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] items-start gap-4 rounded-card border border-border p-[18px]"
+      className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] items-start gap-4 rounded-card p-[18px] shadow-card"
       onSubmit={submit}
     >
       {error ? (
@@ -250,7 +252,7 @@ const FactsStrip = ({
     ["Port · SSL", `${connection.port} · ${sslLabel(connection.sslMode)}`],
   ];
   return (
-    <section className="overflow-hidden rounded-card border border-border">
+    <section className="overflow-hidden rounded-card shadow-card">
       <dl className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-px bg-border">
         {facts.map(([label, value]) => (
           <div className="min-w-0 bg-card px-4 py-3.5" key={label}>
@@ -258,7 +260,7 @@ const FactsStrip = ({
               {label}
             </dt>
             <dd
-              className="truncate font-medium font-mono text-[13.5px] leading-[1.3]"
+              className="truncate font-medium text-[13px] tabular-nums leading-[1.3]"
               title={value}
             >
               {value}
@@ -321,7 +323,7 @@ const BackupConfirm = ({
       <AlertDialogContent>
         <AlertDialogHeader className="border-b-0 pb-0">
           <AlertDialogTitle>Back up {connection.name} now?</AlertDialogTitle>
-          <AlertDialogDescription className="text-[13.5px]">
+          <AlertDialogDescription className="text-[13px]">
             Runs <span className="font-mono text-foreground-2">pg_dump</span>{" "}
             against the {ENVIRONMENT_WORDS[connection.environment]} database.
             Read-only, but it adds load{expectation}.
@@ -331,10 +333,10 @@ const BackupConfirm = ({
           <div className="flex items-center gap-2.5 rounded-menu border border-border bg-sunken px-3 py-2.5">
             <DatabaseChip size={28} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-mono font-semibold text-[13px] leading-[1.3]">
+              <span className="block truncate font-semibold text-[13px] tabular-nums leading-[1.3]">
                 {connection.databaseName}
               </span>
-              <span className="block truncate font-mono text-[11.5px] text-muted-foreground leading-[1.3]">
+              <span className="block truncate text-[11.5px] text-muted-foreground tabular-nums leading-[1.3]">
                 {connection.host}
               </span>
             </span>
@@ -388,9 +390,9 @@ const DangerZone = ({
     }
   };
   return (
-    <section className="flex flex-wrap items-center gap-4 rounded-card border border-(--alert-danger-border) px-4 py-3.5">
+    <section className="flex flex-wrap items-center gap-4 rounded-card p-4 shadow-[inset_0_0_0_1px_var(--prod-line)]">
       <div className="min-w-[240px] flex-1">
-        <h2 className="font-semibold text-(--status-danger-fg) text-sm leading-[1.3]">
+        <h2 className="font-semibold text-[14px] text-foreground leading-[1.3] tracking-[-0.01em]">
           Delete connection
         </h2>
         <p className="text-[13px] text-muted-foreground leading-normal">
@@ -451,7 +453,9 @@ const BackupsSection = ({
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-[240px] flex-1">
-          <h2 className="font-semibold text-base leading-[1.3]">Backups</h2>
+          <h2 className="font-semibold text-[15px] leading-[22px] tracking-[-0.01em]">
+            Backups
+          </h2>
           <p className="text-[13px] text-muted-foreground leading-normal">
             Full copies in PostgreSQL custom format, restorable with{" "}
             <span className="font-mono text-[12.5px]">pg_restore</span>. Files
@@ -472,7 +476,7 @@ const BackupsSection = ({
         />
       ) : null}
       {backups.isPending ? (
-        <div className="rounded-card border border-border">
+        <div className="rounded-card shadow-card">
           <SkeletonRows
             columns="190px minmax(220px,1fr) 100px 100px 190px"
             count={3}
@@ -572,6 +576,20 @@ export function ConnectionDetail({
 
   return (
     <>
+      <ShellHeader
+        context={
+          <ContextChip label="DB">
+            <span className="tabular-nums">{current.name}</span>
+            <EnvTag environment={current.environment} />
+          </ContextChip>
+        }
+        crumbs={[
+          { label: "Data" },
+          { href: "/database", label: "Database" },
+          { label: current.name },
+        ]}
+        linkComponent={Link}
+      />
       <PageHeader
         actions={
           <>
@@ -601,11 +619,10 @@ export function ConnectionDetail({
             ) : null}
           </>
         }
-        back={<BackLink href="/database">Database</BackLink>}
         description={
           <>
             {ENGINE_LABELS[current.engine]} {current.serverVersion ?? ""} ·{" "}
-            <span className="font-mono text-[13px]">
+            <span className="text-[13px] tabular-nums">
               {current.databaseName}
             </span>
           </>

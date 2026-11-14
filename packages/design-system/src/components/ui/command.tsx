@@ -44,10 +44,6 @@ function CommandDialog({
 }) {
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
       <DialogContent
         className={cn(
           "top-[14vh] w-[min(560px,calc(100vw-32px))] max-w-none! translate-y-0 overflow-hidden rounded-panel! border border-border p-0 sm:max-w-none",
@@ -55,6 +51,10 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
         {children}
       </DialogContent>
     </Dialog>
@@ -110,7 +110,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       className={cn(
-        "p-7 text-center text-[13.5px] text-muted-foreground",
+        "p-7 text-center text-[13px] text-muted-foreground",
         className
       )}
       data-slot="command-empty"
@@ -156,7 +156,7 @@ function CommandItem({
   return (
     <CommandPrimitive.Item
       className={cn(
-        "group/command-item relative flex cursor-default select-none items-center gap-2.5 rounded-[7px] px-2.5 py-[9px] font-medium text-[13.5px] leading-[1.2] outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-hover data-[selected=true]:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
+        "group/command-item relative flex cursor-default select-none items-center gap-2.5 rounded-[7px] px-2.5 py-[9px] font-medium text-[13px] leading-[1.2] outline-hidden data-[disabled=true]:pointer-events-none data-[selected=true]:bg-hover data-[selected=true]:text-foreground data-[disabled=true]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
         className
       )}
       data-slot="command-item"

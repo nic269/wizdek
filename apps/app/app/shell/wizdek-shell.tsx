@@ -34,9 +34,11 @@ const ShellLink = ({
   onClick,
   title,
   "aria-current": ariaCurrent,
+  "aria-label": ariaLabel,
 }: AppShellLinkProps) => (
   <Link
     aria-current={ariaCurrent}
+    aria-label={ariaLabel}
     className={className}
     href={href}
     title={title}
@@ -132,6 +134,7 @@ export function WizdekShell({
         brand={{
           meta: `${appConfig.shortName} · ${appConfig.versionLabel}`,
           name: appConfig.name,
+          version: appConfig.versionLabel,
         }}
         collapsed={collapsed}
         currentPath={usePathname()}

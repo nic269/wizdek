@@ -35,11 +35,11 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useActiveOrganization } from "../../lib/active-organization";
-import { BackLink } from "../../lib/back-link";
 import { plural } from "../../lib/format";
 import { usePermissions } from "../../lib/permissions";
 import { useShopifyApps } from "../../lib/queries";
 import type { ShopifyApp } from "../store-labels";
+import { StoresTabs } from "../stores-tabs";
 
 type TokenMode = ShopifyApp["tokenMode"];
 
@@ -110,7 +110,7 @@ const AppCard = ({
 }) => {
   const inUse = app.storeCount > 0;
   return (
-    <article className="flex flex-col gap-3.5 rounded-card border border-border p-4">
+    <article className="flex flex-col gap-3.5 rounded-card p-4 shadow-card">
       <div className="flex items-center gap-2.5">
         <span className="grid size-[34px] place-items-center rounded-lg bg-accent-soft text-accent-ink">
           <Box className="size-4" />
@@ -119,7 +119,7 @@ const AppCard = ({
           <h2 className="truncate font-semibold text-[14.5px] leading-[1.3]">
             {app.name}
           </h2>
-          <p className="truncate font-mono text-muted-foreground text-xs leading-[1.3]">
+          <p className="truncate text-muted-foreground text-xs tabular-nums leading-[1.3]">
             client_id {shortId(app.clientId)}
           </p>
         </div>
@@ -293,7 +293,7 @@ const AppSheet = ({
             <Field className="gap-1.5">
               <FieldLabel htmlFor="app-client-id">Client ID</FieldLabel>
               <Input
-                className="font-mono text-[13px]"
+                className="text-[13px] tabular-nums"
                 disabled={Boolean(editing)}
                 id="app-client-id"
                 onChange={(event) => setField("clientId", event.target.value)}
@@ -324,7 +324,7 @@ const AppSheet = ({
             <Field className="gap-1.5">
               <FieldLabel htmlFor="app-scopes">Scopes</FieldLabel>
               <Input
-                className="font-mono text-[13px]"
+                className="text-[13px] tabular-nums"
                 id="app-scopes"
                 onChange={(event) => setField("scopes", event.target.value)}
                 placeholder="read_orders, write_orders"
@@ -343,7 +343,7 @@ const AppSheet = ({
                 </span>
               </FieldLabel>
               <Input
-                className="font-mono text-[13px]"
+                className="text-[13px] tabular-nums"
                 id="app-install-link"
                 onChange={(event) =>
                   setField("installLink", event.target.value)
@@ -448,10 +448,10 @@ export function ShopifyAppsPanel() {
             </Button>
           ) : null
         }
-        back={<BackLink href="/stores">Stores</BackLink>}
         description="Apps from the Shopify Dev Dashboard that wizdek connects stores through. Used by the App credentials and OAuth methods."
         title="Shopify apps"
       />
+      <StoresTabs appCount={apps.data?.length} current="apps" />
       {permissionsLoading || canManage ? null : (
         <ReadOnlyBanner>
           You can see the registered apps but not change them. Ask an Owner for

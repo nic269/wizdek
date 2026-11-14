@@ -165,8 +165,8 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
   return (
     <div
       className={cn(
-        "relative w-[216px] rounded-card border bg-card text-card-foreground shadow-node",
-        outcome ? OUTCOME_BORDERS[outcome] : "border-input",
+        "relative w-[216px] rounded-card border bg-card text-card-foreground shadow-node before:pointer-events-none before:absolute before:inset-y-2.5 before:-left-px before:w-[3px] before:rounded-r-full before:bg-(--cat)",
+        outcome ? OUTCOME_BORDERS[outcome] : "border-border",
         issue && !outcome && "border-[#e8c77c]",
         selected &&
           "border-accent shadow-[0_0_0_3px_var(--accent-soft),0_6px_18px_-6px_rgba(0,0,0,.15)]"
@@ -185,10 +185,10 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <CategoryChip category={category} nodeType={data.nodeType} />
         <div className="min-w-0 flex-1">
-          <div className="mb-1 font-mono font-semibold text-(--cat) text-[9.5px] uppercase leading-none tracking-[0.07em]">
+          <div className="mb-1 font-semibold text-(--cat) text-[9.5px] uppercase tabular-nums leading-none tracking-[0.07em]">
             {CATEGORY_LABELS[category]}
           </div>
-          <div className="truncate font-semibold text-[13.5px] leading-[1.2]">
+          <div className="truncate font-semibold text-[13px] leading-[1.2]">
             {title}
           </div>
         </div>
@@ -227,7 +227,7 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
           type="source"
         >
           {outputs.length > 1 ? (
-            <span className="pointer-events-none absolute top-1/2 left-[14px] -translate-y-1/2 font-medium font-mono text-[10.5px] text-muted-foreground leading-none">
+            <span className="pointer-events-none absolute top-1/2 left-[14px] -translate-y-1/2 font-medium text-[10.5px] text-muted-foreground tabular-nums leading-none">
               {output}
             </span>
           ) : null}

@@ -83,7 +83,7 @@ const useSampleFields = (flowId: string, nodeId: string): string[] => {
 };
 
 const Kbd = ({ children }: { children: string }) => (
-  <kbd className="rounded border border-border px-[5px] py-[3px] font-medium font-mono text-[10.5px] text-foreground leading-none">
+  <kbd className="rounded border border-border px-[5px] py-[3px] font-medium text-[10.5px] text-foreground tabular-nums leading-none">
     {children}
   </kbd>
 );
@@ -227,7 +227,7 @@ export function NodeConfigPanel({
             <div className="flex flex-wrap gap-[5px]">
               {sampleFields.map((field) => (
                 <Button
-                  className="h-auto rounded px-[7px] py-[5px] font-medium font-mono text-[11.5px] text-foreground-2 hover:border-accent hover:bg-card hover:text-accent-ink"
+                  className="h-auto rounded px-[7px] py-[5px] font-medium text-[11.5px] text-foreground-2 tabular-nums hover:border-accent hover:bg-card hover:text-accent-ink"
                   key={field}
                   onClick={() => copyTemplate(field)}
                   title={`Copy ${fieldTemplate(field)}`}

@@ -3,7 +3,6 @@
 import "@xyflow/react/dist/style.css";
 import "./flow-builder.css";
 import {
-  ArrowLeft,
   Button,
   cn,
   ErrorAlert,
@@ -11,6 +10,7 @@ import {
   ListChecks,
   Lock,
   Play,
+  ShellHeader,
   Shimmer,
   StatusBadge,
   toast,
@@ -110,100 +110,109 @@ function BuilderHeader({
   const issueCount = editor.issues.length;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-border border-b px-3.5 py-2.5">
-      <Link
-        className="inline-flex items-center gap-[5px] px-1 py-1.5 font-medium text-[13px] text-muted-foreground hover:text-foreground"
-        href="/flows"
-      >
-        <ArrowLeft className="size-3.5" />
-        Flows
-      </Link>
-      <span aria-hidden="true" className="text-input">
-        /
-      </span>
-      <h1 className="truncate font-semibold text-[15px] leading-none tracking-[-0.01em]">
-        {flow.name}
-      </h1>
-      <StatusBadge status={flow.status} />
-      {canManage ? null : (
-        <span className="inline-flex h-[22px] items-center gap-[5px] rounded-full border border-input px-2 font-medium text-foreground-2 text-xs">
-          <Lock className="size-[11px]" />
-          Read-only
-        </span>
-      )}
-      <VersionHistory
-        flowId={flow.id}
-        isDirty={isDirty}
-        savedAt={editor.savedAt}
-        version={editor.version}
-      />
-      <div className="flex-1" />
-      <Button
-        aria-pressed={showValidation}
-        className={cn(
-          "h-8 px-[11px] text-[13px]",
-          showValidation && "bg-hover"
-        )}
-        onClick={onToggleValidation}
-        type="button"
-        variant="ghost"
-      >
-        <ListChecks />
-        Validate
-        {issueCount > 0 ? (
-          <span className="min-w-[18px] rounded-full bg-(--status-warning-bg) px-[5px] text-center font-semibold text-(--status-warning-fg) text-[11px] leading-[18px]">
-            {issueCount}
-          </span>
-        ) : null}
-      </Button>
-      <Link
-        className="inline-flex h-8 items-center gap-[7px] rounded-lg px-[11px] font-medium text-[13px] hover:bg-hover"
-        href={`/flows/${flow.id}/runs`}
-      >
-        <History className="size-[15px]" />
-        Runs
-      </Link>
-      <span aria-hidden="true" className="h-5 w-px bg-border" />
-      {canManage ? (
-        <Button
-          aria-keyshortcuts="Meta+S"
-          aria-label={editor.isSaving ? "Saving" : "Save"}
-          className={cn("h-8 text-[13px]", !isDirty && "text-muted-foreground")}
-          disabled={editor.isSaving || !isDirty}
-          onClick={onSave}
-          type="button"
-          variant="outline"
-        >
-          {editor.isSaving ? "Saving…" : "Save"}
-          <kbd className="font-medium font-mono text-[10.5px] text-muted-foreground">
-            ⌘S
-          </kbd>
-        </Button>
-      ) : null}
-      {canRun && startsManually ? (
-        <Button
-          className="h-8 text-[13px]"
-          disabled={isDirty || issueCount > 0}
-          onClick={onRun}
-          title={runBlockedReason(isDirty, issueCount)}
-          type="button"
-        >
-          <Play className="size-[13px]" />
-          Run…
-        </Button>
-      ) : null}
-      {startsAutomatically ? (
-        <Button
-          className="h-8 text-[13px]"
-          onClick={onActivate}
-          type="button"
-          variant={canManage ? "default" : "outline"}
-        >
-          <Play className="size-[13px]" />
-          Activation…
-        </Button>
-      ) : null}
-    </div>
+    <ShellHeader
+      actions={
+        <>
+          <Button
+            aria-pressed={showValidation}
+            className={cn(
+              "h-8 px-[11px] text-[13px]",
+              showValidation && "bg-hover"
+            )}
+            onClick={onToggleValidation}
+            type="button"
+            variant="ghost"
+          >
+            <ListChecks />
+            Validate
+            {issueCount > 0 ? (
+              <span className="min-w-[18px] rounded-full bg-(--status-warning-bg) px-[5px] text-center font-semibold text-(--status-warning-fg) text-[11px] leading-[18px]">
+                {issueCount}
+              </span>
+            ) : null}
+          </Button>
+          <Link
+            className="inline-flex h-8 items-center gap-[7px] rounded-lg px-[11px] font-medium text-[13px] hover:bg-hover"
+            href={`/flows/${flow.id}/runs`}
+          >
+            <History className="size-[15px]" />
+            Runs
+          </Link>
+          <span aria-hidden="true" className="h-5 w-px bg-border" />
+          {canManage ? (
+            <Button
+              aria-keyshortcuts="Meta+S"
+              aria-label={editor.isSaving ? "Saving" : "Save"}
+              className={cn(
+                "h-8 text-[13px]",
+                !isDirty && "text-muted-foreground"
+              )}
+              disabled={editor.isSaving || !isDirty}
+              onClick={onSave}
+              type="button"
+              variant="outline"
+            >
+              {editor.isSaving ? "Saving…" : "Save"}
+              <kbd className="font-medium text-[10.5px] text-muted-foreground tabular-nums">
+                ⌘S
+              </kbd>
+            </Button>
+          ) : null}
+          {canRun && startsManually ? (
+            <Button
+              className="h-8 text-[13px]"
+              disabled={isDirty || issueCount > 0}
+              onClick={onRun}
+              title={runBlockedReason(isDirty, issueCount)}
+              type="button"
+            >
+              <Play className="size-[13px]" />
+              Run…
+            </Button>
+          ) : null}
+          {startsAutomatically ? (
+            <Button
+              className="h-8 text-[13px]"
+              onClick={onActivate}
+              type="button"
+              variant={canManage ? "default" : "outline"}
+            >
+              <Play className="size-[13px]" />
+              Activation…
+            </Button>
+          ) : null}
+        </>
+      }
+      crumbs={[
+        { label: "Automation" },
+        { href: "/flows", label: "Flows" },
+        {
+          label: (
+            <h1 className="truncate font-[550] text-[13px] text-foreground">
+              {flow.name}
+            </h1>
+          ),
+        },
+      ]}
+      lead={
+        <div className="flex min-w-0 items-center gap-2.5">
+          <StatusBadge status={flow.status} />
+          {canManage ? null : (
+            <span className="inline-flex h-[22px] items-center gap-[5px] rounded-full border border-input px-2 font-medium text-foreground-2 text-xs">
+              <Lock className="size-[11px]" />
+              Read-only
+            </span>
+          )}
+          <VersionHistory
+            flowId={flow.id}
+            isDirty={isDirty}
+            savedAt={editor.savedAt}
+            version={editor.version}
+          />
+        </div>
+      }
+      linkComponent={Link}
+    />
   );
 }
 

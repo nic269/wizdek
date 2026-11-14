@@ -71,7 +71,7 @@ const ItemDetail = ({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3.5">
       <div className="flex items-center gap-2">
-        <span className="truncate font-mono font-semibold text-sm leading-none">
+        <span className="truncate font-semibold text-sm tabular-nums leading-none">
           {itemTitle(item)}
         </span>
         <span className="text-muted-foreground text-xs">
@@ -198,7 +198,7 @@ export function RunItemsPanel({
     >
       <div className="flex flex-col gap-2.5 border-border border-b px-3.5 pt-3 pb-2.5">
         <div className="flex items-center gap-2">
-          <h2 className="flex-1 font-semibold text-[13.5px] leading-none">
+          <h2 className="flex-1 font-semibold text-[13px] leading-none">
             Items
           </h2>
           <span className="text-muted-foreground text-xs">
@@ -231,7 +231,7 @@ export function RunItemsPanel({
                 variant="outline"
               >
                 {option.label}
-                <span className="font-medium font-mono text-[11px] opacity-75">
+                <span className="font-medium text-[11px] tabular-nums opacity-75">
                   {count.toLocaleString()}
                 </span>
               </Button>
@@ -276,10 +276,10 @@ export function RunItemsPanel({
                   onClick={() => setSelectedId(item.id)}
                   variant="ghost"
                 >
-                  <span className="w-[34px] font-medium font-mono text-[11.5px] text-faint">
+                  <span className="w-[34px] font-medium text-[11.5px] text-faint tabular-nums">
                     {row ?? "—"}
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-medium font-mono text-[13px]">
+                  <span className="min-w-0 flex-1 truncate font-medium text-[13px] tabular-nums">
                     {itemTitle(item)}
                   </span>
                   <span className="truncate text-muted-foreground text-xs">

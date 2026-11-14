@@ -296,7 +296,7 @@ const DangerZone = ({
                 <span className="block truncate font-semibold text-[13px]">
                   {store.name}
                 </span>
-                <span className="block truncate font-mono text-muted-foreground text-xs">
+                <span className="block truncate text-muted-foreground text-xs tabular-nums">
                   {store.shopDomain}
                 </span>
               </span>
@@ -382,7 +382,7 @@ const DrawerHeader = ({
           </SheetTitle>
           <EnvTag environment={store.environment} />
         </div>
-        <SheetDescription className="flex items-center gap-1.5 font-mono text-[12.5px] text-muted-foreground leading-[1.4]">
+        <SheetDescription className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground tabular-nums leading-[1.4]">
           {store.shopDomain}
           <Button
             aria-label="Copy domain"
@@ -456,7 +456,7 @@ const ScopesSection = ({ store }: { store: Store }) => {
   return (
     <Section
       aside={
-        <span className="font-medium font-mono text-muted-foreground text-xs">
+        <span className="font-medium text-muted-foreground text-xs tabular-nums">
           {store.scopes.length} granted
         </span>
       }
@@ -466,7 +466,7 @@ const ScopesSection = ({ store }: { store: Store }) => {
         {scopes.map((scope) => (
           <span
             className={cn(
-              "rounded border px-[7px] py-[5px] font-medium font-mono text-[11.5px] leading-none",
+              "rounded border px-[7px] py-[5px] font-medium text-[11.5px] tabular-nums leading-none",
               isWriteScope(scope)
                 ? "border-[oklch(0.9_0.05_60)] bg-[oklch(0.96_0.03_60)] text-[oklch(0.42_0.1_55)]"
                 : "border-border bg-sunken text-foreground-2"
@@ -549,7 +549,7 @@ export function StoreDrawer({
                   </span>
                 </Fact>
                 <Fact label="API version">
-                  <span className="font-mono">{store.apiVersion}</span>
+                  <span className="tabular-nums">{store.apiVersion}</span>
                 </Fact>
               </div>
               <Button

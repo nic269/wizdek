@@ -10,6 +10,7 @@ import {
   ErrorAlert,
   History,
   Input,
+  NavTabs,
   PageHeader,
   PencilLine,
   Plus,
@@ -162,7 +163,7 @@ const FlowRow = ({
           />
           <div className="min-w-0">
             <Link
-              className="block truncate font-semibold text-[13.5px] text-foreground leading-[1.3] hover:underline"
+              className="block truncate font-semibold text-[13px] text-foreground leading-[1.3] hover:underline"
               href={href}
               onClick={(event) => event.stopPropagation()}
             >
@@ -345,16 +346,31 @@ const FlowsEmpty = ({
   />
 );
 
+type FlowFilter = "ALL" | "ACTIVE" | "DRAFT" | "ARCHIVED";
+
+const FLOW_FILTERS: { key: FlowFilter; label: string }[] = [
+  { key: "ALL", label: "All" },
+  { key: "ACTIVE", label: "Active" },
+  { key: "DRAFT", label: "Drafts" },
+  { key: "ARCHIVED", label: "Archived" },
+];
+
+/** "All" leaves archived flows out, like the list always has. */
+const matchesFilter = (flow: FlowListItem, filter: FlowFilter) =>
+  filter === "ALL" ? flow.status !== "ARCHIVED" : flow.status === filter;
+
 /** The list's state, kept out of the panel so it stays readable. */
-const listState = (
-  flows: FlowListItem[] | undefined,
-  showArchived: boolean
-) => {
+const listState = (flows: FlowListItem[] | undefined, filter: FlowFilter) => {
   const all = flows ?? [];
   return {
     all,
-    archivedCount: all.filter(({ status }) => status === "ARCHIVED").length,
-    visible: all.filter((flow) => showArchived || flow.status !== "ARCHIVED"),
+    counts: Object.fromEntries(
+      FLOW_FILTERS.map(({ key }) => [
+        key,
+        all.filter((flow) => matchesFilter(flow, key)).length,
+      ])
+    ) as Record<FlowFilter, number>,
+    visible: all.filter((flow) => matchesFilter(flow, filter)),
   };
 };
 
@@ -368,7 +384,7 @@ export function FlowsPanel() {
   const flows = useFlows(organizationId);
   const [name, setName] = useState("");
   const [renaming, setRenaming] = useState<FlowListItem | null>(null);
-  const [showArchived, setShowArchived] = useState(false);
+  const [filter, setFilter] = useState<FlowFilter>("ALL");
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -425,7 +441,7 @@ export function FlowsPanel() {
     }
   };
 
-  const { all, archivedCount, visible } = listState(flows.data, showArchived);
+  const { all, counts, visible } = listState(flows.data, filter);
   const isLoading = flows.isLoading || permissionsLoading;
 
   return (
@@ -476,6 +492,19 @@ export function FlowsPanel() {
         />
       ) : null}
 
+      {flows.isError || isLoading || all.length === 0 ? null : (
+        <NavTabs
+          aria-label="Flow status"
+          tabs={FLOW_FILTERS.map(({ key, label }) => ({
+            count: counts[key],
+            current: filter === key,
+            key,
+            label,
+            onSelect: () => setFilter(key),
+          }))}
+        />
+      )}
+
       {flows.isError || (!isLoading && all.length === 0) ? null : (
         <FlowTable
           canManage={canManage}
@@ -486,16 +515,12 @@ export function FlowsPanel() {
         />
       )}
 
-      {!isLoading && archivedCount > 0 ? (
-        <Button
-          className="self-start px-0 text-[12.5px] text-muted-foreground hover:bg-transparent hover:text-foreground"
-          onClick={() => setShowArchived((current) => !current)}
-          size="xs"
-          variant="ghost"
-        >
-          <Archive className="size-3.5" />
-          {showArchived ? "Hide archived" : `Show archived (${archivedCount})`}
-        </Button>
+      {!isLoading && all.length > 0 && visible.length === 0 ? (
+        <p className="py-6 text-center text-[13px] text-muted-foreground">
+          No{" "}
+          {FLOW_FILTERS.find(({ key }) => key === filter)?.label.toLowerCase()}{" "}
+          flows.
+        </p>
       ) : null}
 
       <RenameDialog

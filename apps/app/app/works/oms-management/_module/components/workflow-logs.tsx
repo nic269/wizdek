@@ -1,23 +1,21 @@
 "use client";
 
-import { Button, RefreshCw } from "@repo/design-system";
-import { Badge } from "@repo/design-system/components/ui/badge";
+import { Button, cn, RefreshCw, StatusBadge } from "@repo/design-system";
 import { Skeleton } from "@repo/design-system/components/ui/skeleton";
+import { Switch } from "@repo/design-system/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { Actor, PublicProfile, TargetRef } from "../lib/contracts";
 import { queryKey } from "../lib/contracts";
 import { LogFilters, type LogFilterValues } from "./log-filters";
 import { request } from "./management-app";
-import { CheckboxField, ErrorNotice, Panel } from "./oms-ui";
+import { ErrorNotice, Panel } from "./oms-ui";
 import { WorkflowRunDetailPanel } from "./workflow-run-detail";
 import {
   formatDuration,
   formatLogDate,
   formatLogLabel,
   type WorkflowRun,
-  workflowBadgeVariant,
-  workflowCardClass,
 } from "./workflow-types";
 
 const FILTER_KEYS = [
@@ -139,12 +137,18 @@ export function WorkflowLogs({
       <Panel
         action={
           <div className="flex flex-wrap items-center gap-3">
-            <CheckboxField
-              checked={autoRefresh}
-              id="workflow-auto-refresh"
-              label="Auto refresh (10s)"
-              onCheckedChange={(checked) => setAutoRefresh(checked === true)}
-            />
+            <label
+              className="flex items-center gap-2 text-[12.5px] text-foreground-2"
+              htmlFor="workflow-auto-refresh"
+            >
+              <Switch
+                checked={autoRefresh}
+                id="workflow-auto-refresh"
+                onCheckedChange={(checked) => setAutoRefresh(checked)}
+              />
+              Auto-refresh
+              <span className="text-faint tabular-nums">10s</span>
+            </label>
             <Button
               disabled={list.isFetching}
               onClick={() => list.refetch()}
@@ -179,11 +183,13 @@ export function WorkflowLogs({
       <div className="grid items-start gap-4 xl:grid-cols-[350px_minmax(0,1fr)]">
         <section
           aria-label="Workflow runs"
-          className="min-w-0 overflow-hidden rounded-xl border bg-card"
+          className="min-w-0 overflow-hidden rounded-card bg-card shadow-card"
         >
-          <header className="border-b px-4 py-3">
-            <h2 className="font-semibold text-sm">Workflow Runs</h2>
-            <p className="mt-1 text-muted-foreground text-xs">
+          <header className="flex h-10 items-center gap-2 border-border border-b px-4">
+            <h2 className="flex-1 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+              Workflow runs
+            </h2>
+            <p className="text-faint text-xs tabular-nums">
               {runs.length} runs · Page {page + 1}
             </p>
           </header>
@@ -212,7 +218,11 @@ export function WorkflowLogs({
               <Button
                 aria-label={`Open workflow ${run.title || run.id}`}
                 aria-pressed={runId === run.id}
-                className={`h-auto w-full flex-col items-stretch justify-start whitespace-normal rounded-none border-b border-l-4 px-4 py-3 text-left ${workflowCardClass(runId === run.id, run.errorCount)}`}
+                className={cn(
+                  "h-auto w-full items-start justify-start gap-3 whitespace-normal rounded-none border-0 border-border border-b px-4 py-3 text-left font-normal hover:bg-sunken",
+                  runId === run.id &&
+                    "bg-selected shadow-[inset_2px_0_0_var(--accent)] hover:bg-selected"
+                )}
                 key={run.id}
                 onClick={() => {
                   setSelected(run.id);
@@ -221,37 +231,47 @@ export function WorkflowLogs({
                 type="button"
                 variant="ghost"
               >
-                <div className="flex min-w-0 flex-col items-start gap-2">
-                  <h3 className="line-clamp-2 break-words font-semibold text-sm">
+                <StatusBadge
+                  className="mt-px"
+                  status={(run.status ?? "UNKNOWN").toUpperCase()}
+                >
+                  {formatLogLabel(run.status ?? "UNKNOWN")}
+                </StatusBadge>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="line-clamp-2 break-words font-[550] text-[13px] text-foreground">
                     {run.title || run.id}
-                  </h3>
-                  <Badge variant={workflowBadgeVariant(run.status)}>
-                    {formatLogLabel(run.status ?? "UNKNOWN")}
-                  </Badge>
-                </div>
-                <p className="mt-2 truncate text-muted-foreground text-xs">
-                  {run.workflowKey || run.featureKey || run.module}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                  <span>{formatDuration(run.durationMs)}</span>
-                  <span>{run.logCount ?? 0} logs</span>
-                  <span className="text-muted-foreground">
-                    {run.warningCount ?? 0} warnings
                   </span>
-                  <span
-                    className={
-                      run.errorCount > 0
-                        ? "text-destructive"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {run.errorCount ?? 0} errors
+                  <span className="truncate text-muted-foreground text-xs tabular-nums">
+                    {run.workflowKey || run.featureKey || run.module}
+                    {" · "}
+                    {run.actor?.email || "system"}
                   </span>
-                </div>
-                <p className="mt-2 text-muted-foreground text-xs">
-                  {formatLogDate(run.createdAt, false, options.data?.timeZone)}{" "}
-                  · {run.actor?.email || "system"}
-                </p>
+                  <span className="flex flex-wrap gap-x-3 text-muted-foreground text-xs tabular-nums">
+                    <span>{formatDuration(run.durationMs)}</span>
+                    <span>{run.logCount ?? 0} logs</span>
+                    <span
+                      className={
+                        run.warningCount > 0
+                          ? "text-(--status-warning-fg)"
+                          : undefined
+                      }
+                    >
+                      {run.warningCount ?? 0} warnings
+                    </span>
+                    <span
+                      className={
+                        run.errorCount > 0
+                          ? "text-(--status-danger-fg)"
+                          : undefined
+                      }
+                    >
+                      {run.errorCount ?? 0} errors
+                    </span>
+                  </span>
+                </span>
+                <span className="shrink-0 text-faint text-xs tabular-nums">
+                  {formatLogDate(run.createdAt, false, options.data?.timeZone)}
+                </span>
               </Button>
             ))}
             {!(list.isPending || list.error) && runs.length === 0 ? (
@@ -260,7 +280,7 @@ export function WorkflowLogs({
               </p>
             ) : null}
           </div>
-          <footer className="flex items-center justify-between border-t px-4 py-3">
+          <footer className="flex items-center justify-between border-border border-t px-4 py-3">
             <Button
               disabled={page === 0 || list.isFetching}
               onClick={() => {

@@ -4,16 +4,16 @@ import type * as React from "react";
 import { cn } from "#lib/utils";
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-2.5 py-2 text-left text-sm has-data-[slot=alert-action]:relative has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 has-data-[slot=alert-action]:pr-18 *:[svg:not([class*='size-'])]:size-4 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current",
+  "group/alert relative grid w-full gap-0.5 rounded-[10px] border px-3 py-2.5 text-left text-[13px] has-data-[slot=alert-action]:relative has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 has-data-[slot=alert-action]:pr-18 *:[svg:not([class*='size-'])]:size-4 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current",
   {
     defaultVariants: {
       variant: "default",
     },
     variants: {
       variant: {
-        default: "bg-card text-card-foreground",
+        default: "border-border bg-sunken text-card-foreground",
         destructive:
-          "bg-card text-destructive *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+          "border-prod-line bg-prod-soft text-prod-ink *:data-[slot=alert-description]:text-prod-ink/90 *:[svg]:text-current",
       },
     },
   }
@@ -54,7 +54,7 @@ function AlertDescription({
   return (
     <div
       className={cn(
-        "text-balance text-muted-foreground text-sm md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+        "text-balance text-[13px] text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
         className
       )}
       data-slot="alert-description"

@@ -1,17 +1,7 @@
 "use client";
 
-import {
-  ArrowRight,
-  Button,
-  buttonVariants,
-  Check,
-  cn,
-  toast,
-  X,
-} from "@repo/design-system";
+import { ArrowRight, Button, Check, cn, toast } from "@repo/design-system";
 import Link from "next/link";
-
-const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five"];
 
 export interface OnboardingStep {
   cta: string;
@@ -24,127 +14,86 @@ export interface OnboardingStep {
 }
 
 /**
- * The setup checklist: five steps, done ones checked, the next one raised
- * with a primary call to action.
+ * The setup checklist: one bar per step. Done steps are struck through, the
+ * next one is a link, the rest wait.
  */
 export const OnboardingChecklist = ({
   onDismiss,
-  organizationName,
   steps,
 }: {
   onDismiss: () => void;
-  organizationName: string;
+  organizationName?: string | undefined;
   steps: OnboardingStep[];
 }) => {
   const doneCount = steps.filter(({ done }) => done).length;
   const nextIndex = steps.findIndex(({ done }) => !done);
-  const left = steps.length - doneCount;
-  const next = steps[nextIndex];
   return (
     <section
-      aria-label="Setup checklist"
-      className="rounded-card border border-border bg-[linear-gradient(180deg,var(--sunken),var(--card)_70%)] px-5 pt-[18px] pb-5"
+      aria-labelledby="setup-checklist-title"
+      className="flex flex-col gap-3.5 rounded-card bg-card px-[18px] py-4 shadow-card"
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3.5">
-        <div className="min-w-[220px] flex-1">
-          <h2 className="font-semibold text-[15px] leading-[1.3]">
-            Get {organizationName} ready
-          </h2>
-          <p className="text-[13px] text-muted-foreground leading-[1.45]">
-            {left === 1
-              ? "One step left."
-              : `${COUNT_WORDS[left] ?? left} steps left.`}{" "}
-            {next?.hint}
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <div
-            aria-label={`${doneCount} of ${steps.length} steps done`}
-            aria-valuemax={steps.length}
-            aria-valuemin={0}
-            aria-valuenow={doneCount}
-            className="h-1.5 w-[140px] overflow-hidden rounded-full bg-border"
-            role="progressbar"
-          >
-            <div
-              className="h-full rounded-full bg-accent"
-              style={{ width: `${(doneCount / steps.length) * 100}%` }}
-            />
-          </div>
-          <span className="font-medium font-mono text-muted-foreground text-xs">
-            {doneCount}/{steps.length}
-          </span>
-          <Button
-            aria-label="Dismiss the checklist"
-            className="text-muted-foreground"
-            onClick={() => {
-              onDismiss();
-              toast.info("Checklist hidden", {
-                description: "Find it again under Settings.",
-              });
-            }}
-            size="icon-xs"
-            title="Dismiss"
-            variant="ghost"
-          >
-            <X className="size-[15px]" />
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <h2
+          className="font-semibold text-[15px] leading-[22px] tracking-[-0.01em]"
+          id="setup-checklist-title"
+        >
+          Finish setting up
+        </h2>
+        <span className="text-faint text-xs tabular-nums">
+          {doneCount} of {steps.length}
+        </span>
+        <span className="flex-1" />
+        <Button
+          onClick={() => {
+            onDismiss();
+            toast.info("Checklist hidden", {
+              description: "Find it again under Settings.",
+            });
+          }}
+          size="sm"
+          variant="ghost"
+        >
+          Dismiss
+        </Button>
       </div>
-      <ol className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-2.5">
+      <ol className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2.5">
         {steps.map((step, index) => {
           const isNext = index === nextIndex;
           return (
-            <li
-              className={cn(
-                "flex min-h-28 flex-col gap-2.5 rounded-menu border p-3",
-                isNext ? "border-accent bg-card" : "border-border"
-              )}
-              key={step.title}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "grid size-5 place-items-center rounded-full [&_svg]:size-3",
-                    step.done && "bg-accent text-white",
-                    isNext && "border-[1.5px] border-accent text-accent-ink",
-                    !(step.done || isNext) &&
-                      "border-[1.5px] border-input border-dashed text-faint"
-                  )}
-                >
-                  {step.done ? <Check /> : null}
-                  {isNext ? <ArrowRight /> : null}
-                </span>
-                <span className="font-medium font-mono text-[11px] text-muted-foreground">
-                  STEP {index + 1}
-                </span>
-                {step.done ? <span className="sr-only">Done</span> : null}
-              </div>
+            <li className="flex flex-col gap-2" key={step.title}>
               <div
+                aria-hidden="true"
                 className={cn(
-                  "font-semibold text-[13.5px] leading-[1.3]",
-                  step.done && "text-muted-foreground"
+                  "h-[3px] rounded-sm",
+                  step.done && "bg-foreground",
+                  isNext && "bg-accent",
+                  !(step.done || isNext) && "bg-border"
                 )}
-              >
-                {step.title}
-              </div>
-              <p className="flex-1 text-[12.5px] text-muted-foreground leading-[1.4]">
-                {step.description}
-              </p>
-              {step.done ? null : (
+              />
+              {step.done ? (
+                <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                  <Check className="size-3.5 shrink-0" />
+                  <s className="truncate">{step.title}</s>
+                  <span className="sr-only">Done</span>
+                </span>
+              ) : null}
+              {isNext ? (
                 <Link
-                  className={cn(
-                    buttonVariants({
-                      size: "xs",
-                      variant: isNext ? "default" : "outline",
-                    }),
-                    "self-start"
-                  )}
+                  className="flex items-center gap-1.5 font-[550] text-[13px] text-accent-ink hover:text-accent"
                   href={step.href}
+                  title={step.description}
                 >
-                  {step.cta}
-                  <ArrowRight className="size-[13px]" />
+                  <span className="truncate">{step.title}</span>
+                  <ArrowRight className="size-3.5 shrink-0" />
+                </Link>
+              ) : null}
+              {step.done || isNext ? null : (
+                <Link
+                  className="truncate text-[13px] text-muted-foreground hover:text-foreground"
+                  href={step.href}
+                  title={step.description}
+                >
+                  {step.title}
                 </Link>
               )}
             </li>

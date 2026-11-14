@@ -101,16 +101,19 @@ export function SiteConfig({
       )}
       {!cronOnly && (
         <>
-          {data.maintenance ? (
-            <MaintenanceEditor
-              data={data.maintenance}
-              key={data.maintenance.version ?? "initial"}
-              profile={profile}
-              setDirty={(dirty) => sectionDirty("maintenance", dirty)}
-            />
-          ) : (
-            <ErrorNotice message="Maintenance settings are unavailable with this database's schema or permissions." />
-          )}
+          <div className="grid items-start gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
+            {data.maintenance ? (
+              <MaintenanceEditor
+                data={data.maintenance}
+                key={data.maintenance.version ?? "initial"}
+                profile={profile}
+                setDirty={(dirty) => sectionDirty("maintenance", dirty)}
+              />
+            ) : (
+              <ErrorNotice message="Maintenance settings are unavailable with this database's schema or permissions." />
+            )}
+            <OperationHistory profile={profile} />
+          </div>
           {!!data.maintenance && (
             <GeneralSiteSettings
               key={data.settingsVersion}
@@ -143,7 +146,7 @@ export function SiteConfig({
           </Button>
         }
         description={`Schedules use ${data.cron?.timeZone ?? data.settings.siteTimezone}. Changes are loaded dynamically and do not require a restart.`}
-        title="Cronjob"
+        title="Cron jobs"
       >
         {data.cron ? (
           <div className="space-y-4">
@@ -168,7 +171,7 @@ export function SiteConfig({
           <ErrorNotice message="Cronjobs are unavailable with this database's schema or permissions." />
         )}
       </Panel>
-      <OperationHistory profile={profile} />
+      {cronOnly ? <OperationHistory profile={profile} /> : null}
     </div>
   );
 }

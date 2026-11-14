@@ -228,7 +228,7 @@ const AuditRow = ({ event }: { event: AuditEvent }) => {
       style={{ gridTemplateColumns: COLUMNS }}
     >
       <time
-        className="font-mono text-muted-foreground text-xs leading-[1.3]"
+        className="text-muted-foreground text-xs tabular-nums leading-[1.3]"
         dateTime={new Date(event.createdAt).toISOString()}
         title={formatDateTime(event.createdAt)}
       >
@@ -243,12 +243,12 @@ const AuditRow = ({ event }: { event: AuditEvent }) => {
         </strong>{" "}
         {known?.what ?? "recorded"}{" "}
         {object ? (
-          <span className="break-all font-mono text-foreground-2 text-xs">
+          <span className="break-all text-foreground-2 text-xs tabular-nums">
             {object}
           </span>
         ) : null}
       </span>
-      <span className="truncate text-right font-mono text-[11.5px] text-faint leading-none">
+      <span className="truncate text-right text-[11.5px] text-faint tabular-nums leading-none">
         {event.action}
       </span>
     </div>

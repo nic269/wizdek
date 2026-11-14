@@ -118,7 +118,7 @@ const InviteCard = ({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border border-border bg-sunken px-[18px] py-4">
+    <section className="flex flex-col gap-3 rounded-card bg-sunken px-[18px] py-4 shadow-card">
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2 className="font-semibold text-sm leading-[1.3]">
           Invite people to {organizationName}
@@ -152,7 +152,7 @@ const InviteCard = ({
         <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
           <span>Invite link, if the email doesn't arrive:</span>
           <a
-            className="min-w-0 break-all font-mono text-foreground-2 hover:underline"
+            className="min-w-0 break-all text-foreground-2 tabular-nums hover:underline"
             href={acceptUrl}
           >
             {acceptUrl}
@@ -184,7 +184,7 @@ const MemberRow = ({ member, you }: { member: Member; you: boolean }) => (
     <div className="flex min-w-0 items-center gap-[11px]">
       <PersonAvatar id={member.user.id} name={member.user.name} />
       <div className="min-w-0">
-        <div className="truncate font-semibold text-[13.5px] leading-[1.3]">
+        <div className="truncate font-semibold text-[13px] leading-[1.3]">
           {member.user.name}
           {you ? (
             <span className="font-normal text-muted-foreground"> · you</span>
@@ -261,7 +261,7 @@ const InvitationRow = ({
       style={{ gridTemplateColumns: INVITATION_COLUMNS }}
     >
       <div className="min-w-0">
-        <div className="truncate font-medium text-[13.5px] leading-[1.3]">
+        <div className="truncate font-medium text-[13px] leading-[1.3]">
           {invitation.email}
         </div>
         <div className="truncate text-muted-foreground text-xs leading-[1.3]">

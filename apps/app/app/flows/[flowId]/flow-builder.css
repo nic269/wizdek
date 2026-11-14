@@ -4,7 +4,9 @@
  */
 .flow-canvas .react-flow {
   --xy-background-color: var(--sunken);
-  --xy-edge-stroke: #b9b8b1;
+  --xy-background-pattern-color: var(--input);
+  --xy-background-pattern-dots-color-default: var(--input);
+  --xy-edge-stroke: #b4b6bb;
   --xy-edge-stroke-selected: var(--accent);
   --xy-edge-stroke-width: 1.5;
   --xy-connectionline-stroke: var(--accent);

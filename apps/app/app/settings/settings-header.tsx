@@ -1,7 +1,7 @@
 "use client";
 
 import { authFeatureConfig } from "@repo/config";
-import { cn, Settings, Shield, Users } from "@repo/design-system";
+import { cn, Settings, ShellHeader, Shield, Users } from "@repo/design-system";
 import Link from "next/link";
 import { useActiveOrganization } from "../lib/active-organization";
 
@@ -44,13 +44,20 @@ export function SettingsHeader({ tab }: { tab: SettingsTab }) {
     (item) =>
       item.tab !== "members" || authFeatureConfig.organizationInvitations
   );
+  const currentTab = TABS.find((item) => item.tab === tab);
   return (
     <header className="flex flex-col gap-3.5 border-border border-b">
+      <ShellHeader
+        crumbs={[
+          { label: "Organization" },
+          { label: currentTab?.label ?? title },
+        ]}
+      />
       <div className="flex min-w-[min(100%,240px)] flex-col">
-        <h1 className="m-0 font-semibold text-2xl leading-[1.15] tracking-[-0.02em]">
+        <h1 className="m-0 font-semibold text-[20px] leading-7 tracking-[-0.018em]">
           {title}
         </h1>
-        <p className="mt-1.5 text-muted-foreground text-sm leading-normal">
+        <p className="mt-1 text-[13px] text-muted-foreground leading-normal">
           {description}
         </p>
       </div>
@@ -65,7 +72,7 @@ export function SettingsHeader({ tab }: { tab: SettingsTab }) {
             <Link
               aria-current={current ? "page" : undefined}
               className={cn(
-                "inline-flex h-9 shrink-0 items-center gap-[7px] border-b-2 px-3 font-medium text-[13.5px] leading-none transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent-soft",
+                "inline-flex h-9 shrink-0 items-center gap-[7px] border-b-2 px-3 font-medium text-[13px] leading-none transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/15",
                 current
                   ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground"

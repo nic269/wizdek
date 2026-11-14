@@ -304,7 +304,7 @@ export function OperationHistory({ profile }: { profile: PublicProfile }) {
                     />
                   )}
                 <span className="block font-medium">{op.action}</span>
-                <span className="block font-mono text-muted-foreground text-xs">
+                <span className="block text-muted-foreground text-xs tabular-nums">
                   {op.id}
                 </span>
               </TableCell>

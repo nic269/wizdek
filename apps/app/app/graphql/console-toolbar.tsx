@@ -10,6 +10,7 @@ import {
   describeStatus,
   EnvTag,
   IdentityChip,
+  ShellHeader,
 } from "@repo/design-system";
 import {
   DropdownMenu,
@@ -45,7 +46,7 @@ const StorePicker = ({
           <Button
             aria-label="Store"
             className={cn(
-              "h-9 min-w-[290px] justify-start gap-[9px] pr-2.5 pl-2 font-normal",
+              "h-[34px] min-w-[260px] justify-start gap-[9px] pr-2.5 pl-2 font-normal",
               prod &&
                 "border-(--prod-border) bg-(--prod-bg) hover:bg-(--prod-bg)"
             )}
@@ -60,7 +61,7 @@ const StorePicker = ({
               <span className="truncate font-semibold text-[13px] leading-none">
                 {store.name}
               </span>
-              <span className="truncate font-mono text-[11px] text-muted-foreground leading-none">
+              <span className="truncate text-[11px] text-muted-foreground tabular-nums leading-none">
                 {store.shopDomain}
               </span>
             </span>
@@ -135,34 +136,49 @@ export function ConsoleToolbar({
   versions: ApiVersion[];
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5 border-border border-b px-4 py-3">
-      <h1 className="mr-1.5 ml-1 font-semibold text-[17px] leading-none tracking-[-0.01em]">
-        GraphQL
-      </h1>
-      <StorePicker
-        onStoreChange={onStoreChange}
-        store={store}
-        stores={stores}
-      />
-      <OptionSelect
-        aria-label="API version"
-        className="h-9! w-auto font-mono text-[13px]"
-        onValueChange={onApiVersionChange}
-        options={versions.map((version) => ({
-          label: version.displayName,
-          value: version.handle,
-        }))}
-        value={apiVersion || null}
-      />
-      <Label className="h-9 gap-2 px-2 font-medium text-[13px] text-foreground-2">
-        <Switch checked={costDebug} onCheckedChange={onCostDebugChange} />
-        Detailed cost
-      </Label>
-      <span className="flex-1" />
-      <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
-        <CircleCheck className="size-3.5" />
-        Saved queries sync to {organizationName}
-      </span>
-    </div>
+    <ShellHeader
+      actions={
+        <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+          <CircleCheck className="size-3.5" />
+          Saved queries sync to {organizationName}
+        </span>
+      }
+      context={
+        <>
+          <StorePicker
+            onStoreChange={onStoreChange}
+            store={store}
+            stores={stores}
+          />
+          <OptionSelect
+            aria-label="API version"
+            className="h-[30px]! w-auto text-[13px] tabular-nums"
+            onValueChange={onApiVersionChange}
+            options={versions.map((version) => ({
+              label: version.displayName,
+              value: version.handle,
+            }))}
+            value={apiVersion || null}
+          />
+          <Label className="h-[30px] gap-2 px-1 font-medium text-[12.5px] text-foreground-2">
+            <Switch checked={costDebug} onCheckedChange={onCostDebugChange} />
+            Detailed cost
+          </Label>
+          <span aria-hidden="true" className="h-5 w-px bg-border" />
+        </>
+      }
+      crumbs={[
+        { label: "Shopify" },
+        {
+          label: (
+            <h1 className="truncate font-[550] text-[13px] text-foreground">
+              GraphQL console
+            </h1>
+          ),
+        },
+      ]}
+      productionNote="Production store. Mutations run against live data."
+      risk={store?.environment === "PROD" ? "production" : undefined}
+    />
   );
 }

@@ -51,7 +51,7 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Popup
         className={cn(
-          "data-open:fade-in-0 data-open:slide-in-from-bottom-2 data-closed:fade-out-0 data-closed:slide-out-to-bottom-2 fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-panel bg-popover text-popover-foreground text-sm shadow-dialog outline-none duration-150 data-closed:animate-out data-open:animate-in sm:max-w-sm",
+          "data-open:fade-in-0 data-open:slide-in-from-bottom-2 data-closed:fade-out-0 data-closed:slide-out-to-bottom-2 fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-popover text-popover-foreground text-sm shadow-dialog outline-none duration-150 data-closed:animate-out data-open:animate-in sm:max-w-sm",
           className
         )}
         data-slot="dialog-content"
@@ -135,7 +135,10 @@ function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
 function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
-      className={cn("font-semibold text-base leading-[1.3]", className)}
+      className={cn(
+        "font-semibold text-[15px] leading-[1.35] tracking-[-0.01em]",
+        className
+      )}
       data-slot="dialog-title"
       {...props}
     />

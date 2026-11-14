@@ -26,7 +26,7 @@ function Item({
       <span>{label}</span>
       <span
         className={cn(
-          "font-medium font-mono text-[11.5px] leading-none",
+          "font-medium text-[11.5px] tabular-nums leading-none",
           TONES[tone]
         )}
       >

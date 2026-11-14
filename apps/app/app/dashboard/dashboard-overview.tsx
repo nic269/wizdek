@@ -10,10 +10,10 @@ import {
   CircleHelp,
   cn,
   Database,
-  EnvTag,
   ErrorAlert,
   HardDrive,
   hueFromId,
+  IdentityChip,
   KeyRound,
   PageHeader,
   Plus,
@@ -21,7 +21,6 @@ import {
   StatusBadge,
   Store,
   Webhook,
-  Workflow,
 } from "@repo/design-system";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -166,26 +165,27 @@ const attentionItems = (input: {
   return [...unknown, ...reconnect, ...databases, ...secrets];
 };
 
+/** A caps label with an optional link, above a card. */
 const Section = ({
   action,
   children,
-  icon,
   title,
 }: {
   action?: ReactNode;
   children: ReactNode;
-  icon: ReactNode;
+  icon?: ReactNode;
   title: string;
 }) => (
-  <section className="overflow-hidden rounded-card border border-border">
-    <div className="flex items-center gap-2.5 border-border border-b px-4 py-3.5">
-      <span aria-hidden="true" className="text-muted-foreground [&_svg]:size-4">
-        {icon}
-      </span>
-      <h2 className="flex-1 font-semibold text-sm leading-[1.2]">{title}</h2>
+  <section aria-label={title} className="flex min-w-0 flex-col gap-2.5">
+    <div className="flex min-h-5 items-center gap-2">
+      <h2 className="flex-1 font-medium text-[11px] text-faint uppercase leading-none tracking-[0.06em]">
+        {title}
+      </h2>
       {action}
     </div>
-    {children}
+    <div className="overflow-hidden rounded-card bg-card shadow-card">
+      {children}
+    </div>
   </section>
 );
 
@@ -296,7 +296,7 @@ const AttentionSection = ({
               {item.icon}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-semibold text-[13.5px] leading-[1.35]">
+              <span className="block font-semibold text-[13px] leading-[1.35]">
                 {item.title}
               </span>
               <span className="block text-pretty text-[12.5px] text-muted-foreground leading-[1.45]">
@@ -346,35 +346,30 @@ const StoreHealthSection = ({
         ) : null}
       </div>
     ) : null}
-    {isLoading
-      ? null
-      : stores.slice(0, 6).map((store) => (
+    {!isLoading && stores.length > 0 ? (
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] p-1.5">
+        {stores.slice(0, 8).map((store) => (
           <Link
-            className={cn(rowClass, "py-[11px]")}
+            className="flex min-w-0 flex-col items-start gap-1.5 rounded-lg p-3 hover:bg-sunken focus-visible:bg-sunken focus-visible:outline-none"
             href={`/stores?store=${store.id}`}
             key={store.id}
+            title={`${store.name} · ${store.shopDomain}`}
           >
-            <span
-              aria-hidden="true"
-              className="size-2 shrink-0 rounded-[2px]"
-              style={{
-                background: `oklch(0.62 0.14 ${hueFromId(store.id)})`,
-              }}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-[7px]">
-                <span className="truncate font-semibold text-[13.5px] leading-[1.3]">
-                  {store.name}
-                </span>
-                <EnvTag environment={store.environment} />
-              </span>
-              <span className="block truncate font-mono text-muted-foreground text-xs leading-[1.4]">
-                {store.shopDomain}
+            <span className="flex min-w-0 max-w-full items-center gap-1.5">
+              <IdentityChip
+                className="size-[18px]! rounded-[5px]! text-[10px]!"
+                id={store.id}
+                name={store.name}
+              />
+              <span className="truncate text-xs tabular-nums">
+                {store.shopDomain.replace(".myshopify.com", "")}
               </span>
             </span>
             <StatusBadge status={store.status} />
           </Link>
         ))}
+      </div>
+    ) : null}
   </Section>
 );
 
@@ -409,7 +404,7 @@ const RecentRunsSection = ({
           >
             <span className="flex min-w-0 items-center gap-2">
               <StatusBadge status={run.status} />
-              <span className="truncate font-semibold text-[13.5px] leading-[1.3]">
+              <span className="truncate font-semibold text-[13px] leading-[1.3]">
                 {run.flowName}
               </span>
             </span>
@@ -467,7 +462,7 @@ const RecentBackupsSection = ({
             key={backup.id}
           >
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold text-[13.5px] leading-[1.3]">
+              <span className="block truncate font-semibold text-[13px] leading-[1.3]">
                 {backup.connectionName}
               </span>
               <span className="block truncate text-muted-foreground text-xs leading-[1.4]">
@@ -577,28 +572,19 @@ const OverviewHeader = ({
   <PageHeader
     actions={
       <>
-        {can("graphql:query") ? (
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            href="/graphql"
-          >
-            <Braces />
-            New query
-          </Link>
-        ) : null}
-        {can("flows:manage") ? (
-          <Link
-            className={buttonVariants({ variant: "outline" })}
-            href="/flows?new=1"
-          >
-            <Workflow />
-            New flow
-          </Link>
-        ) : null}
         {can("stores:manage") ? (
-          <Link className={buttonVariants()} href="/stores/new">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href="/stores/new"
+          >
             <Plus />
             Connect store
+          </Link>
+        ) : null}
+        {can("graphql:query") ? (
+          <Link className={buttonVariants()} href="/graphql">
+            <Braces />
+            Open console
           </Link>
         ) : null}
       </>
@@ -613,6 +599,7 @@ const OverviewHeader = ({
           })
         : " "
     }
+    size="display"
     title={`${now ? greetingFor(now.getHours()) : "Hello"}, ${userName.split(" ")[0] ?? userName}`}
   />
 );
@@ -730,7 +717,7 @@ export function DashboardOverview({ userName }: { userName: string }) {
         />
       ) : null}
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-[18px]">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-5">
         <AttentionSection attention={attention} isLoading={data.isLoading} />
         {data.access.stores ? (
           <StoreHealthSection
@@ -741,7 +728,7 @@ export function DashboardOverview({ userName }: { userName: string }) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-[18px]">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {data.access.flows ? (
           <RecentRunsSection isLoading={data.isLoading} runs={data.runs} />
         ) : null}

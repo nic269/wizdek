@@ -109,7 +109,7 @@ export const ListFrame = ({
   children: ReactNode;
   minWidth: number;
 }) => (
-  <div className="overflow-auto rounded-card border border-border bg-card">
+  <div className="overflow-auto rounded-card bg-card shadow-card">
     <div style={{ minWidth }}>{children}</div>
   </div>
 );
@@ -125,7 +125,7 @@ export const ListTitle = ({
   <div className="flex items-baseline gap-2">
     <h2 className="font-semibold text-[15px] leading-[1.3]">{title}</h2>
     {count === undefined ? null : (
-      <span className="font-medium font-mono text-muted-foreground text-xs">
+      <span className="font-medium text-muted-foreground text-xs tabular-nums">
         {count}
       </span>
     )}

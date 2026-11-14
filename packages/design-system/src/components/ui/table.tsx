@@ -14,13 +14,13 @@ function Table({
   return (
     <div
       className={cn(
-        "relative w-full overflow-x-auto rounded-card border border-border bg-card",
+        "relative w-full overflow-x-auto rounded-card bg-card shadow-card",
         containerClassName
       )}
       data-slot="table-container"
     >
       <table
-        className={cn("w-full caption-bottom text-[13.5px]", className)}
+        className={cn("w-full caption-bottom text-[13px]", className)}
         data-slot="table"
         {...props}
       />
@@ -32,7 +32,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       className={cn(
-        "bg-sunken [&_tr]:border-b [&_tr]:hover:bg-transparent",
+        "bg-card [&_tr]:border-b [&_tr]:hover:bg-transparent",
         className
       )}
       data-slot="table-header"
@@ -68,7 +68,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       className={cn(
-        "border-border border-b transition-colors hover:bg-hover has-aria-expanded:bg-hover data-[state=selected]:bg-accent-soft",
+        "border-border border-b transition-colors hover:bg-sunken has-aria-expanded:bg-sunken data-[state=selected]:bg-selected",
         className
       )}
       data-slot="table-row"
@@ -81,7 +81,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "h-[38px] whitespace-nowrap px-4 text-left align-middle font-medium text-muted-foreground text-xs [&:has([role=checkbox])]:pr-0",
+        "h-9 whitespace-nowrap px-3 text-left align-middle font-medium text-muted-foreground text-xs first:pl-4 last:pr-4 [&:has([role=checkbox])]:pr-0",
         className
       )}
       data-slot="table-head"
@@ -94,7 +94,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       className={cn(
-        "h-[60px] whitespace-nowrap px-4 py-2.5 align-middle text-foreground-2 [&:has([role=checkbox])]:pr-0",
+        "h-11 whitespace-nowrap px-3 py-2 align-middle text-foreground first:pl-4 last:pr-4 [&:has([role=checkbox])]:pr-0",
         className
       )}
       data-slot="table-cell"

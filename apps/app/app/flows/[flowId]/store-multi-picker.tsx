@@ -59,7 +59,7 @@ export function StoreMultiPicker({
               <span className="block truncate font-semibold text-[13px] leading-[1.3]">
                 {store.name}
               </span>
-              <span className="block truncate font-mono text-muted-foreground text-xs leading-[1.3]">
+              <span className="block truncate text-muted-foreground text-xs tabular-nums leading-[1.3]">
                 {store.shopDomain}
               </span>
             </span>

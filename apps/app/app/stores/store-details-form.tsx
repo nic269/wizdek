@@ -207,7 +207,7 @@ const TokenCredentials = ({
         <FieldLabel htmlFor="store-domain">Store domain</FieldLabel>
         <Input
           autoComplete="off"
-          className="font-mono text-[13px]"
+          className="text-[13px] tabular-nums"
           id="store-domain"
           onChange={(event) => setShopDomain(event.target.value)}
           placeholder="your-store.myshopify.com"
@@ -250,7 +250,7 @@ const ManagedCredentials = ({ store }: { store: Store }) => (
     <Field className="gap-1.5">
       <FieldLabel htmlFor="store-domain">Store domain</FieldLabel>
       <Input
-        className="font-mono text-[13px]"
+        className="text-[13px] tabular-nums"
         id="store-domain"
         readOnly
         value={store.shopDomain}

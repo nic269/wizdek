@@ -1,0 +1,15 @@
+<svg
+  height="32"
+  viewBox="0 0 32 32"
+  width="32"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>Wizloft</title>
+  <rect fill="#0F1115" height="32" rx="7" width="32" />
+  <g transform="translate(5.16 9.97) scale(0.0496)">
+    <path
+      d="M0.00 59.00 L52.00 59.00 L111.50 157.35 L163.25 71.81 L215.00 157.35 L310.20 0.00 L362.20 0.00 L215.00 243.30 L163.25 157.76 L111.50 243.30 Z M319.50 109.42 L319.50 204.10 L437.00 204.10 L397.80 243.30 L275.50 243.30 L275.50 182.14 Z"
+      fill="#FFFFFF"
+    />
+  </g>
+</svg>

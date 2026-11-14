@@ -61,11 +61,19 @@ export const nodeIcon = (nodeType: string) => NODE_ICONS[nodeType] ?? <Box />;
 export const asCategory = (category: string | undefined): NodeCategory =>
   category && category in CATEGORY_HUES ? (category as NodeCategory) : "action";
 
+/** The design-token name of each category's colour pair. */
+const CATEGORY_TOKENS: Record<NodeCategory, string> = {
+  action: "shopify",
+  data: "data",
+  logic: "logic",
+  trigger: "trigger",
+};
+
 /** CSS variables for a category: `--cat` (ink) and `--cat-tint` (chip). */
 export const categoryStyle = (category: NodeCategory): CSSProperties =>
   ({
-    "--cat": `oklch(0.5 0.14 ${CATEGORY_HUES[category]})`,
-    "--cat-tint": `oklch(0.95 0.035 ${CATEGORY_HUES[category]})`,
+    "--cat": `var(--cat-${CATEGORY_TOKENS[category]})`,
+    "--cat-tint": `var(--cat-${CATEGORY_TOKENS[category]}-tint)`,
   }) as CSSProperties;
 
 const chipRadius = (size: number) => {

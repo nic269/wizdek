@@ -227,7 +227,7 @@ export function ShopifyAppsSettings({
                   <span className="block font-semibold text-sm">
                     {app.name}
                   </span>
-                  <span className="mt-1 block break-all font-mono text-muted-foreground text-xs">
+                  <span className="mt-1 block break-all text-muted-foreground text-xs tabular-nums">
                     {app.clientId}
                   </span>
                   <span className="mt-1 block text-muted-foreground text-xs">
@@ -410,7 +410,7 @@ export function ShopifyAppsSettings({
               </DialogDescription>
             </DialogHeader>
             <DialogBody>
-              <p className="mb-3 break-all font-mono text-xs">
+              <p className="mb-3 break-all text-xs tabular-nums">
                 {deleting.clientId}
               </p>
               <TextField

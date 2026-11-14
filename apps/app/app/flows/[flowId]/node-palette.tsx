@@ -5,8 +5,8 @@ import { useState } from "react";
 import {
   asCategory,
   CATEGORY_GROUPS,
-  CATEGORY_HUES,
   CategoryChip,
+  categoryStyle,
 } from "../node-visuals";
 import type { NodeType } from "./use-flow-editor";
 
@@ -59,10 +59,8 @@ export function NodePalette({
               <h2 className="font-(family-name:--label-font) text-(length:--label-size) flex items-center gap-[7px] px-1.5 pt-3 pb-1.5 font-medium text-muted-foreground leading-none tracking-(--label-tracking) [text-transform:var(--label-transform)]">
                 <span
                   aria-hidden="true"
-                  className="size-1.5 rounded-[2px]"
-                  style={{
-                    background: `oklch(0.5 0.14 ${CATEGORY_HUES[group.id]})`,
-                  }}
+                  className="size-1.5 rounded-[2px] bg-(--cat)"
+                  style={categoryStyle(group.id)}
                 />
                 {group.label}
               </h2>

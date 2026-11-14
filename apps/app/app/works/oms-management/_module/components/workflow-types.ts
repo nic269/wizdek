@@ -92,24 +92,3 @@ export function formatLogLabel(value: string) {
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
-
-export function workflowBadgeVariant(
-  status: string
-): "destructive" | "secondary" | "outline" {
-  if (status === "FAILED" || status === "ERROR") {
-    return "destructive";
-  }
-  if (status === "COMPLETED_WITH_ERRORS" || status === "WARN") {
-    return "secondary";
-  }
-  return "outline";
-}
-export function workflowCardClass(selected: boolean, errorCount: number) {
-  if (selected) {
-    return "border-l-accent bg-accent-soft";
-  }
-  if (errorCount > 0) {
-    return "border-l-destructive";
-  }
-  return "border-l-transparent";
-}

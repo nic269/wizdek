@@ -100,22 +100,31 @@ export function BusinessTools({
           </AlertDescription>
         </Alert>
       )}
+      {catalog.error ? <ErrorNotice message={catalog.error.message} /> : null}
       <Tabs
+        className="flex-col gap-4 md:flex-row md:items-start md:gap-7"
         onValueChange={(value) => {
           setSecret(null);
           setTab(value as ToolTab);
         }}
+        orientation="vertical"
         value={tab}
       >
-        <TabsList className="max-w-full overflow-x-auto" variant="line">
+        <TabsList
+          aria-label="Tools"
+          className="h-auto! w-full flex-none flex-col items-stretch gap-0.5 bg-transparent p-0 md:w-[230px]"
+        >
           {TOOL_TABS.map(([id, label]) => (
-            <TabsTrigger key={id} value={id}>
+            <TabsTrigger
+              className="h-8 flex-none justify-start rounded-[7px] px-2 font-normal text-[13px] text-foreground-2 hover:bg-hover data-active:bg-card data-active:font-[550] data-active:text-foreground data-active:shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(22,23,26,0.05)]"
+              key={id}
+              value={id}
+            >
               {label}
             </TabsTrigger>
           ))}
         </TabsList>
-        {catalog.error ? <ErrorNotice message={catalog.error.message} /> : null}
-        <TabsContent value="stores">
+        <TabsContent className="min-w-0 flex-1" value="stores">
           <Panel
             description="Secrets are revealed only after an explicit audited request, and hidden again after 15 seconds."
             title="Store credentials"
@@ -212,7 +221,7 @@ export function BusinessTools({
             </div>
           </Panel>
         </TabsContent>
-        <TabsContent value="fraud">
+        <TabsContent className="min-w-0 flex-1" value="fraud">
           <Panel
             description="Only orders currently in Fraud Check can be reviewed. The preview shows the current record before confirmation."
             title="Review fraud risk"
@@ -251,7 +260,7 @@ export function BusinessTools({
             />
           </Panel>
         </TabsContent>
-        <TabsContent value="documents">
+        <TabsContent className="min-w-0 flex-1" value="documents">
           <DocumentTools profile={profile} />
         </TabsContent>
       </Tabs>

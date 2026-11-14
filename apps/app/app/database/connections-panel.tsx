@@ -212,7 +212,7 @@ const ConnectionRow = ({
           <DatabaseChip />
           <div className="min-w-0">
             <div className="flex items-center gap-[7px]">
-              <span className="truncate font-semibold text-[13.5px] text-foreground leading-[1.3]">
+              <span className="truncate font-semibold text-[13px] text-foreground leading-[1.3]">
                 {connection.name}
               </span>
               <EnvTag environment={connection.environment} />
@@ -225,11 +225,11 @@ const ConnectionRow = ({
       </TableCell>
       <TableCell>
         <div className="min-w-0">
-          <div className="truncate font-medium font-mono text-[13px] text-foreground leading-[1.3]">
+          <div className="truncate font-medium text-[13px] text-foreground tabular-nums leading-[1.3]">
             {connection.databaseName}
           </div>
           <div
-            className="truncate font-mono text-muted-foreground text-xs leading-[1.4]"
+            className="truncate text-muted-foreground text-xs tabular-nums leading-[1.4]"
             title={`${connection.host}:${connection.port}`}
           >
             {connection.host}
@@ -417,7 +417,7 @@ export function ConnectionsPanel({
             description="Kept until you delete them."
             title="Backups of deleted connections"
           />
-          <div className="overflow-x-auto rounded-card border border-border bg-card">
+          <div className="overflow-x-auto rounded-card bg-card shadow-card">
             <BackupsTable
               backups={orphaned}
               canBackup={can("databases:backup")}

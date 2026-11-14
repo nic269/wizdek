@@ -55,6 +55,8 @@ Do not rotate/revoke the only recovery credential while an operation remains unc
 
 The control store owns a sibling `.owner` directory. Another instance fails readiness. Clean shutdown releases it; an abrupt host/process crash may leave it.
 
+In development, new locks record the hostname and runtime. A new dev process automatically recovers a lock only when it belongs to development on the same host and its PID is confirmed absent (`ESRCH`). Recovery is serialized; live PIDs, permission errors, malformed/legacy metadata and other hosts fail closed. Use a local, unshared control-store path for development. Production never automatically reclaims a lock. If recovery itself is interrupted, its `.owner.recovery` directory also requires the manual procedure below.
+
 To recover a stale lock: stop all instances, confirm no process/container can still write the volume, snapshot the database/WAL and lock metadata, then remove only the stale owner directory and start one instance. Never steal a live/ambiguous lock.
 
 ## Removal

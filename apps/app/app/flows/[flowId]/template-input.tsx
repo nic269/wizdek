@@ -75,7 +75,7 @@ export function TemplateInput({
           {parts.map((part) =>
             part.template ? (
               <span
-                className="shrink-0 rounded bg-accent-soft px-1.5 py-1 font-medium font-mono text-[12px] text-accent-ink leading-none"
+                className="shrink-0 rounded bg-accent-soft px-1.5 py-1 font-medium text-[12px] text-accent-ink tabular-nums leading-none"
                 key={part.key}
               >
                 {part.text}

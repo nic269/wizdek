@@ -46,7 +46,7 @@ const AssignmentRow = ({
     <div className="flex items-center gap-3 border-border border-b px-4 py-[11px] last:border-b-0">
       <PersonAvatar id={member.user.id} name={member.user.name} size={30} />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-semibold text-[13.5px] leading-[1.3]">
+        <div className="truncate font-semibold text-[13px] leading-[1.3]">
           {member.user.name}
         </div>
         <div className="truncate text-muted-foreground text-xs leading-[1.3]">

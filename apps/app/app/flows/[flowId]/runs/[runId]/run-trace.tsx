@@ -4,18 +4,19 @@ import "@xyflow/react/dist/style.css";
 import "../../flow-builder.css";
 import { apiClient, getApiErrorMessage } from "@repo/api/client";
 import {
-  ArrowLeft,
   Button,
   buttonVariants,
   CircleCheck,
   CircleHelp,
   CircleX,
+  ContextChip,
   cn,
   EnvTag,
   ErrorAlert,
   Layers,
   ListTree,
   SegmentedControl,
+  ShellHeader,
   Shimmer,
   StatusBadge,
   toast,
@@ -138,7 +139,7 @@ const SummaryTile = ({
     className={cn(
       "h-auto justify-start gap-2.5 rounded-menu px-3 py-2.5 text-left [&_svg:not([class*='size-'])]:size-[17px]",
       className,
-      active && "ring-3 ring-accent-soft"
+      active && "ring-3 ring-ring/15"
     )}
     onClick={onPick}
     variant="outline"
@@ -222,55 +223,71 @@ const TraceTitleBar = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2.5">
-      <Link
-        className="inline-flex items-center gap-[5px] font-medium text-[13px] text-muted-foreground hover:text-foreground"
-        href={`/flows/${flowId}/runs`}
-      >
-        <ArrowLeft className="size-3.5" />
-        Runs
-      </Link>
-      <span aria-hidden="true" className="text-input">
-        /
-      </span>
-      <h1 className="font-semibold text-[19px] leading-[1.2] tracking-[-0.015em]">
-        Run #{run.number}
-      </h1>
-      <span data-testid="run-status">
-        <StatusBadge status={run.status} />
-      </span>
-      <span className="flex-1" />
-      <SegmentedControl
-        aria-label="View"
-        onValueChange={setView}
-        options={[
-          { icon: <ListTree />, label: "Timeline", value: "timeline" },
-          { icon: <Workflow />, label: "On canvas", value: "canvas" },
-        ]}
-        value={view}
-      />
-      <Link
-        className={buttonVariants({ variant: "outline" })}
-        href={`/flows/${flowId}`}
-      >
-        Open flow
-      </Link>
-      {canRun && detail.canResume ? (
-        <Button disabled={isResuming} onClick={resume} type="button">
-          {isResuming ? "Resuming…" : "Resume run"}
-        </Button>
-      ) : null}
-      {canRun && active ? (
-        <Button
-          disabled={isCanceling || cancelRequested}
-          onClick={cancel}
-          type="button"
-          variant="destructive"
+    <ShellHeader
+      actions={
+        <>
+          <SegmentedControl
+            aria-label="View"
+            onValueChange={setView}
+            options={[
+              { icon: <ListTree />, label: "Timeline", value: "timeline" },
+              { icon: <Workflow />, label: "On canvas", value: "canvas" },
+            ]}
+            value={view}
+          />
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={`/flows/${flowId}`}
+          >
+            Open flow
+          </Link>
+          {canRun && detail.canResume ? (
+            <Button disabled={isResuming} onClick={resume} type="button">
+              {isResuming ? "Resuming…" : "Resume run"}
+            </Button>
+          ) : null}
+          {canRun && active ? (
+            <Button
+              disabled={isCanceling || cancelRequested}
+              onClick={cancel}
+              type="button"
+              variant="destructive"
+            >
+              {cancelRequested ? "Canceling…" : "Cancel run"}
+            </Button>
+          ) : null}
+        </>
+      }
+      context={
+        <ContextChip
+          label="Store"
+          risk={detail.store.environment === "PROD" ? "production" : undefined}
         >
-          {cancelRequested ? "Canceling…" : "Cancel run"}
-        </Button>
-      ) : null}
-    </div>
+          {detail.store.name}
+          <EnvTag environment={detail.store.environment} />
+        </ContextChip>
+      }
+      crumbs={[
+        { label: "Automation" },
+        { href: `/flows/${flowId}`, label: detail.flowName },
+        { href: `/flows/${flowId}/runs`, label: "Runs" },
+        {
+          label: (
+            <h1 className="truncate font-[550] text-[13px] text-foreground">
+              Run #{run.number}
+            </h1>
+          ),
+        },
+      ]}
+      lead={
+        <span data-testid="run-status">
+          <StatusBadge status={run.status} />
+        </span>
+      }
+      linkComponent={Link}
+      productionNote="Production store. This run reads and writes live data."
+      risk={detail.store.environment === "PROD" ? "production" : undefined}
+    />
   );
 };
 
@@ -296,7 +313,7 @@ const TraceMeta = ({ detail }: { detail: RunDetail }) => {
       </span>
       <span>
         Duration{" "}
-        <span className="font-mono text-foreground-2">
+        <span className="text-foreground-2 tabular-nums">
           {run.startedAt ? formatDuration(run.startedAt, run.completedAt) : "—"}
         </span>
       </span>

@@ -1,6 +1,13 @@
 "use client";
 
-import { Button, Input, PageHeader, Trash2 } from "@repo/design-system";
+import {
+  Button,
+  Input,
+  PageHeader,
+  ShellActions,
+  ShellHeader,
+  Trash2,
+} from "@repo/design-system";
 import { Checkbox } from "@repo/design-system/components/ui/checkbox";
 import {
   Dialog,
@@ -117,65 +124,83 @@ function StorePicker({
   );
   return (
     <>
-      <PageHeader
-        back={
-          <Link className="text-muted-foreground text-sm" href="/shopify">
-            ← Shopify
-          </Link>
+      <ShellHeader
+        context={
+          <div className="flex items-center gap-2">
+            <label
+              className="text-[10.5px] text-faint uppercase tracking-[0.05em]"
+              htmlFor="metafields-store"
+            >
+              Store
+            </label>
+            <OptionSelect
+              className="h-[30px] w-auto min-w-56"
+              disabled={busy}
+              id="metafields-store"
+              onValueChange={setStoreId}
+              options={stores.map((item) => ({
+                disabled: item.status !== "CONNECTED",
+                label: `${item.name} · ${item.shopDomain} · ${item.environment}${item.status === "CONNECTED" ? "" : ` · ${item.status}`}`,
+                value: item.id,
+              }))}
+              placeholder="Choose a store"
+              value={storeId || null}
+            />
+          </div>
         }
-        description="Manage definitions for one store. Create multiple fields in one pass, without opening a separate form for each."
-        title="Metafields"
+        crumbs={[{ label: "Shopify" }, { label: "Metafields" }]}
       />
-      <FieldGroup className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row">
-        <Field className="min-w-0 sm:w-auto">
-          <FieldLabel htmlFor="metafields-store">Store</FieldLabel>
-          <OptionSelect
-            disabled={busy}
-            id="metafields-store"
-            onValueChange={setStoreId}
-            options={stores.map((item) => ({
-              disabled: item.status !== "CONNECTED",
-              label: `${item.name} · ${item.shopDomain} · ${item.environment}${item.status === "CONNECTED" ? "" : ` · ${item.status}`}`,
-              value: item.id,
-            }))}
-            placeholder="Choose a store"
-            value={storeId || null}
+      <div className="grid gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
+        <nav
+          aria-label="Resource"
+          className="flex flex-col gap-0.5 md:border-border md:border-r md:pr-3"
+        >
+          <span className="px-2 pb-2 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+            Resource
+          </span>
+          {OWNERS.map((owner) => (
+            <button
+              aria-current={owner.value === ownerType ? "page" : undefined}
+              className="flex h-8 items-center rounded-md px-2 text-left text-[13px] text-foreground-2 hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-[current=page]:bg-selected aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+              disabled={busy}
+              key={owner.value}
+              onClick={() => setOwnerType(owner.value)}
+              type="button"
+            >
+              {owner.label}
+            </button>
+          ))}
+        </nav>
+        <div className="flex min-w-0 flex-col gap-4">
+          <PageHeader
+            description="Manage definitions for one store. Create multiple fields in one pass, without opening a separate form for each."
+            title={`${ownerLabel(ownerType)} definitions`}
           />
-        </Field>
-        <Field className="sm:w-52">
-          <FieldLabel htmlFor="metafields-resource">Resource</FieldLabel>
-          <OptionSelect
-            disabled={busy}
-            id="metafields-resource"
-            onValueChange={setOwnerType}
-            options={OWNERS}
-            value={ownerType}
-          />
-        </Field>
-      </FieldGroup>
-      {stores.length === 0 ? (
-        <p>
-          No stores yet.{" "}
-          <Link className="underline" href="/stores/new">
-            Connect a store
-          </Link>{" "}
-          to get started.
-        </p>
-      ) : null}
-      {store ? (
-        <DefinitionManager
-          canMutate={canMutate}
-          key={`${store.id}:${ownerType}`}
-          onBusy={setBusy}
-          ownerType={ownerType}
-          store={store}
-          stores={stores}
-        />
-      ) : (
-        <p className="py-12 text-center text-muted-foreground">
-          Choose a connected store to view its metafield definitions.
-        </p>
-      )}
+          {stores.length === 0 ? (
+            <p>
+              No stores yet.{" "}
+              <Link className="underline" href="/stores/new">
+                Connect a store
+              </Link>{" "}
+              to get started.
+            </p>
+          ) : null}
+          {store ? (
+            <DefinitionManager
+              canMutate={canMutate}
+              key={`${store.id}:${ownerType}`}
+              onBusy={setBusy}
+              ownerType={ownerType}
+              store={store}
+              stores={stores}
+            />
+          ) : (
+            <p className="py-12 text-center text-muted-foreground">
+              Choose a connected store to view its metafield definitions.
+            </p>
+          )}
+        </div>
+      </div>
     </>
   );
 }
@@ -265,7 +290,7 @@ function DefinitionManager({
           placeholder="Search name or namespace.key…"
           value={search}
         />
-        <div className="flex flex-wrap gap-2">
+        <ShellActions>
           <CopyDefinitions
             disabled={!canMutate || busy}
             onBusy={(value) => {
@@ -296,7 +321,7 @@ function DefinitionManager({
           >
             Create definitions
           </Button>
-        </div>
+        </ShellActions>
       </div>
       <Feedback
         definitionsError={definitions.error}
@@ -776,7 +801,7 @@ function DefinitionsTable({
       {loading ? (
         <p role="status">Loading definitions…</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-card shadow-card">
           <Table>
             <TableHeader>
               <TableRow>
