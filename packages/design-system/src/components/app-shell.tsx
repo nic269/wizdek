@@ -25,10 +25,12 @@ export interface AppShellIndicator {
 }
 
 export interface AppShellNavItem {
+  children?: readonly AppShellNavItem[] | undefined;
   href: string;
   icon: ReactNode;
   indicator?: AppShellIndicator | null | undefined;
   label: string;
+  nested?: boolean | undefined;
 }
 
 export interface AppShellNavGroup {
@@ -56,10 +58,19 @@ const DOT_TONES = {
   warning: "bg-(--status-warning-dot)",
 } as const;
 
+const flattenedItems = (items: readonly AppShellNavItem[]): AppShellNavItem[] =>
+  items.flatMap((item) => [
+    item,
+    ...flattenedItems(item.children ?? []).map((child) => ({
+      ...child,
+      nested: true,
+    })),
+  ]);
+
 /** The nav item whose href is the longest prefix of the path is current. */
 const activeHrefOf = (groups: readonly AppShellNavGroup[], path: string) =>
   groups
-    .flatMap(({ items }) => items)
+    .flatMap(({ items }) => flattenedItems(items))
     .filter(
       ({ href }) =>
         path === href || (href !== "/" && path.startsWith(`${href}/`))
@@ -107,7 +118,7 @@ const NavList = ({
         >
           {group.label}
         </div>
-        {group.items.map((item) => {
+        {flattenedItems(group.items).map((item) => {
           const active = item.href === activeHref;
           return (
             <Link
@@ -115,6 +126,8 @@ const NavList = ({
               className={cn(
                 "flex items-center gap-2.5 rounded-[7px] px-2 font-medium text-sidebar-foreground outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                 mobile ? "h-11 rounded-lg px-2.5 text-sm" : "h-8 text-[13.5px]",
+                item.nested &&
+                  "ml-5 in-data-[collapsed=true]:hidden border-sidebar-border border-l pl-3",
                 active
                   ? "bg-sidebar-active shadow-(--sidebar-active-shadow)"
                   : "hover:bg-sidebar-hover"
@@ -190,7 +203,7 @@ export const AppShell = ({
   const activeHref = activeHrefOf(navGroups, currentPath);
   const pageTitle =
     navGroups
-      .flatMap(({ items }) => items)
+      .flatMap(({ items }) => flattenedItems(items))
       .find(({ href }) => href === activeHref)?.label ?? brand.name;
 
   return (

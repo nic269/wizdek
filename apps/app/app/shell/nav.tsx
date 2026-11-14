@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from "react";
 
 export interface ShellNavItem {
+  children?: ShellNavItem[] | undefined;
   href: string;
   icon: ReactNode;
   label: string;
@@ -33,14 +34,21 @@ const ICONS: Record<string, ReactNode> = {
   "/settings/members": <Users />,
   "/shopify": <Boxes />,
   "/stores": <Store />,
+  "/works": <Boxes />,
+  "/works/oms-management": <Database />,
 };
+
+const withIcons = (
+  item: (typeof dashboardNavGroups)[number]["items"][number]
+): ShellNavItem => ({
+  ...item,
+  children: item.children?.map(withIcons),
+  icon: ICONS[item.href] ?? <LayoutGrid />,
+});
 
 export const shellNavGroups: ShellNavGroup[] = dashboardNavGroups.map(
   (group) => ({
-    items: group.items.map((item) => ({
-      ...item,
-      icon: ICONS[item.href] ?? <LayoutGrid />,
-    })),
+    items: group.items.map(withIcons),
     label: group.label,
   })
 );

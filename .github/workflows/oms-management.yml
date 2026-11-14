@@ -1,0 +1,43 @@
+name: OMS management module
+on:
+  pull_request:
+    paths: ["apps/app/app/works/**", "apps/app/app/shell/**", "apps/app/app/app-shell-layout.tsx", "apps/app/package.json", "packages/config/src/navigation*", "packages/design-system/src/components/app-shell.tsx", "packages/auth/src/session*", "pnpm-lock.yaml", ".github/workflows/oms-management.yml"]
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://fixture:fixture@127.0.0.1:5432/wizdek_build
+      BETTER_AUTH_SECRET: fixture-only-not-a-live-secret-at-least-32-chars
+      BETTER_AUTH_URL: http://localhost:4000
+      NEXT_PUBLIC_APP_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4002
+      NEXT_PUBLIC_WEB_URL: http://localhost:4001
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: oms_test_password
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.23.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26.13.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter @repo/database generate
+      - run: pnpm boundaries
+      - run: pnpm --filter @repo/app check:oms-isolation
+      - run: pnpm --filter @repo/app check-types
+      - run: pnpm --filter @repo/app test:oms
+      - run: pnpm --filter @repo/app test:oms:integration
+        env:
+          OMS_TEST_POSTGRES_URL: postgresql://postgres:oms_test_password@127.0.0.1:5432/postgres
+      - run: pnpm --filter @repo/app build
+      - run: pnpm --filter @repo/app exec playwright install --with-deps chromium
+      - run: pnpm --filter @repo/app test:oms:e2e

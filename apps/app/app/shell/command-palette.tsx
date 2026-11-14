@@ -129,12 +129,14 @@ export const CommandPalette = ({
   };
 
   const pages: Entry[] = navGroups.flatMap(({ items }) =>
-    items.map((item) => ({
-      hint: "Page",
-      href: item.href,
-      icon: item.icon,
-      label: item.label,
-    }))
+    items
+      .flatMap((item) => [item, ...(item.children ?? [])])
+      .map((item) => ({
+        hint: "Page",
+        href: item.href,
+        icon: item.icon,
+        label: item.label,
+      }))
   );
   const actions = ACTIONS.filter(
     ({ permission }) => !permission || can(permission)

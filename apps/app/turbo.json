@@ -1,0 +1,15 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      "passThroughEnv": ["OMS_*"]
+    },
+    "test:oms": {
+      "cache": false
+    },
+    "test:oms:integration": {
+      "cache": false,
+      "passThroughEnv": ["OMS_TEST_*"]
+    }
+  }
+}

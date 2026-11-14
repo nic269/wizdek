@@ -7,6 +7,8 @@ import { WizdekShell } from "./shell/wizdek-shell";
 
 interface AppShellLayoutProps {
   children: ReactNode;
+  requiresOrganization?: boolean;
+  signInCallback?: string;
   /**
    * `default` and `narrow` pad and centre the page; `full` gives the page the
    * whole panel, for the flow builder, the console and the run trace.
@@ -17,15 +19,24 @@ interface AppShellLayoutProps {
 export async function AppShellLayout({
   children,
   width = "default",
+  requiresOrganization = true,
+  signInCallback,
 }: AppShellLayoutProps) {
   const session = await getCurrentSession(await headers());
 
   if (!session) {
-    redirect("/sign-in");
+    redirect(
+      signInCallback
+        ? `/sign-in?callbackUrl=${encodeURIComponent(signInCallback)}`
+        : "/sign-in"
+    );
   }
 
   return (
-    <WizdekShell user={{ email: session.user.email, name: session.user.name }}>
+    <WizdekShell
+      requiresOrganization={requiresOrganization}
+      user={{ email: session.user.email, name: session.user.name }}
+    >
       <Page width={width}>{children}</Page>
     </WizdekShell>
   );

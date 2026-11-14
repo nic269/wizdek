@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
       { destination: `${apiUrl}/status`, source: "/status" },
     ];
   },
+  serverExternalPackages: ["pg"],
   transpilePackages: [
     "@repo/access-control",
     "@repo/api",

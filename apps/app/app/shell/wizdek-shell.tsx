@@ -86,8 +86,10 @@ const indicatorFor = (
 export function WizdekShell({
   children,
   user,
+  requiresOrganization = true,
 }: {
   children: ReactNode;
+  requiresOrganization?: boolean;
   user: { email: string; name: string };
 }) {
   const { isLoading, organizations } = useActiveOrganization();
@@ -119,7 +121,8 @@ export function WizdekShell({
   );
 
   // Without an organization no page has anything to show yet.
-  const noOrganization = !isLoading && organizations.length === 0;
+  const noOrganization =
+    requiresOrganization && !isLoading && organizations.length === 0;
   const content = noOrganization ? <NoOrganization /> : children;
 
   return (

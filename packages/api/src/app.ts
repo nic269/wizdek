@@ -13,6 +13,7 @@ import {
 import { ApiError, type ApiErrorResponse } from "./errors";
 import { requireAuthEndpointEnabled } from "./feature-guards";
 import { handleFlowFileDownload } from "./flow-file-download-route";
+import { handleIdentity } from "./identity-route";
 import { getOpenApiDocument } from "./openapi";
 import { requireAppOrigin } from "./origin-check";
 import { router } from "./routers";
@@ -153,6 +154,7 @@ export const createApiApp = () => {
     requireAuthEndpointEnabled(context.req.path);
     return auth.handler(context.req.raw);
   });
+  app.get("/api/identity", handleIdentity);
   // Writes that change store data, reach a database or accept files must
   // come from the app.
   for (const path of [

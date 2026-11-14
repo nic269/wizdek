@@ -161,10 +161,12 @@ export const AuthForm = ({
           email,
         });
         router.push(`/verify-email?${verificationParams.toString()}`);
+        router.refresh();
       } else {
-        router.push(callbackUrl);
+        // The callback can belong to another app mounted at this origin.
+        // A document navigation loads that app's runtime and fresh session.
+        window.location.assign(callbackUrl);
       }
-      router.refresh();
     } catch (caughtError) {
       setError(getErrorMessage(caughtError));
     } finally {

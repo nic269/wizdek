@@ -1,6 +1,7 @@
 import { authFeatureConfig } from "./features";
 
 export interface DashboardNavItem {
+  children?: readonly DashboardNavItem[];
   href: string;
   label: string;
 }
@@ -22,6 +23,13 @@ export const createDashboardNavGroups = (
       { href: "/graphql", label: "GraphQL" },
       { href: "/flows", label: "Flows" },
       { href: "/database", label: "Database" },
+      // OMS_NAV_START
+      {
+        children: [{ href: "/works/oms-management", label: "OMS management" }],
+        href: "/works",
+        label: "Works",
+      },
+      // OMS_NAV_END
     ],
     label: "Workspace",
   },

@@ -44,6 +44,16 @@ describe("dashboard navigation groups", () => {
       "GraphQL",
       "Flows",
       "Database",
+      "Works",
     ]);
   });
 });
+
+// OMS_NAV_TEST_START
+it("nests OMS management under Works", () => {
+  const works = dashboardNav.find((item) => item.href === "/works");
+  expect(works?.children).toEqual([
+    { href: "/works/oms-management", label: "OMS management" },
+  ]);
+});
+// OMS_NAV_TEST_END

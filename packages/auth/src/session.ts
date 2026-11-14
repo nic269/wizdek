@@ -33,3 +33,31 @@ export const getCurrentSession = async (
 
   return user && canUseAuthenticatedSession(user) ? session : null;
 };
+
+/** Response headers must reach the browser when a session is renewed. */
+export const getCurrentSessionWithHeaders = async (
+  headers: Headers,
+  options: { renew?: boolean } = {}
+): Promise<{ session: ActiveAuthSession | null; headers: Headers }> => {
+  const result = await auth.api.getSession({
+    headers,
+    query: {
+      disableCookieCache: true,
+      disableRefresh: options.renew === false,
+    },
+    returnHeaders: true,
+  });
+  const session = result.response;
+  if (!session?.user?.id) {
+    return { headers: result.headers, session: null };
+  }
+  const user = await prisma.user.findUnique({
+    select: { emailVerified: true, status: true },
+    where: { id: session.user.id },
+  });
+  return {
+    headers:
+      user && canUseAuthenticatedSession(user) ? result.headers : new Headers(),
+    session: user && canUseAuthenticatedSession(user) ? session : null,
+  };
+};
