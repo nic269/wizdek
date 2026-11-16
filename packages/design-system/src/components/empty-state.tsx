@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../lib/cn";
 
-/** A dashed card with an icon tile, a title, one sentence and one action. */
+/** An empty view: an icon tile, a title, one sentence and one action, centred. */
 export const EmptyState = ({
   icon,
   iconTile = true,
@@ -23,17 +23,19 @@ export const EmptyState = ({
 }) => (
   <div
     className={cn(
-      "flex flex-col items-center gap-2.5 rounded-card border border-input border-dashed px-6 py-14 text-center",
+      "flex flex-col items-center gap-2.5 px-6 py-12 text-center",
       className
     )}
   >
     {icon && !iconTile ? <div className="mb-1">{icon}</div> : null}
     {icon && iconTile ? (
-      <div className="grid size-11 place-items-center rounded-[11px] border border-border bg-sunken text-muted-foreground [&_svg]:size-5">
+      <div className="grid size-11 place-items-center rounded-card bg-sunken text-muted-foreground shadow-[inset_0_0_0_1px_var(--border)] [&_svg]:size-5">
         {icon}
       </div>
     ) : null}
-    <h2 className="font-semibold text-base leading-[1.3]">{title}</h2>
+    <h2 className="font-semibold text-[15px] leading-[22px] tracking-[-0.01em]">
+      {title}
+    </h2>
     {description ? (
       <p className="max-w-[420px] text-pretty text-[13px] text-muted-foreground leading-normal">
         {description}

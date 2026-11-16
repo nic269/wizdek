@@ -9,27 +9,35 @@ const ENV_CLASSES: Record<Environment, string> = {
     "bg-(--env-staging-bg) text-(--env-staging-fg) shadow-[inset_0_0_0_1px_var(--env-staging-ring)]",
 };
 
-/** The risk signal that sits next to every store or database name. */
+/**
+ * The risk signal that sits next to every store or database name. It spells
+ * the environment out; `compact` is the short 16px form for dense rows.
+ */
 export const EnvTag = ({
   environment,
+  compact = false,
   className,
 }: {
   environment: Environment;
+  compact?: boolean | undefined;
   className?: string | undefined;
 }) => (
   <span
     className={cn(
-      "inline-flex h-5 shrink-0 items-center rounded-[5px] px-[7px] font-medium text-[10.5px] uppercase leading-none tracking-[0.05em]",
+      "inline-flex shrink-0 items-center rounded-[5px] font-semibold uppercase tabular-nums leading-none tracking-[0.05em]",
+      compact ? "h-4 px-[5px] text-[9.5px]" : "h-5 px-[7px] text-[10.5px]",
       ENV_CLASSES[environment],
       className
     )}
-    title={ENVIRONMENT_LABELS[environment]}
+    title={compact ? ENVIRONMENT_LABELS[environment] : undefined}
   >
-    {ENVIRONMENT_SHORT_LABELS[environment]}
+    {compact
+      ? ENVIRONMENT_SHORT_LABELS[environment]
+      : ENVIRONMENT_LABELS[environment]}
   </span>
 );
 
-/** The short tag text; the full label is the tag's tooltip. */
+/** The compact tag text; the full label is then the tag's tooltip. */
 export const ENVIRONMENT_SHORT_LABELS: Record<Environment, string> = {
   DEV: "Dev",
   PROD: "Prod",

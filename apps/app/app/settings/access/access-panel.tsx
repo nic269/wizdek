@@ -52,7 +52,7 @@ export function AccessPanel({ currentUserId }: { currentUserId: string }) {
           <strong>roles:manage</strong>.
         </ReadOnlyBanner>
       )}
-      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid items-start gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_420px]">
         <div className="flex min-w-0 flex-col gap-6">
           {canReadMembers ? (
             <RoleAssignments

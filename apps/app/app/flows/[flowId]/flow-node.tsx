@@ -11,12 +11,7 @@ import {
 } from "@repo/design-system";
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { createContext, type ReactNode, useContext } from "react";
-import {
-  asCategory,
-  CATEGORY_LABELS,
-  CategoryChip,
-  categoryStyle,
-} from "../node-visuals";
+import { asCategory, CategoryChip, categoryStyle } from "../node-visuals";
 import type { CanvasNode } from "./flow-definition-mapping";
 import { specsByType } from "./node-defaults";
 import { summarizeNode } from "./node-summary";
@@ -63,12 +58,13 @@ const OUTCOME_ICONS: Record<Outcome, ReactNode> = {
   unknown: <CircleHelp className="text-(--status-unknown-bg)" />,
 };
 
-const OUTCOME_BORDERS: Record<Outcome, string> = {
-  failed: "border-[#e3a19b]",
-  idle: "border-input",
-  running: "border-input",
-  succeeded: "border-input",
-  unknown: "border-(--status-unknown-bg) shadow-[0_0_0_3px_#ffe8d9]",
+const OUTCOME_RINGS: Record<Outcome, string> = {
+  failed: "[--node-ring:#e3a19b]",
+  idle: "",
+  running: "",
+  succeeded: "",
+  unknown:
+    "shadow-[0_0_0_1px_var(--status-unknown-bg),0_0_0_4px_#ffe8d9,inset_3px_0_0_var(--cat)]",
 };
 
 const CountChip = ({
@@ -125,33 +121,6 @@ export const RunCountChips = ({
 const handleOffset = (index: number, count: number) =>
   `${((index + 1) / (count + 1)) * 100}%`;
 
-const Footer = ({
-  issue,
-  summary,
-}: {
-  issue: string | undefined;
-  summary: string;
-}) => {
-  if (issue) {
-    return (
-      <div className="flex min-h-[30px] items-center gap-1.5 rounded-b-[9px] border-border border-t bg-(--alert-warning-bg) px-3 py-[7px] text-(--status-warning-fg) text-[11.5px] leading-[1.3]">
-        <TriangleAlert className="size-3 shrink-0" />
-        <span className="truncate">{issue}</span>
-      </div>
-    );
-  }
-  return (
-    <div className="flex min-h-[30px] items-center gap-1.5 border-border border-t px-3 py-[7px] text-[11.5px] text-muted-foreground leading-[1.3]">
-      {summary ? (
-        <CircleCheck className="size-3 shrink-0" />
-      ) : (
-        <CircleDashed className="size-3 shrink-0" />
-      )}
-      <span className="truncate">{summary || "Not configured yet"}</span>
-    </div>
-  );
-};
-
 export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
   const issue = useContext(NodeIssuesContext).get(id);
   const overlay = useContext(RunOverlayContext)?.get(id);
@@ -162,14 +131,16 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
   const title = data.name || spec?.label || data.nodeType;
   const outcome = overlay ? outcomeOf(overlay) : null;
 
+  const summary = summarizeNode(data.nodeType, data.config);
+
   return (
     <div
       className={cn(
-        "relative w-[216px] rounded-card border bg-card text-card-foreground shadow-node before:pointer-events-none before:absolute before:inset-y-2.5 before:-left-px before:w-[3px] before:rounded-r-full before:bg-(--cat)",
-        outcome ? OUTCOME_BORDERS[outcome] : "border-border",
-        issue && !outcome && "border-[#e8c77c]",
+        "relative w-[240px] rounded-card bg-card text-card-foreground shadow-[0_0_0_1px_var(--node-ring),0_1px_2px_rgba(22,23,26,0.05),inset_3px_0_0_var(--cat)] [--node-ring:var(--border)]",
+        outcome && OUTCOME_RINGS[outcome],
+        issue && !outcome && "[--node-ring:#e8c77c]",
         selected &&
-          "border-accent shadow-[0_0_0_3px_var(--accent-soft),0_6px_18px_-6px_rgba(0,0,0,.15)]"
+          "shadow-[0_0_0_2px_var(--accent),0_0_0_6px_rgba(54,86,214,0.12),inset_3px_0_0_var(--cat)]"
       )}
       data-testid={`flow-node-${id}`}
       style={categoryStyle(category)}
@@ -182,16 +153,27 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
           type="target"
         />
       )}
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <CategoryChip category={category} nodeType={data.nodeType} />
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 font-semibold text-(--cat) text-[9.5px] uppercase tabular-nums leading-none tracking-[0.07em]">
-            {CATEGORY_LABELS[category]}
-          </div>
-          <div className="truncate font-semibold text-[13px] leading-[1.2]">
+      <div className="flex h-16 items-center gap-2.5 pr-3 pl-3.5">
+        <CategoryChip category={category} nodeType={data.nodeType} size={28} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate font-[550] text-[13px] leading-5">
             {title}
-          </div>
+          </span>
+          <span
+            className={cn(
+              "truncate text-[11px] tabular-nums leading-4",
+              issue ? "text-(--status-warning-fg)" : "text-faint"
+            )}
+          >
+            {issue ?? (summary || "Not configured yet")}
+          </span>
         </div>
+        {issue && !outcome ? (
+          <TriangleAlert
+            aria-hidden="true"
+            className="size-3.5 shrink-0 text-(--status-warning-dot)"
+          />
+        ) : null}
         {outcome ? (
           <span
             className="shrink-0 [&_svg]:size-4"
@@ -210,12 +192,7 @@ export function FlowNodeCard({ data, id, selected }: NodeProps<CanvasNode>) {
             </span>
           ) : null}
         </div>
-      ) : (
-        <Footer
-          issue={issue}
-          summary={summarizeNode(data.nodeType, data.config)}
-        />
-      )}
+      ) : null}
       {outputs.map((output, index) => (
         <Handle
           aria-label={`${title} output ${output}`}

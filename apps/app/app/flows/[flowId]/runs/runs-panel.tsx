@@ -7,6 +7,8 @@ import {
   EnvTag,
   ErrorAlert,
   History,
+  NavTabs,
+  ShellHeader,
   SkeletonRows,
   StatusBadge,
 } from "@repo/design-system";
@@ -68,7 +70,7 @@ const RunTableRow = ({ flowId, run }: { flowId: string; run: RunRow }) => {
       <TableCell>
         <span className="flex items-center gap-[7px] text-[13px] text-foreground">
           <span className="truncate">{run.storeName}</span>
-          <EnvTag environment={run.storeEnvironment} />
+          <EnvTag compact environment={run.storeEnvironment} />
         </span>
       </TableCell>
       <TableCell className="text-[13px] text-muted-foreground">
@@ -91,6 +93,49 @@ const RunTableRow = ({ flowId, run }: { flowId: string; run: RunRow }) => {
     </TableRow>
   );
 };
+
+/** The shell header of the runs page: breadcrumb and the flow's tabs. */
+export const RunsHeader = ({
+  flowId,
+  flowName,
+}: {
+  flowId: string;
+  flowName: string;
+}) => (
+  <ShellHeader
+    crumbs={[
+      { label: "Automation" },
+      { href: "/flows", label: "Flows" },
+      { href: `/flows/${flowId}`, label: flowName },
+      { label: "Runs" },
+    ]}
+    lead={
+      <>
+        <span aria-hidden="true" className="h-5 w-px bg-border" />
+        <NavTabs
+          aria-label="Flow sections"
+          linkComponent={Link}
+          tabs={[
+            {
+              current: false,
+              href: `/flows/${flowId}`,
+              key: "editor",
+              label: "Editor",
+            },
+            {
+              current: true,
+              href: `/flows/${flowId}/runs`,
+              key: "runs",
+              label: "Runs",
+            },
+          ]}
+          variant="header"
+        />
+      </>
+    }
+    linkComponent={Link}
+  />
+);
 
 export function RunsPanel({ flowId }: { flowId: string }) {
   const runs = useInfiniteQuery({

@@ -2,8 +2,15 @@
 
 import {
   Button,
+  Ellipsis,
+  ErrorAlert,
+  InlineAlert,
   Input,
   PageHeader,
+  PencilLine,
+  Plus,
+  RefreshCw,
+  Search,
   ShellActions,
   ShellHeader,
   Trash2,
@@ -17,10 +24,17 @@ import {
   DialogTitle,
 } from "@repo/design-system/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@repo/design-system/components/ui/dropdown-menu";
+import {
   Field,
   FieldGroup,
   FieldLabel,
 } from "@repo/design-system/components/ui/field";
+import { Skeleton } from "@repo/design-system/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -36,7 +50,7 @@ import {
 } from "@repo/design-system/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { Fragment, useRef, useState } from "react";
+import { Fragment, type ReactNode, useRef, useState } from "react";
 import { useActiveOrganization } from "../../lib/active-organization";
 import { OptionSelect } from "../../lib/option-select";
 import { usePermissions } from "../../lib/permissions";
@@ -79,6 +93,9 @@ const ownerLabel = (value: string) =>
   OWNERS.find((owner) => owner.value === value)?.label ?? value;
 const message = (error: unknown) =>
   error instanceof Error ? error.message : "Request failed. Please try again.";
+
+const countLabel = (search: string, shown: number, total: number) =>
+  search ? `${shown} of ${total} definitions` : `${total} definitions`;
 
 export function MetafieldsPanel() {
   const { organization } = useActiveOrganization();
@@ -161,7 +178,7 @@ function StorePicker({
           {OWNERS.map((owner) => (
             <button
               aria-current={owner.value === ownerType ? "page" : undefined}
-              className="flex h-8 items-center rounded-md px-2 text-left text-[13px] text-foreground-2 hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-[current=page]:bg-selected aria-[current=page]:font-medium aria-[current=page]:text-foreground"
+              className="flex h-8 items-center rounded-md px-2 text-left text-[13px] text-foreground-2 hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-50 aria-[current=page]:bg-card aria-[current=page]:font-[550] aria-[current=page]:text-foreground aria-[current=page]:shadow-(--sidebar-active-shadow)"
               disabled={busy}
               key={owner.value}
               onClick={() => setOwnerType(owner.value)}
@@ -195,7 +212,7 @@ function StorePicker({
               stores={stores}
             />
           ) : (
-            <p className="py-12 text-center text-muted-foreground">
+            <p className="rounded-card bg-sunken p-[18px] text-center text-[13px] text-muted-foreground shadow-[inset_0_0_0_1px_var(--border)]">
               Choose a connected store to view its metafield definitions.
             </p>
           )}
@@ -274,44 +291,63 @@ function DefinitionManager({
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+  const selectedDefinitions = allDefinitions.filter((item) =>
+    selectedIds.has(item.id)
+  );
+  const locked = !canMutate || busy;
   return (
     <>
       {canMutate ? null : (
-        <p className="rounded-lg bg-sunken p-3 text-sm">
+        <InlineAlert tone="neutral">
           Read-only access. Creating, editing and deleting requires
           graphql:mutate permission.
-        </p>
+        </InlineAlert>
       )}
-      <div className="flex flex-wrap justify-between gap-3">
-        <Input
-          aria-label="Search definitions"
-          className="max-w-sm"
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search name or namespace.key…"
-          value={search}
-        />
-        <ShellActions>
-          <CopyDefinitions
-            disabled={!canMutate || busy}
-            onBusy={(value) => {
-              setBusy(value);
-              onBusy(value);
-            }}
-            ownerType={ownerType}
-            selected={allDefinitions.filter((item) => selectedIds.has(item.id))}
-            source={store}
-            stores={stores}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-[300px]">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-faint"
           />
+          <Input
+            aria-label="Search definitions"
+            className="pl-8"
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search name or namespace.key"
+            value={search}
+          />
+        </div>
+        <span className="flex-1" />
+        <span className="text-faint text-xs tabular-nums">
+          {countLabel(search, visible.length, allDefinitions.length)}
+        </span>
+        <ShellActions>
           <Button
+            aria-label="Refresh definitions"
             disabled={busy || definitions.isFetching}
             onClick={() => {
               definitions.refetch();
               types.refetch();
             }}
-            variant="outline"
+            size="icon"
+            title="Refresh definitions"
+            variant="ghost"
           >
-            Refresh
+            <RefreshCw
+              className={definitions.isFetching ? "animate-spin" : ""}
+            />
           </Button>
+          <CopyDefinitions
+            disabled={locked}
+            onBusy={(value) => {
+              setBusy(value);
+              onBusy(value);
+            }}
+            ownerType={ownerType}
+            selected={selectedDefinitions}
+            source={store}
+            stores={stores}
+          />
           <Button
             disabled={!canMutate || busy || !types.data}
             onClick={() => {
@@ -319,6 +355,7 @@ function DefinitionManager({
               setCreating(true);
             }}
           >
+            <Plus />
             Create definitions
           </Button>
         </ShellActions>
@@ -330,7 +367,7 @@ function DefinitionManager({
         typesError={types.error}
       />
       <DefinitionsTable
-        disabled={!canMutate || busy}
+        disabled={locked}
         error={Boolean(definitions.error)}
         loading={definitions.isPending}
         onDelete={(item) => {
@@ -348,10 +385,23 @@ function DefinitionManager({
         selectedIds={selectedIds}
         visible={visible}
       />
-      <p className="text-muted-foreground text-xs">
-        {allDefinitions.length} definitions · {store.shopDomain} ·{" "}
-        {ownerLabel(ownerType)}
-      </p>
+      <BulkBar
+        count={selectedDefinitions.length}
+        onClear={() => setSelectedIds(new Set())}
+      >
+        <CopyDefinitions
+          disabled={locked}
+          onBusy={(value) => {
+            setBusy(value);
+            onBusy(value);
+          }}
+          onDark
+          ownerType={ownerType}
+          selected={selectedDefinitions}
+          source={store}
+          stores={stores}
+        />
+      </BulkBar>
       <Dialog
         onOpenChange={(open) => {
           if (!busy) {
@@ -775,6 +825,40 @@ function BatchEditor({
   );
 }
 
+/** The dark bar that floats over the table while rows are selected. */
+function BulkBar({
+  children,
+  count,
+  onClear,
+}: {
+  children: ReactNode;
+  count: number;
+  onClear: () => void;
+}) {
+  if (count === 0) {
+    return null;
+  }
+  return (
+    <div
+      aria-label="Bulk actions"
+      className="sticky bottom-6 z-10 mx-auto flex items-center gap-2.5 rounded-card bg-(--toast-bg) py-1.5 pr-1.5 pl-3.5 text-(--toast-fg) text-[13px] shadow-toast"
+      role="toolbar"
+    >
+      <span className="font-[550] tabular-nums">{count} selected</span>
+      <Button
+        className="text-(--toast-muted) hover:bg-white/10 hover:text-(--toast-fg)"
+        onClick={onClear}
+        size="sm"
+        variant="ghost"
+      >
+        Clear
+      </Button>
+      <span aria-hidden="true" className="h-[18px] w-px bg-white/15" />
+      {children}
+    </div>
+  );
+}
+
 function DefinitionsTable({
   selectedIds,
   onSelectionChange,
@@ -796,120 +880,151 @@ function DefinitionsTable({
   onEdit: (item: Definition) => void;
   onDelete: (item: Definition) => void;
 }) {
+  if (loading) {
+    return (
+      <div className="flex flex-col" role="status">
+        <span className="sr-only">Loading definitions…</span>
+        {["w-2/5", "w-1/3", "w-1/2", "w-2/5"].map((width, index) => (
+          <div
+            className="flex h-11 items-center gap-3 border-border border-b"
+            // biome-ignore lint/suspicious/noArrayIndexKey: Static placeholder rows.
+            key={index}
+          >
+            <Skeleton className="size-4 rounded-[4.5px]" />
+            <Skeleton className={`h-2.5 ${width}`} />
+            <span className="flex-1" />
+            <Skeleton className="h-5 w-28 rounded-[5px]" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  const allSelected =
+    visible.length > 0 && visible.every((item) => selectedIds.has(item.id));
   return (
-    <>
-      {loading ? (
-        <p role="status">Loading definitions…</p>
-      ) : (
-        <div className="overflow-x-auto rounded-card shadow-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
+    <div className="-mx-3">
+      <Table
+        className="table-fixed"
+        containerClassName="rounded-none shadow-none"
+      >
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-8">
+              <Checkbox
+                aria-label="Select all visible definitions"
+                checked={allSelected}
+                disabled={disabled || !visible.length}
+                indeterminate={
+                  visible.some((item) => selectedIds.has(item.id)) &&
+                  !allSelected
+                }
+                onCheckedChange={(checked) => {
+                  const next = new Set(selectedIds);
+                  for (const item of visible) {
+                    if (checked) {
+                      next.add(item.id);
+                    } else {
+                      next.delete(item.id);
+                    }
+                  }
+                  onSelectionChange(next);
+                }}
+              />
+            </TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead className="w-[32%]">Namespace and key</TableHead>
+            <TableHead className="w-56">Type</TableHead>
+            <TableHead className="w-12">
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {visible.map((item) => {
+            const selected = selectedIds.has(item.id);
+            return (
+              <TableRow
+                className={selected ? "bg-selected hover:bg-selected" : ""}
+                data-state={selected ? "selected" : undefined}
+                key={item.id}
+              >
+                <TableCell>
                   <Checkbox
-                    aria-label="Select all visible definitions"
-                    checked={
-                      visible.length > 0 &&
-                      visible.every((item) => selectedIds.has(item.id))
-                    }
-                    disabled={disabled || !visible.length}
-                    indeterminate={
-                      visible.some((item) => selectedIds.has(item.id)) &&
-                      !visible.every((item) => selectedIds.has(item.id))
-                    }
+                    aria-label={`Select ${item.namespace}.${item.key}`}
+                    checked={selected}
+                    disabled={disabled}
                     onCheckedChange={(checked) => {
                       const next = new Set(selectedIds);
-                      for (const item of visible) {
-                        if (checked) {
-                          next.add(item.id);
-                        } else {
-                          next.delete(item.id);
-                        }
+                      if (checked) {
+                        next.add(item.id);
+                      } else {
+                        next.delete(item.id);
                       }
                       onSelectionChange(next);
                     }}
                   />
-                </TableHead>
-                {["Definition", "Namespace & key", "Type", "Actions"].map(
-                  (title) => (
-                    <TableHead className="px-4 py-3 font-medium" key={title}>
-                      {title}
-                    </TableHead>
-                  )
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Checkbox
-                      aria-label={`Select ${item.namespace}.${item.key}`}
-                      checked={selectedIds.has(item.id)}
-                      disabled={disabled}
-                      onCheckedChange={(checked) => {
-                        const next = new Set(selectedIds);
-                        if (checked) {
-                          next.add(item.id);
-                        } else {
-                          next.delete(item.id);
-                        }
-                        onSelectionChange(next);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="max-w-xs px-4 py-3">
-                    <div className="font-medium">{item.name}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="truncate font-[550]">{item.name}</div>
+                  {item.description ? (
                     <p className="truncate text-muted-foreground text-xs">
                       {item.description}
                     </p>
-                  </TableCell>
-                  <TableCell className="px-4 py-3 font-mono text-xs">
-                    {item.namespace}.{item.key}
-                  </TableCell>
-                  <TableCell className="px-4 py-3 text-muted-foreground">
-                    {typeLabel(item.type.name)}
-                  </TableCell>
-                  <TableCell className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <Button
-                        aria-label={`Edit ${item.namespace}.${item.key}`}
-                        disabled={disabled}
-                        onClick={() => {
-                          onEdit(item);
-                        }}
-                        size="sm"
-                        variant="outline"
-                      >
+                  ) : null}
+                </TableCell>
+                <TableCell className="truncate text-xs tabular-nums">
+                  {item.namespace}.{item.key}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className="inline-flex h-5 max-w-full items-center truncate rounded-[5px] bg-hover px-1.5 text-[11px] text-foreground-2 tabular-nums"
+                    title={typeLabel(item.type.name)}
+                  >
+                    {item.type.name}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          aria-label={`Actions for ${item.namespace}.${item.key}`}
+                          disabled={disabled}
+                          size="icon-sm"
+                          variant="ghost"
+                        />
+                      }
+                    >
+                      <Ellipsis />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem onClick={() => onEdit(item)}>
+                        <PencilLine />
                         Edit
-                      </Button>
-                      <Button
-                        aria-label={`Delete ${item.namespace}.${item.key}`}
-                        disabled={disabled}
-                        onClick={() => {
-                          onDelete(item);
-                        }}
-                        size="sm"
-                        variant="outline"
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDelete(item)}
+                        variant="destructive"
                       >
+                        <Trash2 />
                         Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {visible.length === 0 && !error ? (
-            <p className="p-10 text-center text-muted-foreground">
-              {search
-                ? "No matching definitions."
-                : "No definitions yet for this resource. Create your first batch."}
-            </p>
-          ) : null}
-        </div>
-      )}
-    </>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      {visible.length === 0 && !error ? (
+        <p className="p-10 text-center text-[13px] text-muted-foreground">
+          {search
+            ? "No matching definitions."
+            : "No definitions yet for this resource. Create your first batch."}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -926,21 +1041,19 @@ function Feedback({
 }) {
   return (
     <>
-      {error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p className="rounded-lg bg-sunken p-3 text-sm" role="status">
-          {notice}
-        </p>
-      ) : null}
+      {error ? <ErrorAlert message={error} title="That didn't work." /> : null}
+      {notice ? <InlineAlert tone="neutral">{notice}</InlineAlert> : null}
       {typesError ? (
-        <p role="alert">Could not load field types: {message(typesError)}</p>
+        <ErrorAlert
+          message={message(typesError)}
+          title="Couldn't load field types."
+        />
       ) : null}
       {definitionsError ? (
-        <p role="alert">{message(definitionsError)}</p>
+        <ErrorAlert
+          message={message(definitionsError)}
+          title="Couldn't load definitions."
+        />
       ) : null}
     </>
   );

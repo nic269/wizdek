@@ -1,11 +1,12 @@
 "use client";
-import { Button, Input, LoaderCircle } from "@repo/design-system";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@repo/design-system/components/ui/alert";
-import { Badge } from "@repo/design-system/components/ui/badge";
+  Button,
+  EnvTag,
+  InlineAlert,
+  Input,
+  LoaderCircle,
+  StatusBadge,
+} from "@repo/design-system";
 import {
   Dialog,
   DialogBody,
@@ -50,7 +51,10 @@ export function OperationButton({
   accountId,
   restoreOperationId,
   disabled = false,
+  variant = "default",
 }: {
+  /** `outline` for secondary actions in rows; the default is the primary. */
+  variant?: "default" | "outline";
   profile: PublicProfile;
   action: string;
   payload: Record<string, unknown>;
@@ -143,6 +147,7 @@ export function OperationButton({
         size="sm"
         title={allowed ? undefined : disabledReason}
         type="button"
+        variant={variant}
       >
         {busy ? <LoaderCircle className="animate-spin" /> : null}
         {busy ? <span>Working…</span> : <span>{label}</span>}
@@ -154,6 +159,7 @@ export function OperationButton({
       >
         {preview ? (
           <DialogContent className="sm:max-w-3xl">
+            <ConfirmTarget target={preview.target} />
             <DialogHeader>
               <DialogTitle>{preview.action}</DialogTitle>
               <DialogDescription>
@@ -161,29 +167,20 @@ export function OperationButton({
               </DialogDescription>
             </DialogHeader>
             <DialogBody>
-              <Alert
-                className={
-                  preview.target.safetyClass === "production"
-                    ? "border-(--alert-warning-border) bg-(--alert-warning-bg)"
-                    : ""
-                }
-              >
-                <AlertTitle>{preview.target.name}</AlertTitle>
-                <AlertDescription>
-                  Revision {preview.target.revision} ·{" "}
-                  {preview.target.safetyClass}
-                </AlertDescription>
-              </Alert>
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="min-w-0">
-                  <h3 className="mb-2 font-medium text-sm">Before</h3>
-                  <pre className="max-h-72 overflow-auto rounded-lg bg-sunken p-3 text-xs">
+                  <h3 className="mb-1.5 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+                    Before
+                  </h3>
+                  <pre className="max-h-72 overflow-auto rounded-[10px] bg-sunken px-3.5 py-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
                     {JSON.stringify(preview.before, null, 2)}
                   </pre>
                 </div>
                 <div className="min-w-0">
-                  <h3 className="mb-2 font-medium text-sm">After</h3>
-                  <pre className="max-h-72 overflow-auto rounded-lg bg-sunken p-3 text-xs">
+                  <h3 className="mb-1.5 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+                    After
+                  </h3>
+                  <pre className="max-h-72 overflow-auto rounded-[10px] bg-sunken px-3.5 py-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
                     {JSON.stringify(preview.after, null, 2)}
                   </pre>
                 </div>
@@ -191,10 +188,16 @@ export function OperationButton({
               {preview.target.safetyClass === "production" ? (
                 <FormField
                   id="production-ack"
-                  label="Type production to confirm"
+                  label={
+                    <>
+                      Type <span className="text-prod-ink">production</span> to
+                      confirm
+                    </>
+                  }
                 >
                   <Input
                     autoComplete="off"
+                    className="border-prod focus-visible:border-prod focus-visible:ring-prod/15"
                     id="production-ack"
                     onChange={(event) => setAck(event.target.value)}
                     value={ack}
@@ -211,7 +214,7 @@ export function OperationButton({
                 disabled={busy}
                 onClick={() => setPreview(null)}
                 type="button"
-                variant="outline"
+                variant="ghost"
               >
                 Cancel
               </Button>
@@ -223,6 +226,11 @@ export function OperationButton({
                 }
                 onClick={execute}
                 type="button"
+                variant={
+                  preview.target.safetyClass === "production"
+                    ? "danger"
+                    : "default"
+                }
               >
                 Confirm change
               </Button>
@@ -233,6 +241,53 @@ export function OperationButton({
     </>
   );
 }
+/** The environment a confirmed change will hit; production gets a red bar. */
+function ConfirmTarget({
+  target,
+}: {
+  target: { name: string; revision: number; safetyClass: string };
+}) {
+  const production = target.safetyClass === "production";
+  return (
+    <>
+      {production ? (
+        <div aria-hidden="true" className="h-1 flex-none bg-prod" />
+      ) : null}
+      <div className="flex items-center gap-2.5 px-[22px] pt-5">
+        <EnvTag environment={production ? "PROD" : "STAGING"} />
+        <span className="text-faint text-xs tabular-nums">
+          {target.name} · revision {target.revision}
+        </span>
+      </div>
+    </>
+  );
+}
+
+/** Operation states as the shared status vocabulary; unknown stays loud. */
+const OPERATION_STATUS: Record<string, string> = {
+  accepted: "QUEUED",
+  canceled: "CANCELED",
+  cancelled: "CANCELED",
+  completed: "COMPLETED",
+  failed: "FAILED",
+  pending: "QUEUED",
+  running: "RUNNING",
+  unknown: "UNKNOWN",
+};
+const sentenceCase = (value: string) =>
+  value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " ");
+
+const OPERATION_LABELS: Record<string, string> = {
+  accepted: "Accepted",
+  canceled: "Canceled",
+  cancelled: "Canceled",
+  completed: "Completed",
+  failed: "Failed",
+  pending: "Pending",
+  running: "Running",
+  unknown: "Uncertain",
+};
+
 export function OperationHistory({ profile }: { profile: PublicProfile }) {
   const [error, setError] = useState("");
   const query = useQuery({
@@ -269,20 +324,24 @@ export function OperationHistory({ profile }: { profile: PublicProfile }) {
     }
   }
   let historyContent = (
-    <p className="py-6 text-center text-muted-foreground text-sm">
+    <p className="px-4 py-6 text-center text-[13px] text-muted-foreground">
       No operations for this connection.
     </p>
   );
   if (query.error) {
-    historyContent = <ErrorNotice message={query.error.message} />;
+    historyContent = (
+      <div className="px-4">
+        <ErrorNotice message={query.error.message} />
+      </div>
+    );
   } else if (query.data?.operations.length) {
     historyContent = (
-      <Table>
+      <Table containerClassName="rounded-none shadow-none">
         <TableHeader>
           <TableRow>
             <TableHead>Operation</TableHead>
-            <TableHead>Revision</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-right">Revision</TableHead>
             <TableHead>Created</TableHead>
             <TableHead />
           </TableRow>
@@ -291,29 +350,36 @@ export function OperationHistory({ profile }: { profile: PublicProfile }) {
           {query.data.operations.map((op) => (
             <TableRow key={op.id}>
               <TableCell className="whitespace-normal">
-                {op.action === "maintenance.update" &&
-                  op.state === "completed" &&
-                  op.revision === profile.revision && (
-                    <OperationButton
-                      action="maintenance.update"
-                      expectedVersion={null}
-                      label="Review restore"
-                      payload={{}}
-                      profile={profile}
-                      restoreOperationId={op.id}
-                    />
-                  )}
-                <span className="block font-medium">{op.action}</span>
+                <span className="block font-[550]">{op.action}</span>
                 <span className="block text-muted-foreground text-xs tabular-nums">
                   {op.id}
                 </span>
               </TableCell>
-              <TableCell>{op.revision}</TableCell>
               <TableCell>
-                <Badge variant="outline">{op.state}</Badge>
+                <StatusBadge status={OPERATION_STATUS[op.state] ?? "QUEUED"}>
+                  {OPERATION_LABELS[op.state] ?? sentenceCase(op.state)}
+                </StatusBadge>
               </TableCell>
-              <TableCell>{new Date(op.created_at).toLocaleString()}</TableCell>
-              <TableCell>
+              <TableCell className="text-right tabular-nums">
+                {op.revision}
+              </TableCell>
+              <TableCell className="text-muted-foreground tabular-nums">
+                {new Date(op.created_at).toLocaleString()}
+              </TableCell>
+              <TableCell className="text-right">
+                {op.action === "maintenance.update" &&
+                op.state === "completed" &&
+                op.revision === profile.revision ? (
+                  <OperationButton
+                    action="maintenance.update"
+                    expectedVersion={null}
+                    label="Review restore"
+                    payload={{}}
+                    profile={profile}
+                    restoreOperationId={op.id}
+                    variant="outline"
+                  />
+                ) : null}
                 {["accepted", "running", "unknown"].includes(op.state) ? (
                   <Button
                     onClick={() => reconcile(op.id)}
@@ -331,13 +397,38 @@ export function OperationHistory({ profile }: { profile: PublicProfile }) {
       </Table>
     );
   }
+  const uncertain =
+    query.data?.operations.filter((op) => op.state === "unknown").length ?? 0;
   return (
     <Panel
-      description="Check uncertain results before another write. Recovery confirms completion or safely cancels an operation that has not run."
+      action={
+        <span className="text-faint text-xs tabular-nums">
+          revision {profile.revision}
+        </span>
+      }
+      bodyClassName="px-0"
       title="Recent operations"
     >
       <div className="flex flex-col gap-3">
-        {error ? <ErrorNotice message={error} /> : null}
+        {uncertain > 0 ? (
+          <InlineAlert
+            className="mx-4"
+            title={
+              uncertain === 1
+                ? "1 operation is uncertain."
+                : `${uncertain} operations are uncertain.`
+            }
+            tone="unknown"
+          >
+            The OMS accepted the request but never confirmed it. Check the
+            result before another write.
+          </InlineAlert>
+        ) : null}
+        {error ? (
+          <div className="px-4">
+            <ErrorNotice message={error} />
+          </div>
+        ) : null}
         {historyContent}
       </div>
     </Panel>
@@ -361,6 +452,11 @@ export function MaintenanceEditor({
   );
   return (
     <Panel
+      action={
+        <StatusBadge tone={data.value.enabled ? "warning" : "neutral"}>
+          {data.value.enabled ? "On" : "Off"}
+        </StatusBadge>
+      }
       description={
         <>
           Control maintenance for <strong>{profile.name}</strong>. Exceptions
@@ -369,18 +465,31 @@ export function MaintenanceEditor({
       }
       title="Maintenance mode"
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-[18px]">
+        <div className="flex items-start gap-3">
           <Switch
             checked={enabled}
+            className={
+              profile.safetyClass === "production"
+                ? "data-checked:bg-prod"
+                : undefined
+            }
             id="maintenance-enabled"
             onCheckedChange={(checked) => {
               setEnabled(checked);
               setDirty(true);
             }}
           />
-          <label className="text-sm" htmlFor="maintenance-enabled">
-            Redirect pages to the maintenance notice
+          <label
+            className="flex flex-col gap-0.5 text-[13px]"
+            htmlFor="maintenance-enabled"
+          >
+            <span className="font-[550]">
+              Redirect pages to the maintenance notice
+            </span>
+            <span className="text-muted-foreground text-xs">
+              Visitors see the maintenance page except on the paths below.
+            </span>
           </label>
         </div>
         <FormField

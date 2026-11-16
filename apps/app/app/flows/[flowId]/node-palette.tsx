@@ -2,12 +2,7 @@
 
 import { Button, Input, Search } from "@repo/design-system";
 import { useState } from "react";
-import {
-  asCategory,
-  CATEGORY_GROUPS,
-  CategoryChip,
-  categoryStyle,
-} from "../node-visuals";
+import { asCategory, CATEGORY_GROUPS, CategoryChip } from "../node-visuals";
 import type { NodeType } from "./use-flow-editor";
 
 /** Carries the node type while a palette entry is dragged onto the canvas. */
@@ -33,7 +28,7 @@ export function NodePalette({
   return (
     <aside
       aria-label="Node palette"
-      className="flex min-h-0 w-[236px] flex-none flex-col border-border border-r"
+      className="flex min-h-0 w-[232px] flex-none flex-col border-border border-r"
     >
       <div className="relative p-3">
         <Search className="pointer-events-none absolute top-[21px] left-[21px] size-3.5 text-muted-foreground" />
@@ -41,7 +36,7 @@ export function NodePalette({
           aria-label="Add a step"
           className="h-8 pl-[30px] text-[13px]"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Add a step…"
+          placeholder="Add a node"
           type="search"
           value={query}
         />
@@ -56,18 +51,13 @@ export function NodePalette({
           }
           return (
             <section key={group.id}>
-              <h2 className="font-(family-name:--label-font) text-(length:--label-size) flex items-center gap-[7px] px-1.5 pt-3 pb-1.5 font-medium text-muted-foreground leading-none tracking-(--label-tracking) [text-transform:var(--label-transform)]">
-                <span
-                  aria-hidden="true"
-                  className="size-1.5 rounded-[2px] bg-(--cat)"
-                  style={categoryStyle(group.id)}
-                />
+              <h2 className="font-(family-name:--label-font) text-(length:--label-size) px-1.5 pt-2.5 pb-1.5 font-medium text-faint leading-none tracking-(--label-tracking) [text-transform:var(--label-transform)]">
                 {group.label}
               </h2>
               {entries.map((nodeType) => (
                 <Button
                   aria-label={`Add ${nodeType.label}`}
-                  className="h-auto w-full cursor-grab items-start justify-start gap-[9px] whitespace-normal rounded-[7px] px-1.5 py-[7px] text-left font-normal"
+                  className="h-8 w-full cursor-grab justify-start gap-2.5 rounded-md px-2 text-left font-normal text-[13px] text-foreground"
                   draggable
                   key={nodeType.type}
                   onClick={() => onAdd(nodeType.type)}
@@ -85,15 +75,10 @@ export function NodePalette({
                   <CategoryChip
                     category={group.id}
                     nodeType={nodeType.type}
-                    size={26}
+                    size={22}
                   />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-[13px] leading-[1.25]">
-                      {nodeType.label}
-                    </span>
-                    <span className="line-clamp-2 block text-[11.5px] text-muted-foreground leading-[1.35]">
-                      {nodeType.description}
-                    </span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {nodeType.label}
                   </span>
                 </Button>
               ))}

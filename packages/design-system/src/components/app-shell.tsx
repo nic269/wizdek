@@ -2,7 +2,7 @@
 
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { Menu, PanelLeft, Search, X } from "../icons";
+import { ChevronDown, Menu, PanelLeft, Search, X } from "../icons";
 import { cn } from "../lib/cn";
 import { BrandIcon, BrandLogo } from "./brand-logo";
 import {
@@ -106,19 +106,24 @@ export const BrandMark = ({ size = 28 }: { size?: number }) => (
   <BrandIcon size={size} />
 );
 
-const Indicator = ({ indicator }: { indicator: AppShellIndicator }) => (
-  <span className="inline-flex items-center gap-[5px] font-medium text-[11px] text-sidebar-muted tabular-nums leading-none">
-    <span
-      aria-hidden="true"
-      className={cn(
-        "size-1.5 rounded-full",
-        DOT_TONES[indicator.tone],
-        indicator.pulse && "animate-[wz-pulse_1.6s_ease_infinite]"
-      )}
-    />
-    {indicator.label}
-  </span>
-);
+const Indicator = ({ indicator }: { indicator: AppShellIndicator }) =>
+  indicator.tone === "warning" ? (
+    <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-(--status-warning-bg) px-[5px] font-semibold text-(--status-warning-fg) text-[10.5px] tabular-nums leading-none">
+      {indicator.label}
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-sidebar-muted tabular-nums leading-none">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "size-[7px] rounded-full shadow-[0_0_0_3px_rgba(58,123,224,0.18)]",
+          DOT_TONES[indicator.tone],
+          indicator.pulse && "animate-[wz-pulse_1.6s_ease_infinite]"
+        )}
+      />
+      {indicator.label}
+    </span>
+  );
 
 const KEY_CLASS =
   "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-white/15 px-1 font-medium text-[11px] text-white/85";
@@ -133,7 +138,49 @@ const Keys = ({ keys }: { keys: readonly string[] }) => (
   </span>
 );
 
-/** The expanded list: caps group headings over their items. */
+/** One destination in the expanded list. */
+const NavLink = ({
+  active,
+  item,
+  linkComponent: Link,
+  mobile,
+  onNavigate,
+}: {
+  active: boolean;
+  item: AppShellNavItem;
+  linkComponent: ComponentType<AppShellLinkProps>;
+  mobile: boolean;
+  onNavigate?: (() => void) | undefined;
+}) => (
+  <Link
+    aria-current={active ? "page" : undefined}
+    className={cn(
+      "flex items-center gap-2.5 rounded-[7px] px-2 font-[450] text-foreground-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+      mobile ? "h-11 rounded-lg px-2.5 text-sm" : "h-8 text-[13.5px]",
+      item.nested && "ml-5 border-sidebar-border border-l pl-3",
+      active
+        ? "bg-sidebar-active font-[550] text-foreground shadow-(--sidebar-active-shadow)"
+        : "hover:bg-sidebar-hover hover:text-foreground"
+    )}
+    href={item.href}
+    onClick={onNavigate}
+  >
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid w-4 shrink-0 place-items-center [&_svg]:size-4",
+        mobile && "w-[17px] [&_svg]:size-[17px]",
+        active ? "text-foreground" : "text-sidebar-muted"
+      )}
+    >
+      {item.icon}
+    </span>
+    <span className="flex-1 truncate">{item.label}</span>
+    {item.indicator ? <Indicator indicator={item.indicator} /> : null}
+  </Link>
+);
+
+/** The expanded list: collapsible caps group headings over their items. */
 const NavList = ({
   activeHref,
   groups,
@@ -146,54 +193,58 @@ const NavList = ({
   linkComponent: ComponentType<AppShellLinkProps>;
   mobile?: boolean;
   onNavigate?: () => void;
-}) => (
-  <nav
-    aria-label="Primary"
-    className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden [scrollbar-width:none]"
-  >
-    {groups.map((group) => (
-      <div className="flex flex-col gap-px" key={group.label || "home"}>
-        {group.label ? (
-          <div className="px-2 pt-1.5 pb-[7px] font-semibold text-[11px] text-faint uppercase leading-none tracking-[0.06em]">
-            {group.label}
-          </div>
-        ) : null}
-        {flattenedItems(group.items).map((item) => {
-          const active = item.href === activeHref;
-          return (
-            <Link
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2.5 rounded-[7px] px-2 font-[450] text-foreground-2 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-                mobile ? "h-11 rounded-lg px-2.5 text-sm" : "h-8 text-[13px]",
-                item.nested && "ml-5 border-sidebar-border border-l pl-3",
-                active
-                  ? "bg-sidebar-active font-[550] text-foreground shadow-(--sidebar-active-shadow)"
-                  : "hover:bg-sidebar-hover hover:text-foreground"
-              )}
-              href={item.href}
-              key={item.href}
-              onClick={onNavigate}
-            >
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "grid w-4 shrink-0 place-items-center [&_svg]:size-4",
-                  mobile && "w-[17px] [&_svg]:size-[17px]",
-                  active ? "text-foreground" : "text-sidebar-muted"
-                )}
+}) => {
+  const [closed, setClosed] = useState<readonly string[]>([]);
+  const toggle = (label: string) =>
+    setClosed((current) =>
+      current.includes(label)
+        ? current.filter((item) => item !== label)
+        : [...current, label]
+    );
+  return (
+    <nav
+      aria-label="Main"
+      className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overflow-x-hidden [scrollbar-width:none]"
+    >
+      {groups.map((group) => {
+        const open = !closed.includes(group.label);
+        return (
+          <div className="flex flex-col gap-0.5" key={group.label || "home"}>
+            {group.label ? (
+              <button
+                aria-expanded={open}
+                className="flex h-7 w-full items-center gap-1.5 rounded-[7px] px-2 text-left font-semibold text-[11px] text-faint uppercase leading-none tracking-[0.06em] outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                onClick={() => toggle(group.label)}
+                type="button"
               >
-                {item.icon}
-              </span>
-              <span className="flex-1 truncate">{item.label}</span>
-              {item.indicator ? <Indicator indicator={item.indicator} /> : null}
-            </Link>
-          );
-        })}
-      </div>
-    ))}
-  </nav>
-);
+                <span className="flex-1 truncate">{group.label}</span>
+                <ChevronDown
+                  aria-hidden="true"
+                  className={cn(
+                    "size-3 transition-transform",
+                    !open && "-rotate-90"
+                  )}
+                />
+              </button>
+            ) : null}
+            {open
+              ? flattenedItems(group.items).map((item) => (
+                  <NavLink
+                    active={item.href === activeHref}
+                    item={item}
+                    key={item.href}
+                    linkComponent={Link}
+                    mobile={mobile}
+                    onNavigate={onNavigate}
+                  />
+                ))
+              : null}
+          </div>
+        );
+      })}
+    </nav>
+  );
+};
 
 const RAIL_BUTTON =
   "relative grid size-10 place-items-center rounded-[10px] text-sidebar-muted outline-none transition-colors hover:bg-sidebar-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-hover data-popup-open:text-foreground [&_svg]:size-4";
@@ -369,7 +420,7 @@ const Rail = ({
         render={
           <button
             aria-keyshortcuts="Meta+K"
-            aria-label="Search or jump to…"
+            aria-label="Search and commands"
             className={RAIL_BUTTON}
             onClick={onSearch}
             type="button"
@@ -385,7 +436,7 @@ const Rail = ({
     </Tooltip>
     <RailRule />
 
-    <nav aria-label="Primary" className="flex flex-col items-center gap-1">
+    <nav aria-label="Main" className="flex flex-col items-center gap-1">
       {groups.map((group, index) => {
         const items = flattenedItems(group.items);
         const separated = index === groups.length - 1 && groups.length > 2;
@@ -416,7 +467,7 @@ const Rail = ({
 );
 
 /**
- * The product shell: a 244px sidebar on the canvas (a 60px rail when
+ * The product shell: a 240px sidebar on the canvas (a 60px rail when
  * collapsed) beside one white panel that scrolls on its own and carries the
  * shell header. Under 820px the sidebar becomes a top bar with a left sheet.
  */
@@ -447,6 +498,8 @@ export const AppShell = ({
     { label: pageTitle },
   ];
   const { risk } = header.override;
+  const HomeLink = linkComponent;
+  const home = navGroups[0]?.items[0];
 
   // ⌘B / Ctrl+B toggles the rail, except while typing.
   useEffect(() => {
@@ -480,7 +533,7 @@ export const AppShell = ({
           "hidden flex-none flex-col overflow-hidden transition-[width] duration-200 ease-out min-[820px]:flex",
           collapsed
             ? "w-[60px] items-center px-2.5 pt-3 pb-3"
-            : "w-[244px] gap-2.5 px-2.5 pt-3.5 pb-3"
+            : "w-[240px] gap-2.5 px-2.5 pt-3.5 pb-3"
         )}
         data-collapsed={collapsed}
       >
@@ -496,12 +549,18 @@ export const AppShell = ({
         ) : (
           <>
             <div className="flex items-center gap-2 px-1.5 pb-1.5">
-              <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 py-0.5 text-brand-ink">
-                <BrandLogo height={17} label={brand.name} />
-                <div className="font-medium text-[10.5px] text-faint tabular-nums leading-[14px]">
+              <HomeLink
+                aria-label={
+                  home ? `${brand.name}, go to ${home.label}` : brand.name
+                }
+                className="flex min-w-0 flex-1 flex-col items-start gap-1.5 rounded-[7px] py-0.5 text-brand-ink outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                href={home?.href ?? "/"}
+              >
+                <BrandLogo height={17} />
+                <span className="font-medium text-[10.5px] text-faint tabular-nums leading-[14px]">
                   {brand.meta}
-                </div>
-              </div>
+                </span>
+              </HomeLink>
               <Tooltip>
                 <TooltipTrigger
                   render={
@@ -530,9 +589,9 @@ export const AppShell = ({
 
             <Button
               aria-keyshortcuts="Meta+K"
+              aria-label="Search and commands"
               className="mx-0.5 mb-1.5 flex h-8 items-center gap-2 rounded-[7px] bg-sidebar-field px-2.5 text-[13px] text-faint shadow-[0_0_0_1px_var(--border)] outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               onClick={onSearch}
-              title="Search or jump to…"
               type="button"
               variant="ghost"
             >
@@ -577,7 +636,7 @@ export const AppShell = ({
         </span>
         <div className="flex-1 truncate font-semibold text-sm">{pageTitle}</div>
         <Button
-          aria-label="Search or jump to…"
+          aria-label="Search and commands"
           className="grid size-9 place-items-center rounded-lg text-sidebar-foreground"
           onClick={onSearch}
           type="button"

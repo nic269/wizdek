@@ -1,6 +1,7 @@
 "use client";
 import {
   Button,
+  EmptyState,
   EnvTag,
   NavTabs,
   PageHeader,
@@ -8,6 +9,8 @@ import {
   RefreshCw,
   ShellHeader,
   SlidersHorizontal,
+  StatusBadge,
+  Warehouse,
 } from "@repo/design-system";
 import {
   Select,
@@ -57,6 +60,26 @@ const ShellLink = ({
     {children}
   </Link>
 );
+/** Logs fill the panel edge to edge; every other section is a padded page. */
+const bodyLayout = (
+  fullWidth: boolean,
+  settings: boolean,
+  hasConnections: boolean
+) =>
+  fullWidth
+    ? { className: "flex min-h-0 flex-1 flex-col", heading: false }
+    : {
+        className:
+          "flex min-h-0 flex-1 flex-col gap-6 pt-6 pb-12 pr-4 pl-5 sm:pt-7",
+        heading: hasConnections && !settings,
+      };
+
+const connectionsAssumed = (
+  pending: boolean,
+  error: Error | null,
+  count: number | undefined
+) => pending || Boolean(error) || (count ?? 0) > 0;
+
 function confirmDiscard(message: string) {
   const ask = window.confirm;
   return ask(message);
@@ -250,45 +273,29 @@ function ManagementContent({
   const enabledProfiles = (catalog.data?.profiles ?? []).filter(
     (p) => p.enabled
   );
+  // Until the catalog loads, assume connections exist so the header is stable.
+  const hasConnections = connectionsAssumed(
+    catalog.isPending,
+    catalog.error,
+    catalog.data?.profiles.length
+  );
+  const layout = bodyLayout(
+    section === "logs" && Boolean(profile),
+    settings,
+    hasConnections
+  );
   return (
     <section className="flex min-h-0 flex-1 flex-col">
       <ShellHeader
         actions={
-          <>
-            <Button
-              onClick={() => setEditing("new")}
-              size="sm"
-              variant="outline"
-            >
-              <Plus className="size-4" />
-              Add connection
-            </Button>
-            {profile?.capabilities.includes("profiles:edit") && (
-              <Button
-                aria-label="Connection settings"
-                onClick={() => setEditing(profile)}
-                size="icon-sm"
-                title="Connection settings"
-                variant="outline"
-              >
-                <SlidersHorizontal className="size-4" />
-              </Button>
-            )}
-            <Button
-              aria-label="Refresh OMS data"
-              disabled={dirty}
-              onClick={() => client.invalidateQueries()}
-              size="icon-sm"
-              title={
-                dirty
-                  ? "Save or discard changes before refreshing"
-                  : "Refresh OMS data"
-              }
-              variant="ghost"
-            >
-              <RefreshCw className="size-4" />
-            </Button>
-          </>
+          <HeaderActions
+            canAdd={hasConnections}
+            dirty={dirty}
+            onAdd={() => setEditing("new")}
+            onEdit={setEditing}
+            onRefresh={() => client.invalidateQueries()}
+            profile={profile}
+          />
         }
         context={
           <Select
@@ -340,7 +347,7 @@ function ManagementContent({
           <>
             <span aria-hidden="true" className="h-5 w-px bg-border" />
             <NavTabs
-              aria-label="OMS management"
+              aria-label="OMS sections"
               tabs={(
                 [
                   ["overview", "Overview"],
@@ -366,15 +373,14 @@ function ManagementContent({
         }
         risk={shellRisk}
       />
-      <div className="flex flex-col gap-6 px-4 pt-6 pb-12 sm:px-8 sm:pt-7">
-        <PageHeader
-          description={
-            profile
-              ? `${profile.name} · ${profile.databaseLabel} · revision ${profile.revision}`
-              : "Choose an OMS connection to inspect logs and manage site configuration."
-          }
-          title={SECTION_TITLES[section]}
-        />
+      <div className={layout.className}>
+        {layout.heading ? (
+          <SectionHeading
+            actor={catalog.data?.actor}
+            profile={profile}
+            title={SECTION_TITLES[section]}
+          />
+        ) : null}
         {settings && (
           <NavTabs
             aria-label="Site config"
@@ -396,6 +402,7 @@ function ManagementContent({
         <ManagementView
           actor={catalog.data?.actor}
           error={catalog.error}
+          onAdd={() => setEditing("new")}
           onSelect={(id) => navigate(section, id)}
           pending={catalog.isPending}
           profile={profile}
@@ -428,6 +435,93 @@ function ManagementContent({
 
 export { queryKey } from "../lib/contracts";
 
+/** The header buttons: add a connection, edit the current one, refresh. */
+function HeaderActions({
+  canAdd,
+  dirty,
+  onAdd,
+  onEdit,
+  onRefresh,
+  profile,
+}: {
+  canAdd: boolean;
+  dirty: boolean;
+  onAdd: () => void;
+  onEdit: (profile: PublicProfile) => void;
+  onRefresh: () => void;
+  profile: PublicProfile | undefined;
+}) {
+  return (
+    <>
+      {canAdd ? (
+        <Button onClick={onAdd} size="sm" variant="outline">
+          <Plus className="size-4" />
+          Add connection
+        </Button>
+      ) : null}
+      {profile?.capabilities.includes("profiles:edit") ? (
+        <Button
+          aria-label="Connection settings"
+          onClick={() => onEdit(profile)}
+          size="icon-sm"
+          title="Connection settings"
+          variant="outline"
+        >
+          <SlidersHorizontal className="size-4" />
+        </Button>
+      ) : null}
+      <Button
+        aria-label="Refresh OMS data"
+        disabled={dirty}
+        onClick={onRefresh}
+        size="icon-sm"
+        title={
+          dirty
+            ? "Save or discard changes before refreshing"
+            : "Refresh OMS data"
+        }
+        variant="ghost"
+      >
+        <RefreshCw className="size-4" />
+      </Button>
+    </>
+  );
+}
+
+/** The page title with the connection line and the verified-session badge. */
+function SectionHeading({
+  actor,
+  profile,
+  title,
+}: {
+  actor: Actor | undefined;
+  profile: PublicProfile | undefined;
+  title: string;
+}) {
+  if (!profile) {
+    return (
+      <PageHeader
+        description="Choose an OMS connection to inspect logs and manage site configuration."
+        title={title}
+      />
+    );
+  }
+  return (
+    <PageHeader
+      aside={
+        actor ? (
+          <span className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+            <StatusBadge tone="success">Session verified</StatusBadge>
+            <span className="tabular-nums">{actor.email}</span>
+          </span>
+        ) : undefined
+      }
+      description={`${profile.name} · ${profile.databaseLabel} · revision ${profile.revision}`}
+      title={title}
+    />
+  );
+}
+
 function ManagementView({
   actor,
   profiles,
@@ -436,8 +530,10 @@ function ManagementView({
   pending,
   error,
   setDirty,
+  onAdd,
   onSelect,
 }: {
+  onAdd: () => void;
   actor: Actor | undefined;
   profiles: PublicProfile[];
   profile: PublicProfile | undefined;
@@ -481,9 +577,28 @@ function ManagementView({
       );
     }
     return (
-      <div key={`${actor.id}:${profile.id}:${profile.revision}:${section}`}>
+      <div
+        className={section === "logs" ? "flex min-h-0 flex-1 flex-col" : ""}
+        key={`${actor.id}:${profile.id}:${profile.revision}:${section}`}
+      >
         {content}
       </div>
+    );
+  }
+  if (profiles.length === 0) {
+    return (
+      <EmptyState
+        action={
+          <Button onClick={onAdd} type="button">
+            <Plus className="size-4" />
+            Add connection
+          </Button>
+        }
+        className="m-auto max-w-[520px] gap-3.5"
+        description="Add a staging environment first. Production can be added once staging is verified — it gets typed confirmations on every change."
+        icon={<Warehouse />}
+        title="Connect an OMS environment"
+      />
     );
   }
   return (
@@ -507,12 +622,6 @@ function ManagementView({
             />
           </Button>
         ))}
-      {profiles.length === 0 && (
-        <div className="rounded-card border border-dashed p-8 text-center text-[13px] text-muted-foreground">
-          No OMS connections configured yet. Add a connection or configure the
-          staging and production presets.
-        </div>
-      )}
     </div>
   );
 }

@@ -10,12 +10,19 @@ import {
   TableRow,
 } from "@repo/design-system/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import type { Actor, PublicProfile } from "../lib/contracts";
 import { queryKey } from "../lib/contracts";
+import { managementHref } from "../lib/navigation";
 import { request } from "./management-app";
 import { ErrorNotice, Panel } from "./oms-ui";
 import { WorkflowLogs } from "./workflow-logs";
+import {
+  formatLogDate,
+  formatLogLabel,
+  type WorkflowRun,
+} from "./workflow-types";
 
 type RecordValue = Record<string, unknown>;
 
@@ -99,17 +106,10 @@ function GeneralDiagnostics({
     return null;
   }
   const compatibility = data.compatibility as { features: string[] };
-  const failures = ((data.failures as RecordValue)?.rows ??
-    []) as RecordValue[];
+  const failures = ((data.failures as RecordValue)?.rows ?? []) as FailedRun[];
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <Metric
-          badge={<StatusBadge tone="success">Reachable</StatusBadge>}
-          detail="Connection verified"
-          label="Database"
-          value="Connected"
-        />
         <Metric
           badge={
             data.api === "not-configured" ? (
@@ -125,6 +125,12 @@ function GeneralDiagnostics({
           }
         />
         <Metric
+          badge={<StatusBadge tone="success">Reachable</StatusBadge>}
+          detail="Connection verified"
+          label="Database"
+          value="Connected"
+        />
+        <Metric
           detail={`Refreshed ${new Date(String(data.refreshedAt)).toLocaleString()}`}
           label="Available views"
           value={String(compatibility.features.length)}
@@ -133,17 +139,25 @@ function GeneralDiagnostics({
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Panel
           action={
-            <span className="inline-flex h-5 items-center rounded-[5px] bg-hover px-1.5 text-[11px] text-foreground-2 tabular-nums">
-              {failures.length}
-            </span>
+            <Link
+              className="text-[12.5px] text-accent-ink hover:text-accent"
+              href={`${managementHref("logs", profile.id)}&status=FAILED`}
+            >
+              Open in Debug logs
+            </Link>
           }
           bodyClassName="px-0"
-          title="Recent failed workflows"
+          className="gap-0 pb-0"
+          title={
+            <span className="flex items-center gap-2.5">
+              Recent failed workflows
+              <span className="inline-flex h-5 items-center rounded-[5px] bg-hover px-1.5 font-normal text-[11px] text-foreground-2 tabular-nums">
+                {failures.length}
+              </span>
+            </span>
+          }
         >
-          <DataTable
-            onRow={(row) => setDetail(String(row.id))}
-            rows={failures}
-          />
+          <FailedRunsTable onOpen={setDetail} rows={failures} />
         </Panel>
         <Panel
           action={
@@ -152,6 +166,7 @@ function GeneralDiagnostics({
             </span>
           }
           bodyClassName="px-2"
+          className="gap-2 pb-2"
           title="Available views"
         >
           <ul className="flex flex-col gap-0.5">
@@ -167,7 +182,7 @@ function GeneralDiagnostics({
           </ul>
         </Panel>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -200,92 +215,86 @@ function Metric({
   );
 }
 
-function DataTable({
+type FailedRun = WorkflowRun & {
+  logs?: { errorMessage: string | null; message: string }[];
+};
+
+/** The last thing a failed run logged: its error, else its final message. */
+const failureReason = (run: FailedRun) => {
+  const last = run.logs?.at(-1);
+  return last?.errorMessage || last?.message || "—";
+};
+
+function FailedRunsTable({
   rows,
-  onRow,
+  onOpen,
 }: {
-  rows: RecordValue[];
-  onRow?: ((row: RecordValue) => void) | undefined;
+  rows: FailedRun[];
+  onOpen: (id: string) => void;
 }) {
-  const firstRow = rows.at(0);
-  if (!firstRow) {
+  if (rows.length === 0) {
     return (
-      <div className="px-4 py-10 text-center">
-        <h3 className="font-semibold text-[13px]">No records to display</h3>
-        <p className="mt-1 text-muted-foreground text-xs">
-          Try another filter or refresh this view.
-        </p>
-      </div>
+      <p className="px-4 py-10 text-center text-[13px] text-muted-foreground">
+        No failed workflows. Recent failures will appear here.
+      </p>
     );
   }
-  const columns = Object.keys(firstRow).filter(
-    (key) => !["accountId", "actorId", "summary"].includes(key)
-  );
   return (
-    <Table>
+    <Table
+      className="table-fixed"
+      containerClassName="rounded-none shadow-none"
+    >
       <TableHeader>
         <TableRow>
-          {columns.map((key) => (
-            <TableHead key={key}>{key.replace(/([A-Z])/g, " $1")}</TableHead>
-          ))}
+          <TableHead className="w-24">Run</TableHead>
+          <TableHead className="w-[30%]">Workflow</TableHead>
+          <TableHead className="w-28">Module</TableHead>
+          <TableHead>Error</TableHead>
+          <TableHead className="w-40 text-right">When</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row, index) => (
-          <TableRow key={String(row.id ?? row.jobKey ?? index)}>
-            {columns.map((key, column) => (
-              <TableCell
-                className="max-w-80 whitespace-normal break-words"
-                key={key}
+        {rows.map((run) => (
+          <TableRow key={run.id}>
+            <TableCell>
+              <Button
+                aria-label={`Open run ${run.id}`}
+                className="h-auto p-0 text-xs tabular-nums"
+                onClick={() => onOpen(run.id)}
+                title={run.id}
+                type="button"
+                variant="link"
               >
-                <DataCell
-                  isFirst={column === 0}
-                  keyName={key}
-                  onRow={onRow}
-                  row={row}
-                />
-              </TableCell>
-            ))}
+                {run.id.length > 12
+                  ? `${run.id.slice(0, 4)}…${run.id.slice(-3)}`
+                  : run.id}
+              </Button>
+            </TableCell>
+            <TableCell>
+              <span className="block truncate font-[550]" title={run.title}>
+                {run.title || run.workflowKey}
+              </span>
+              <span className="block truncate text-muted-foreground text-xs">
+                {run.workflowKey || run.featureKey}
+              </span>
+            </TableCell>
+            <TableCell className="text-muted-foreground text-xs">
+              {formatLogLabel(run.module)}
+            </TableCell>
+            <TableCell>
+              <span
+                className="block truncate text-(--status-danger-fg)"
+                title={failureReason(run)}
+              >
+                {failureReason(run)}
+              </span>
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-right text-muted-foreground text-xs tabular-nums">
+              {formatLogDate(run.createdAt)}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
     </Table>
   );
-}
-
-function DataCell({
-  row,
-  keyName,
-  isFirst,
-  onRow,
-}: {
-  row: RecordValue;
-  keyName: string;
-  isFirst: boolean;
-  onRow?: ((row: RecordValue) => void) | undefined;
-}) {
-  const value = row[keyName];
-  if (isFirst && onRow) {
-    return (
-      <Button
-        className="h-auto justify-start whitespace-normal p-0 text-left text-xs tabular-nums"
-        onClick={() => onRow(row)}
-        type="button"
-        variant="link"
-      >
-        {String(value ?? "—")}
-      </Button>
-    );
-  }
-  if (keyName === "status") {
-    return (
-      <StatusBadge status={String(value).toUpperCase()}>
-        {String(value)}
-      </StatusBadge>
-    );
-  }
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-  return String(value ?? "—");
 }

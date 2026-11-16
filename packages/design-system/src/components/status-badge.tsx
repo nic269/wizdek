@@ -29,7 +29,7 @@ const STATUSES: Record<string, { label: string; tone: StatusTone }> = {
   IN_PROGRESS: { label: "In progress", tone: "info" },
   INACTIVE: { label: "Inactive", tone: "neutral" },
   PARTIALLY_FAILED: { label: "Partially failed", tone: "warning" },
-  PENDING: { label: "Pending", tone: "info" },
+  PENDING: { label: "Pending", tone: "neutral" },
   QUEUED: { label: "Queued", tone: "neutral" },
   REACHABLE: { label: "Reachable", tone: "success" },
   RECONNECT_REQUIRED: { label: "Reconnect required", tone: "warning" },

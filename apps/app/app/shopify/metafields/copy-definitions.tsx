@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@repo/design-system";
+import { Button, Copy } from "@repo/design-system";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +50,10 @@ export function CopyDefinitions({
   ownerType,
   disabled,
   onBusy,
+  onDark = false,
 }: {
+  /** Styles the trigger for the dark bulk-action bar. */
+  onDark?: boolean;
   source: Store;
   stores: Store[];
   selected: Definition[];
@@ -63,11 +66,16 @@ export function CopyDefinitions({
   return (
     <>
       <Button
+        className={
+          onDark ? "text-(--toast-fg) hover:bg-white/10 hover:text-white" : ""
+        }
         disabled={disabled || !selected.length}
         onClick={() => setOpen(true)}
-        variant="outline"
+        size={onDark ? "sm" : "default"}
+        variant={onDark ? "ghost" : "outline"}
       >
-        Copy selected ({selected.length})
+        <Copy />
+        Copy to store
       </Button>
       <Dialog
         onOpenChange={(value) => {

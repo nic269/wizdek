@@ -215,7 +215,7 @@ const ConnectionRow = ({
               <span className="truncate font-semibold text-[13px] text-foreground leading-[1.3]">
                 {connection.name}
               </span>
-              <EnvTag environment={connection.environment} />
+              <EnvTag compact environment={connection.environment} />
             </div>
             <div className="text-muted-foreground text-xs leading-[1.4]">
               PostgreSQL {connection.serverVersion ?? ""}

@@ -133,45 +133,99 @@ export function SiteConfig({
           />
         </>
       )}
-      <Panel
-        action={
-          <Button
-            disabled={query.isFetching || dirtySections.current.size > 0}
-            onClick={() => query.refetch()}
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCw className={query.isFetching ? "animate-spin" : ""} />
-            Refresh
-          </Button>
+      <div
+        className={
+          cronOnly
+            ? "grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]"
+            : undefined
         }
-        description={`Schedules use ${data.cron?.timeZone ?? data.settings.siteTimezone}. Changes are loaded dynamically and do not require a restart.`}
-        title="Cron jobs"
       >
-        {data.cron ? (
-          <div className="space-y-4">
-            {cronJobs.map((job) => (
-              <CronControls
-                job={job}
-                key={`${String(job.jobKey ?? job.key)}:${String(job.updatedAt ?? "initial")}`}
-                profile={profile}
-                setDirty={(dirty) =>
-                  sectionDirty(`cron:${String(job.jobKey ?? job.key)}`, dirty)
-                }
-                timeZone={data.cron?.timeZone ?? data.settings.siteTimezone}
-              />
-            ))}
-            {!cronJobs.length && (
-              <p className="py-6 text-center text-muted-foreground text-sm">
-                No cronjobs are registered.
-              </p>
-            )}
-          </div>
-        ) : (
-          <ErrorNotice message="Cronjobs are unavailable with this database's schema or permissions." />
-        )}
-      </Panel>
+        <Panel
+          action={
+            <Button
+              disabled={query.isFetching || dirtySections.current.size > 0}
+              onClick={() => query.refetch()}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCw className={query.isFetching ? "animate-spin" : ""} />
+              Refresh
+            </Button>
+          }
+          bodyClassName="px-0"
+          description={`Schedules use ${data.cron?.timeZone ?? data.settings.siteTimezone}. Changes are loaded dynamically and do not require a restart.`}
+          title="Cron jobs"
+        >
+          {data.cron ? (
+            <div className="-my-4">
+              {cronJobs.map((job) => (
+                <CronControls
+                  job={job}
+                  key={`${String(job.jobKey ?? job.key)}:${String(job.updatedAt ?? "initial")}`}
+                  profile={profile}
+                  setDirty={(dirty) =>
+                    sectionDirty(`cron:${String(job.jobKey ?? job.key)}`, dirty)
+                  }
+                  timeZone={data.cron?.timeZone ?? data.settings.siteTimezone}
+                />
+              ))}
+              {!cronJobs.length && (
+                <p className="py-6 text-center text-muted-foreground text-sm">
+                  No cronjobs are registered.
+                </p>
+              )}
+            </div>
+          ) : (
+            <ErrorNotice message="Cronjobs are unavailable with this database's schema or permissions." />
+          )}
+        </Panel>
+        {cronOnly ? <CronSyntaxHelp /> : null}
+      </div>
       {cronOnly ? <OperationHistory profile={profile} /> : null}
     </div>
+  );
+}
+
+/** The five cron fields and the common operators, beside the job list. */
+function CronSyntaxHelp() {
+  return (
+    <aside
+      aria-label="Cron syntax help"
+      className="flex flex-col gap-3 rounded-card bg-sunken p-4 shadow-[inset_0_0_0_1px_var(--border)]"
+    >
+      <h3 className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
+        Cron syntax
+      </h3>
+      <pre className="font-mono text-[12px] text-foreground-2 leading-[22px] tracking-[-0.01em]">
+        {`┌ minute      0–59
+│ ┌ hour      0–23
+│ │ ┌ day     1–31
+│ │ │ ┌ month 1–12
+│ │ │ │ ┌ weekday 0–6
+* * * * *`}
+      </pre>
+      <div className="h-px bg-border" />
+      <dl className="flex flex-col gap-1.5 text-[12.5px]">
+        {(
+          [
+            ["*/5", "every 5 units"],
+            ["1-5", "range"],
+            ["0,30", "list"],
+          ] as const
+        ).map(([syntax, meaning]) => (
+          <div className="flex items-center gap-2" key={syntax}>
+            <dt className="w-[90px] font-mono text-[12px] tracking-[-0.01em]">
+              {syntax}
+            </dt>
+            <dd className="text-muted-foreground">{meaning}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="h-px bg-border" />
+      <p className="text-muted-foreground text-xs">
+        Run immediately queues the job once and records an operation. On
+        production it asks for confirmation.
+      </p>
+    </aside>
   );
 }

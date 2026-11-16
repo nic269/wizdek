@@ -116,7 +116,7 @@ export function BusinessTools({
         >
           {TOOL_TABS.map(([id, label]) => (
             <TabsTrigger
-              className="h-8 flex-none justify-start rounded-[7px] px-2 font-normal text-[13px] text-foreground-2 hover:bg-hover data-active:bg-card data-active:font-[550] data-active:text-foreground data-active:shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(22,23,26,0.05)]"
+              className="h-8 flex-none justify-start rounded-[7px] px-2 font-normal text-[13px] text-foreground-2 hover:bg-hover data-active:bg-card data-active:font-[550] data-active:text-foreground data-active:shadow-[0_0_0_1px_var(--border),0_1px_2px_rgba(22,23,26,0.05)]!"
               key={id}
               value={id}
             >

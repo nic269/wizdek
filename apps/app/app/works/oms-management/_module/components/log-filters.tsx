@@ -1,12 +1,16 @@
 "use client";
 
-import { Button, ChevronDown, Search } from "@repo/design-system";
+import { Button, Filter, Input, Search } from "@repo/design-system";
 import {
-  Collapsible,
-  CollapsibleContent,
-} from "@repo/design-system/components/ui/collapsible";
-import { useState } from "react";
-import { ChoiceSelect, TextField } from "./oms-ui";
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/design-system/components/ui/select";
+import { type ReactNode, useState } from "react";
+import { type Choice, TextField } from "./oms-ui";
 import { formatLogLabel } from "./workflow-types";
 
 export interface LogFilterValues {
@@ -50,7 +54,10 @@ export function LogFilters({
   initialValues = {},
   modules = [],
   featureKeys = [],
+  trailing,
 }: {
+  /** Controls at the end of the bar, such as the auto-refresh switch. */
+  trailing?: ReactNode;
   onSubmit: (filters: LogFilterValues) => void;
   initialValues?: LogFilterValues;
   modules?: string[];
@@ -67,13 +74,24 @@ export function LogFilters({
     to: dateInput(initialValues.to),
   });
   const [advanced, setAdvanced] = useState(
-    Boolean(initialValues.actorId || initialValues.from || initialValues.to)
+    Boolean(
+      initialValues.shopDomain ||
+        initialValues.actorId ||
+        initialValues.from ||
+        initialValues.to
+    )
   );
   const update = (key: keyof typeof values, value: string) =>
     setValues((current) => ({ ...current, [key]: value }));
+  const filterCount = [
+    values.shopDomain,
+    values.actorId,
+    values.from,
+    values.to,
+  ].filter(Boolean).length;
   return (
     <form
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 border-border border-b px-5 py-3"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(
@@ -90,29 +108,21 @@ export function LogFilters({
         );
       }}
     >
-      <div className="grid items-end gap-3 sm:grid-cols-2 2xl:grid-cols-[minmax(220px,1.5fr)_repeat(4,minmax(130px,1fr))_auto]">
-        <TextField
-          id="workflow-search"
-          label="Search"
-          onChange={(event) => update("search", event.target.value)}
-          placeholder="Run, batch, order, shop, error…"
-          value={values.search}
-        />
-        <ChoiceSelect
-          choices={[
-            { label: "All modules", value: "all" },
-            ...Array.from(new Set([...MODULES, ...modules]))
-              .sort()
-              .map((value) => ({ label: formatLogLabel(value), value })),
-          ]}
-          id="workflow-module"
-          label="Module"
-          onValueChange={(value) =>
-            update("module", value === "all" ? "" : value)
-          }
-          value={values.module || "all"}
-        />
-        <ChoiceSelect
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-[260px]">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-faint"
+          />
+          <Input
+            aria-label="Search runs"
+            className="pl-8"
+            onChange={(event) => update("search", event.target.value)}
+            placeholder="Run, batch, order, shop, error"
+            value={values.search}
+          />
+        </div>
+        <FilterSelect
           choices={[
             { label: "All statuses", value: "all" },
             ...STATUSES.map((value) => ({
@@ -120,104 +130,144 @@ export function LogFilters({
               value,
             })),
           ]}
-          id="workflow-status"
           label="Status"
           onValueChange={(value) =>
             update("status", value === "all" ? "" : value)
           }
           value={values.status || "all"}
         />
-        <div>
-          <TextField
-            id="workflow-feature"
-            label="Feature key"
-            list="workflow-features"
-            onChange={(event) => update("featureKey", event.target.value)}
-            placeholder="All features"
-            value={values.featureKey}
-          />
-          <datalist id="workflow-features">
-            {featureKeys.map((value) => (
-              <option key={value} value={value} />
-            ))}
-          </datalist>
-        </div>
-        <TextField
-          id="workflow-shop"
-          label="Shop domain"
-          onChange={(event) => update("shopDomain", event.target.value)}
-          placeholder="All shops"
-          value={values.shopDomain}
+        <FilterSelect
+          choices={[
+            { label: "All modules", value: "all" },
+            ...Array.from(new Set([...MODULES, ...modules]))
+              .sort()
+              .map((value) => ({ label: formatLogLabel(value), value })),
+          ]}
+          label="Module"
+          onValueChange={(value) =>
+            update("module", value === "all" ? "" : value)
+          }
+          value={values.module || "all"}
         />
-        <Button type="submit">
-          <Search />
+        <Input
+          aria-label="Feature key"
+          className="w-44"
+          list="workflow-features"
+          onChange={(event) => update("featureKey", event.target.value)}
+          placeholder="All features"
+          value={values.featureKey}
+        />
+        <datalist id="workflow-features">
+          {featureKeys.map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
+        <Button
+          aria-expanded={advanced}
+          onClick={() => setAdvanced((open) => !open)}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          <Filter />
+          Shop, actor, dates
+          {filterCount > 0 ? (
+            <span className="text-faint tabular-nums">· {filterCount}</span>
+          ) : null}
+        </Button>
+        <Button
+          className="text-muted-foreground"
+          onClick={() => {
+            setValues({
+              actorId: "",
+              featureKey: "",
+              from: "",
+              module: "",
+              search: "",
+              shopDomain: "",
+              status: "",
+              to: "",
+            });
+            onSubmit({});
+          }}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
+          Clear
+        </Button>
+        <Button size="sm" type="submit" variant="outline">
           Search
         </Button>
+        <span className="flex-1" />
+        {trailing}
       </div>
-      <Collapsible onOpenChange={setAdvanced} open={advanced}>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setAdvanced((open) => !open)}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Advanced filters
-            <ChevronDown
-              className={
-                advanced
-                  ? "rotate-180 transition-transform"
-                  : "transition-transform"
-              }
-            />
-          </Button>
-          <Button
-            onClick={() => {
-              setValues({
-                actorId: "",
-                featureKey: "",
-                from: "",
-                module: "",
-                search: "",
-                shopDomain: "",
-                status: "",
-                to: "",
-              });
-              onSubmit({});
-            }}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Reset filters
-          </Button>
+      {advanced ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <TextField
+            id="workflow-shop"
+            label="Shop domain"
+            onChange={(event) => update("shopDomain", event.target.value)}
+            placeholder="All shops"
+            value={values.shopDomain}
+          />
+          <TextField
+            id="workflow-actor"
+            label="Actor ID"
+            onChange={(event) => update("actorId", event.target.value)}
+            value={values.actorId}
+          />
+          <TextField
+            id="workflow-from"
+            label="From"
+            onChange={(event) => update("from", event.target.value)}
+            type="datetime-local"
+            value={values.from}
+          />
+          <TextField
+            id="workflow-to"
+            label="To"
+            min={values.from || undefined}
+            onChange={(event) => update("to", event.target.value)}
+            type="datetime-local"
+            value={values.to}
+          />
         </div>
-        <CollapsibleContent>
-          <div className="grid gap-3 pt-3 sm:grid-cols-3">
-            <TextField
-              id="workflow-actor"
-              label="Actor ID"
-              onChange={(event) => update("actorId", event.target.value)}
-              value={values.actorId}
-            />
-            <TextField
-              id="workflow-from"
-              label="From"
-              onChange={(event) => update("from", event.target.value)}
-              type="datetime-local"
-              value={values.from}
-            />
-            <TextField
-              id="workflow-to"
-              label="To"
-              min={values.from || undefined}
-              onChange={(event) => update("to", event.target.value)}
-              type="datetime-local"
-              value={values.to}
-            />
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+      ) : null}
     </form>
+  );
+}
+
+/** A compact filter select: no visible label, the choice names the filter. */
+function FilterSelect({
+  choices,
+  label,
+  onValueChange,
+  value,
+}: {
+  choices: readonly Choice[];
+  label: string;
+  onValueChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <Select
+      items={choices}
+      onValueChange={(next) => next !== null && onValueChange(next)}
+      value={value}
+    >
+      <SelectTrigger aria-label={label} className="w-auto min-w-36">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {choices.map((choice) => (
+            <SelectItem key={choice.value} value={choice.value}>
+              {choice.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }

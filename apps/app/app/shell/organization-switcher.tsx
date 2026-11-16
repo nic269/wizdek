@@ -45,6 +45,10 @@ const plural = (count: number, word: string) =>
 export const organizationMeta = (organization: Organization) =>
   `${plural(organization.storeCount, "store")} · ${plural(organization.memberCount, "member")}`;
 
+/** The sidebar line under the organization name: the user's role, then stores. */
+const roleAndStores = (organization: Organization) =>
+  `${organization.role ?? "Member"} · ${plural(organization.storeCount, "store")}`;
+
 const CreateOrganizationDialog = ({
   onOpenChange,
   open,
@@ -114,7 +118,7 @@ export const OrganizationSwitcher = () => {
 
   if (isLoading && !organization) {
     return (
-      <div className="h-[38px] animate-pulse rounded-lg border border-sidebar-border bg-sidebar-field" />
+      <div className="h-12 animate-pulse rounded-[10px] bg-sidebar-field shadow-[0_0_0_1px_var(--border)]" />
     );
   }
 
@@ -129,7 +133,7 @@ export const OrganizationSwitcher = () => {
                   ? `Switch organization, current: ${organization.name}`
                   : "Create an organization"
               }
-              className="h-auto w-full justify-start in-data-[collapsed=true]:justify-center gap-[9px] rounded-lg border-sidebar-border bg-sidebar-field p-1.5 text-left font-normal text-sidebar-foreground hover:bg-sidebar-field"
+              className="h-auto w-full justify-start in-data-[collapsed=true]:justify-center gap-2.5 rounded-[10px] border-0 bg-sidebar-field in-data-[collapsed=true]:p-1.5 p-2 text-left font-normal text-sidebar-foreground shadow-[0_0_0_1px_var(--border)] hover:bg-sidebar-field"
               title="Switch organization"
               variant="outline"
             />
@@ -139,7 +143,7 @@ export const OrganizationSwitcher = () => {
             <IdentityChip
               id={organization.id}
               name={organization.name}
-              size={24}
+              size={26}
               variant="organization"
             />
           ) : (
@@ -148,16 +152,16 @@ export const OrganizationSwitcher = () => {
             </span>
           )}
           <span className="flex in-data-[collapsed=true]:hidden min-w-0 flex-1 flex-col">
-            <span className="truncate font-semibold text-[13px] leading-[1.2]">
+            <span className="truncate font-[550] text-[13px] leading-4">
               {organization?.name ?? "No organization"}
             </span>
-            <span className="truncate text-[11.5px] text-sidebar-muted leading-[1.2]">
+            <span className="truncate text-[11px] text-faint tabular-nums leading-4">
               {organization
-                ? organizationMeta(organization)
+                ? roleAndStores(organization)
                 : "Create one to start"}
             </span>
           </span>
-          <ChevronsUpDown className="in-data-[collapsed=true]:hidden size-3.5 text-sidebar-muted" />
+          <ChevronsUpDown className="in-data-[collapsed=true]:hidden size-3.5 text-faint" />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"

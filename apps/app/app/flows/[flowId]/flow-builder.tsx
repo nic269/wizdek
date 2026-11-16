@@ -6,9 +6,9 @@ import {
   Button,
   cn,
   ErrorAlert,
-  History,
   ListChecks,
   Lock,
+  NavTabs,
   Play,
   ShellHeader,
   Shimmer,
@@ -131,14 +131,6 @@ function BuilderHeader({
               </span>
             ) : null}
           </Button>
-          <Link
-            className="inline-flex h-8 items-center gap-[7px] rounded-lg px-[11px] font-medium text-[13px] hover:bg-hover"
-            href={`/flows/${flow.id}/runs`}
-          >
-            <History className="size-[15px]" />
-            Runs
-          </Link>
-          <span aria-hidden="true" className="h-5 w-px bg-border" />
           {canManage ? (
             <Button
               aria-keyshortcuts="Meta+S"
@@ -208,6 +200,26 @@ function BuilderHeader({
             isDirty={isDirty}
             savedAt={editor.savedAt}
             version={editor.version}
+          />
+          <span aria-hidden="true" className="h-5 w-px bg-border" />
+          <NavTabs
+            aria-label="Flow sections"
+            linkComponent={Link}
+            tabs={[
+              {
+                current: true,
+                href: `/flows/${flow.id}`,
+                key: "editor",
+                label: "Editor",
+              },
+              {
+                current: false,
+                href: `/flows/${flow.id}/runs`,
+                key: "runs",
+                label: "Runs",
+              },
+            ]}
+            variant="header"
           />
         </div>
       }
@@ -456,7 +468,7 @@ function Builder({ canManage, canRun, flowId }: FlowBuilderProps) {
               />
             ) : null}
           </div>
-          <div className="flex w-[330px] flex-none flex-col border-border border-l bg-card">
+          <div className="flex w-[340px] flex-none flex-col border-border border-l bg-card">
             {selected ? (
               <NodeConfigPanel
                 canManage={canManage}

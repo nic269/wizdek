@@ -72,29 +72,48 @@ describe("ControlStore ownership and restart", () => {
     const modulePath = resolve(
       "app/works/oms-management/_module/server/storage/control-store.ts"
     );
-    const child = spawnSync(process.execPath, [
-      "--import", "tsx", "--input-type=module", "-e",
-      `import { ControlStore } from ${JSON.stringify(modulePath)};
+    const child = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "-e",
+        `import { ControlStore } from ${JSON.stringify(modulePath)};
        const store = new ControlStore(${JSON.stringify(path)}, ${JSON.stringify(KEY)});
        store.db.prepare("INSERT INTO metadata VALUES ('crash-fixture', 'retained')").run();
        process.kill(process.pid, "SIGKILL");`,
-    ], { env: { ...process.env, NODE_ENV: "development" } });
+      ],
+      { env: { ...process.env, NODE_ENV: "development" } }
+    );
     expect(child.signal, child.stderr.toString()).toBe("SIGKILL");
     const restarted = new ControlStore(path, KEY);
     stores.push(restarted);
-    expect(restarted.db.prepare("SELECT value FROM metadata WHERE key='crash-fixture'").get())
-      .toEqual({ value: "retained" });
+    expect(
+      restarted.db
+        .prepare("SELECT value FROM metadata WHERE key='crash-fixture'")
+        .get()
+    ).toEqual({ value: "retained" });
     expect(() => new ControlStore(path, KEY)).toThrowError(
       expect.objectContaining({ code: "control_store_owned" })
     );
   });
 
   it.each([
-    ["production", { hostname: hostname(), runtime: "development", pid: 2147483647 }],
-    ["development", { hostname: "another-host", runtime: "development", pid: 2147483647 }],
-    ["development", { pid: 2147483647 }],
-    ["development", { hostname: hostname(), runtime: "development", pid: process.pid }],
-    ["development", { hostname: hostname(), runtime: "development", pid: -1 }],
+    [
+      "production",
+      { hostname: hostname(), pid: 2_147_483_647, runtime: "development" },
+    ],
+    [
+      "development",
+      { hostname: "another-host", pid: 2_147_483_647, runtime: "development" },
+    ],
+    ["development", { pid: 2_147_483_647 }],
+    [
+      "development",
+      { hostname: hostname(), pid: process.pid, runtime: "development" },
+    ],
+    ["development", { hostname: hostname(), pid: -1, runtime: "development" }],
   ])("preserves live or ambiguous owners in %s", (runtime, metadata) => {
     vi.stubEnv("NODE_ENV", runtime);
     const path = createPath();

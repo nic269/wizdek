@@ -3,12 +3,15 @@
 import {
   Button,
   Copy,
+  cn,
   Download,
   RefreshCw,
+  SegmentedControl,
   StatusBadge,
 } from "@repo/design-system";
 import { Skeleton } from "@repo/design-system/components/ui/skeleton";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import type { Actor, PublicProfile, TargetRef } from "../lib/contracts";
 import { queryKey } from "../lib/contracts";
 import { request } from "./management-app";
@@ -66,13 +69,14 @@ export function WorkflowRunDetailPanel({
     queryKey: queryKey(actor.id, target, "configured", "log", { id: runId }),
     refetchInterval: autoRefresh ? 10_000 : false,
   });
+  const [level, setLevel] = useState<"ALL" | "ERROR" | "WARN">("ALL");
   const run = query.data?.pages[0]?.run;
   const logs = query.data?.pages.flatMap((page) => page.logs) ?? [];
   if (!runId) {
     return (
-      <div className="min-h-96 rounded-xl border bg-card p-8 text-center">
-        <h2 className="font-semibold text-sm">Select a workflow run</h2>
-        <p className="mt-2 text-muted-foreground text-sm">
+      <div className={cn(PANE, "place-content-center p-8 text-center")}>
+        <h2 className="font-semibold text-[15px]">Select a workflow run</h2>
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Run timeline and error payloads will appear here.
         </p>
       </div>
@@ -80,7 +84,7 @@ export function WorkflowRunDetailPanel({
   }
   if (query.isPending) {
     return (
-      <div className="space-y-3 rounded-xl border p-5" role="status">
+      <div className={cn(PANE, "content-start gap-3 p-6")} role="status">
         <span className="sr-only">Loading workflow details…</span>
         <Skeleton className="h-20 w-full" />
         <Skeleton className="h-72 w-full" />
@@ -89,7 +93,7 @@ export function WorkflowRunDetailPanel({
   }
   if (query.error && !run) {
     return (
-      <div className="space-y-3 rounded-xl border p-5">
+      <div className={cn(PANE, "content-start justify-items-start gap-3 p-6")}>
         <ErrorNotice message={query.error.message} />
         <Button onClick={() => query.refetch()} type="button" variant="outline">
           Retry details
@@ -100,107 +104,128 @@ export function WorkflowRunDetailPanel({
   if (!run) {
     return null;
   }
+  const visibleLogs =
+    level === "ALL" ? logs : logs.filter((log) => log.level === level);
+  const countOf = (name: string) =>
+    logs.filter((log) => log.level === name).length;
   return (
     <section
       aria-label="Workflow detail"
-      className="min-w-0 overflow-hidden rounded-card bg-card shadow-card"
+      className="flex min-w-0 flex-[999_1_520px] flex-col"
     >
-      <header className="border-border border-b px-6 pt-4 pb-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-              {run.module}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h2 className="break-words font-semibold text-[15px] leading-[22px] tracking-[-0.01em]">
-                {run.title || run.id}
-              </h2>
-              <StatusBadge status={run.status.toUpperCase()}>
-                {formatLogLabel(run.status)}
-              </StatusBadge>
-            </div>
-            <p className="mt-1 break-all text-muted-foreground text-xs tabular-nums">
-              {run.id}
-            </p>
+      <header className="flex flex-wrap items-start gap-3 border-border border-b px-6 pt-4 pb-3.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="break-words font-semibold text-[15px] leading-[22px] tracking-[-0.01em]">
+              {run.title || run.id}
+            </h2>
+            <StatusBadge status={run.status.toUpperCase()}>
+              {formatLogLabel(run.status)}
+            </StatusBadge>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {run.module === "IMPORT_EXPORT" &&
-            run.targetType === "ImportBatch" ? (
+          <p className="break-all text-muted-foreground text-xs tabular-nums">
+            run {run.id}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {run.module === "IMPORT_EXPORT" &&
+          run.targetType === "ImportBatch" ? (
+            <Button
+              disabled={action !== null}
+              onClick={() => perform("download")}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Download />
+              {action === "download" ? "Downloading…" : "Download Original"}
+            </Button>
+          ) : null}
+          <Button
+            disabled={action !== null}
+            onClick={() => perform("copy")}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Copy />
+            {action === "copy" ? "Copying…" : "Copy Bundle"}
+          </Button>
+          <Button
+            aria-label="Refresh workflow details"
+            disabled={query.isFetching}
+            onClick={() => query.refetch()}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <RefreshCw className={query.isFetching ? "animate-spin" : ""} />
+          </Button>
+        </div>
+      </header>
+      <div className="flex min-w-0 flex-col gap-5 px-6 py-5">
+        <RunMetrics logs={logs} run={run} timeZone={timeZone} />
+        <ActionNotice error={error} notice={notice} queryError={query.error} />
+        <div className="grid min-w-0 items-start gap-4 2xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div className="flex min-w-0 flex-col gap-2">
+            <h3 className={LABEL}>Run context</h3>
+            <pre className="max-h-[560px] overflow-auto rounded-[10px] bg-sunken px-3.5 py-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
+              {json(run.summary)}
+            </pre>
+          </div>
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex min-h-[30px] flex-wrap items-center gap-2">
+              <h3 className={cn(LABEL, "flex-1")}>
+                Logs{" "}
+                <span className="normal-case tracking-normal">
+                  · {logs.length} loaded
+                </span>
+              </h3>
+              <SegmentedControl
+                aria-label="Log level"
+                onValueChange={setLevel}
+                options={[
+                  { count: logs.length, label: "All", value: "ALL" },
+                  { count: countOf("ERROR"), label: "Errors", value: "ERROR" },
+                  { count: countOf("WARN"), label: "Warn", value: "WARN" },
+                ]}
+                value={level}
+              />
+            </div>
+            <div className="max-h-[760px] overflow-y-auto rounded-card bg-sunken py-1.5 shadow-[inset_0_0_0_1px_var(--border)]">
+              {visibleLogs.map((log) => (
+                <TimelineLog key={log.id} log={log} timeZone={timeZone} />
+              ))}
+              {visibleLogs.length ? null : (
+                <p className="py-8 text-center text-[13px] text-muted-foreground">
+                  No log entries recorded.
+                </p>
+              )}
+            </div>
+            {query.hasNextPage ? (
               <Button
-                disabled={action !== null}
-                onClick={() => perform("download")}
+                className="self-start"
+                disabled={query.isFetchingNextPage}
+                onClick={() => query.fetchNextPage()}
                 size="sm"
                 type="button"
                 variant="outline"
               >
-                <Download />
-                {action === "download" ? "Downloading…" : "Download Original"}
+                {query.isFetchingNextPage
+                  ? "Loading…"
+                  : "Load more log entries"}
               </Button>
             ) : null}
-            <Button
-              disabled={action !== null}
-              onClick={() => perform("copy")}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Copy />
-              {action === "copy" ? "Copying…" : "Copy Bundle"}
-            </Button>
-            <Button
-              aria-label="Refresh workflow details"
-              disabled={query.isFetching}
-              onClick={() => query.refetch()}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <RefreshCw className={query.isFetching ? "animate-spin" : ""} />
-            </Button>
           </div>
         </div>
-        <RunMetrics logs={logs} run={run} />
-        <ActionNotice error={error} notice={notice} queryError={query.error} />
-      </header>
-      <div className="grid min-w-0 2xl:grid-cols-[minmax(0,1fr)_270px]">
-        <div className="min-w-0 px-6 py-5">
-          <h3 className="mb-3 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-            Timeline{" "}
-            <span className="normal-case tracking-normal">
-              · {logs.length} loaded
-            </span>
-          </h3>
-          <div className="max-h-[760px] space-y-3 overflow-y-auto pr-1">
-            {logs.map((log) => (
-              <TimelineLog key={log.id} log={log} timeZone={timeZone} />
-            ))}
-            {logs.length ? null : (
-              <p className="py-8 text-center text-muted-foreground text-sm">
-                No log entries recorded.
-              </p>
-            )}
-          </div>
-          {query.hasNextPage ? (
-            <Button
-              className="mt-4"
-              disabled={query.isFetchingNextPage}
-              onClick={() => query.fetchNextPage()}
-              type="button"
-              variant="outline"
-            >
-              {query.isFetchingNextPage ? "Loading…" : "Load more log entries"}
-            </Button>
-          ) : null}
-        </div>
-        <RunContext run={run} timeZone={timeZone} />
       </div>
     </section>
   );
 }
-const LEVEL_DOTS: Record<string, string> = {
-  ERROR: "bg-(--status-danger-dot)",
-  WARN: "bg-(--status-warning-dot)",
-};
+
+const PANE = "grid min-h-96 min-w-0 flex-[999_1_520px]";
+const LABEL = "font-medium text-[11px] text-faint uppercase tracking-[0.06em]";
+
 const LEVEL_SURFACES: Record<string, string> = {
   ERROR: "bg-prod-soft",
   WARN: "bg-(--alert-warning-bg)",
@@ -210,35 +235,29 @@ const LEVEL_TEXT: Record<string, string> = {
   WARN: "text-(--status-warning-fg)",
 };
 
+const METRIC_TONES = {
+  danger: "text-(--status-danger-fg)",
+  warning: "text-(--status-warning-fg)",
+} as const;
+
 function Metric({
   label,
   value,
-  danger = false,
+  tone,
 }: {
   label: string;
-  value: string;
-  danger?: boolean;
+  value: string | null | undefined;
+  tone?: keyof typeof METRIC_TONES | undefined;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5 bg-card px-3.5 py-2.5">
-      <p className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-        {label}
-      </p>
-      <p
-        className={`break-words text-[13px] tabular-nums ${danger ? "text-(--status-danger-fg)" : ""}`}
+      <dt className={LABEL}>{label}</dt>
+      <dd
+        className={cn(
+          "break-words text-[13px] tabular-nums",
+          tone && METRIC_TONES[tone]
+        )}
       >
-        {value}
-      </p>
-    </div>
-  );
-}
-function ContextRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-        {label}
-      </dt>
-      <dd className="mt-1 break-all text-[12.5px] tabular-nums">
         {value || "—"}
       </dd>
     </div>
@@ -253,137 +272,118 @@ function TimelineLog({
 }) {
   const hasDetails = Boolean(log.errorDetails || log.metadata);
   return (
-    <article className="relative border-border border-l-2 pl-4">
-      <span
-        className={`absolute top-3 -left-[5px] size-2 rounded-full ${LEVEL_DOTS[log.level] ?? "bg-ghost"}`}
-      />
-      <div
-        className={`rounded-[10px] p-3 shadow-[inset_0_0_0_1px_var(--border)] ${LEVEL_SURFACES[log.level] ?? "bg-card"}`}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`font-mono font-semibold text-[11px] ${LEVEL_TEXT[log.level] ?? "text-muted-foreground"}`}
-          >
-            {log.level}
-          </span>
-          <span className="font-semibold text-xs">{log.stage}</span>
-          <span className="text-muted-foreground text-xs">#{log.sequence}</span>
-          <time
-            className="ml-auto text-muted-foreground text-xs"
-            dateTime={log.createdAt}
-            title={formatLogDate(log.createdAt, false, timeZone)}
-          >
-            {formatLogDate(log.createdAt, true, timeZone)}
-          </time>
-        </div>
-        <p className="mt-2 whitespace-pre-wrap break-words text-sm">
+    <article className={cn("px-3 py-1", LEVEL_SURFACES[log.level])}>
+      <div className="flex flex-wrap items-baseline gap-x-3 font-mono text-[11.5px] leading-[22px] tracking-[-0.01em]">
+        <time
+          className="text-faint"
+          dateTime={log.createdAt}
+          title={formatLogDate(log.createdAt, false, timeZone)}
+        >
+          {formatLogDate(log.createdAt, true, timeZone)}
+        </time>
+        <span
+          className={cn(
+            "w-10",
+            log.level === "ERROR" && "font-semibold",
+            LEVEL_TEXT[log.level] ?? "text-muted-foreground"
+          )}
+        >
+          {log.level}
+        </span>
+        <span className="min-w-0 flex-1 whitespace-pre-wrap break-words">
           {log.message}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2 text-muted-foreground text-xs">
-          {log.event ? <span>{log.event}</span> : null}
-          {log.status ? <span>{log.status}</span> : null}
-          {log.rowNumber !== null && log.rowNumber !== undefined ? (
-            <span>Row {log.rowNumber}</span>
-          ) : null}
-          {log.shopDomain ? <span>{log.shopDomain}</span> : null}
-          {log.operationName ? <span>{log.operationName}</span> : null}
-          {log.durationMs !== null && log.durationMs !== undefined ? (
-            <span>{formatDuration(log.durationMs)}</span>
-          ) : null}
-          {log.errorName ? <span>{log.errorName}</span> : null}
-          {log.errorCode ? <span>{log.errorCode}</span> : null}
-        </div>
-        {log.targetId ? (
-          <p className="mt-2 break-all text-muted-foreground text-xs">
-            {[log.targetType, log.targetId].filter(Boolean).join(" · ")}
-          </p>
-        ) : null}
-        {log.errorMessage ? (
-          <p className="mt-2 whitespace-pre-wrap break-words text-destructive text-xs">
-            {log.errorMessage}
-          </p>
-        ) : null}
-        {hasDetails ? (
-          <details className="mt-3">
-            <summary className="cursor-pointer font-medium text-xs">
-              Payload
-            </summary>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-[10px] bg-card p-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
-              {json({ errorDetails: log.errorDetails, metadata: log.metadata })}
-            </pre>
-          </details>
-        ) : null}
+        </span>
       </div>
+      <div className="flex flex-wrap gap-x-2.5 text-muted-foreground text-xs">
+        <span className="font-medium text-foreground-2">{log.stage}</span>
+        <span>#{log.sequence}</span>
+        {log.event ? <span>{log.event}</span> : null}
+        {log.status ? <span>{log.status}</span> : null}
+        {log.rowNumber !== null && log.rowNumber !== undefined ? (
+          <span>Row {log.rowNumber}</span>
+        ) : null}
+        {log.shopDomain ? <span>{log.shopDomain}</span> : null}
+        {log.operationName ? <span>{log.operationName}</span> : null}
+        {log.durationMs !== null && log.durationMs !== undefined ? (
+          <span>{formatDuration(log.durationMs)}</span>
+        ) : null}
+        {log.errorName ? <span>{log.errorName}</span> : null}
+        {log.errorCode ? <span>{log.errorCode}</span> : null}
+      </div>
+      {log.targetId ? (
+        <p className="break-all text-muted-foreground text-xs">
+          {[log.targetType, log.targetId].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
+      {log.errorMessage ? (
+        <p className="whitespace-pre-wrap break-words text-prod-ink text-xs">
+          {log.errorMessage}
+        </p>
+      ) : null}
+      {hasDetails ? (
+        <details className="py-1">
+          <summary className="cursor-pointer font-medium text-xs">
+            Payload
+          </summary>
+          <pre className="mt-1.5 max-h-72 overflow-auto rounded-[10px] bg-card p-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
+            {json({ errorDetails: log.errorDetails, metadata: log.metadata })}
+          </pre>
+        </details>
+      ) : null}
     </article>
   );
 }
 
-function RunMetrics({ run, logs }: { run: WorkflowRun; logs: WorkflowLog[] }) {
+function RunMetrics({
+  run,
+  logs,
+  timeZone,
+}: {
+  run: WorkflowRun;
+  logs: WorkflowLog[];
+  timeZone?: string | undefined;
+}) {
   return (
-    <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-card bg-border shadow-[0_0_0_1px_var(--border)] lg:grid-cols-4">
-      <Metric label="Status" value={run.status} />
-      <Metric label="Logs" value={String(run.logCount ?? logs.length)} />
+    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card bg-border shadow-[0_0_0_1px_var(--border)] md:grid-cols-3 xl:grid-cols-5">
+      <Metric label="Feature" value={run.featureKey} />
+      <Metric label="Workflow" value={run.workflowKey} />
+      <Metric
+        label="Target"
+        value={[run.targetType, run.targetId].filter(Boolean).join(" · ")}
+      />
+      <Metric
+        label="Actor"
+        value={
+          run.actor
+            ? [run.actor.name, run.actor.email].filter(Boolean).join(" · ")
+            : "system"
+        }
+      />
+      <Metric label="Module" value={formatLogLabel(run.module)} />
+      <Metric
+        label="Started"
+        value={formatLogDate(run.startedAt ?? run.createdAt, false, timeZone)}
+      />
+      <Metric
+        label="Completed"
+        value={formatLogDate(run.completedAt, false, timeZone)}
+      />
+      <Metric label="Duration" value={formatDuration(run.durationMs)} />
       <Metric
         label="Warnings"
+        tone={(run.warningCount ?? 0) > 0 ? "warning" : undefined}
         value={String(
           run.warningCount ?? logs.filter((log) => log.level === "WARN").length
         )}
       />
       <Metric
-        danger={(run.errorCount ?? 0) > 0}
         label="Errors"
+        tone={(run.errorCount ?? 0) > 0 ? "danger" : undefined}
         value={String(
           run.errorCount ?? logs.filter((log) => log.level === "ERROR").length
         )}
       />
-    </div>
-  );
-}
-
-function RunContext({
-  run,
-  timeZone,
-}: {
-  run: WorkflowRun;
-  timeZone?: string | undefined;
-}) {
-  return (
-    <aside className="min-w-0 border-border border-t bg-sunken p-4 2xl:border-t-0 2xl:border-l">
-      <h3 className="font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-        Run context
-      </h3>
-      <dl className="mt-3 space-y-3 text-xs">
-        <ContextRow label="Feature" value={run.featureKey} />
-        <ContextRow label="Workflow" value={run.workflowKey} />
-        <ContextRow
-          label="Target"
-          value={[run.targetType, run.targetId].filter(Boolean).join(" · ")}
-        />
-        <ContextRow
-          label="Actor"
-          value={
-            run.actor
-              ? [run.actor.name, run.actor.email].filter(Boolean).join(" · ")
-              : "system"
-          }
-        />
-        <ContextRow
-          label="Started"
-          value={formatLogDate(run.startedAt ?? run.createdAt, false, timeZone)}
-        />
-        <ContextRow
-          label="Completed"
-          value={formatLogDate(run.completedAt, false, timeZone)}
-        />
-        <ContextRow label="Duration" value={formatDuration(run.durationMs)} />
-      </dl>
-      <h3 className="mt-6 font-medium text-[11px] text-faint uppercase tracking-[0.06em]">
-        Summary
-      </h3>
-      <pre className="mt-3 max-h-80 overflow-auto rounded-[10px] bg-card p-3 font-mono text-[12px] text-foreground-2 leading-5 shadow-[inset_0_0_0_1px_var(--border)]">
-        {json(run.summary)}
-      </pre>
-    </aside>
+    </dl>
   );
 }
 
@@ -400,15 +400,11 @@ function ActionNotice({
   return (
     <>
       {notice ? (
-        <p className="mt-3 text-sm" role="status">
+        <p className="text-[13px]" role="status">
           {notice}
         </p>
       ) : null}
-      {failure ? (
-        <div className="mt-3">
-          <ErrorNotice message={failure} />
-        </div>
-      ) : null}
+      {failure ? <ErrorNotice message={failure} /> : null}
     </>
   );
 }

@@ -151,7 +151,7 @@ test("shows source workflow layout, module filters and incremental timeline", as
   await page.getByRole("button", { exact: true, name: "Search" }).click();
   await filtered;
   await expect(page).toHaveURL(CUSTOM_MODULE_URL);
-  await page.getByRole("button", { name: "Reset filters" }).click();
+  await page.getByRole("button", { exact: true, name: "Clear" }).click();
   await expect(page.getByLabel("Module", { exact: true })).toContainText(
     "All modules"
   );

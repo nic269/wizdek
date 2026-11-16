@@ -533,7 +533,7 @@ export function StoreDrawer({
             <DrawerHeader onClose={onClose} store={store} />
             <div className="flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-5 pt-[18px] pb-6">
               <ReconnectAlert canManage={canManage} store={store} />
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-menu border border-border bg-border">
+              <div className="grid grid-cols-2 gap-px rounded-menu border border-border bg-border">
                 <Fact label="Status">
                   <StatusBadge status={store.status} />
                 </Fact>

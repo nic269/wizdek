@@ -291,33 +291,45 @@ const TraceTitleBar = ({
   );
 };
 
+const MetaItem = ({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) => (
+  <div className="flex flex-col gap-0.5">
+    <dt className="font-medium text-[11px] text-faint uppercase leading-4 tracking-[0.06em]">
+      {label}
+    </dt>
+    <dd className="flex items-center gap-1.5 text-[13px] text-foreground tabular-nums leading-5">
+      {children}
+    </dd>
+  </div>
+);
+
+/** The run's facts as a strip of labelled values. */
 const TraceMeta = ({ detail }: { detail: RunDetail }) => {
   const { run } = detail;
   return (
-    <div className="flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[12.5px] text-muted-foreground leading-[1.4]">
-      <span className="font-medium text-foreground-2">
+    <dl className="flex flex-wrap gap-x-8 gap-y-3">
+      <MetaItem label="Flow">
         {detail.flowName} · v{detail.version.version}
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        on{" "}
-        <strong className="font-semibold text-foreground">
-          {detail.store.name}
-        </strong>
-        <EnvTag environment={detail.store.environment} />
-      </span>
-      <span>
-        {detail.startedByName
-          ? `Started by ${detail.startedByName}`
-          : "Started automatically"}{" "}
-        · {formatWhen(run.startedAt ?? run.createdAt)}
-      </span>
-      <span>
-        Duration{" "}
-        <span className="text-foreground-2 tabular-nums">
-          {run.startedAt ? formatDuration(run.startedAt, run.completedAt) : "—"}
-        </span>
-      </span>
-    </div>
+      </MetaItem>
+      <MetaItem label="Store">
+        {detail.store.name}
+        <EnvTag compact environment={detail.store.environment} />
+      </MetaItem>
+      <MetaItem label="Started by">
+        {detail.startedByName ?? "Automatic"}
+      </MetaItem>
+      <MetaItem label="Started">
+        {formatWhen(run.startedAt ?? run.createdAt)}
+      </MetaItem>
+      <MetaItem label="Duration">
+        {run.startedAt ? formatDuration(run.startedAt, run.completedAt) : "—"}
+      </MetaItem>
+    </dl>
   );
 };
 

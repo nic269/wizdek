@@ -107,7 +107,7 @@ const StoreRow = ({
             <span className="truncate font-semibold text-[13px] text-foreground leading-[1.3]">
               {store.name}
             </span>
-            <EnvTag environment={store.environment} />
+            <EnvTag compact environment={store.environment} />
           </div>
           <div className="truncate text-muted-foreground text-xs tabular-nums leading-[1.4]">
             {store.shopDomain}

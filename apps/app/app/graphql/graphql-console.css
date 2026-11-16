@@ -191,6 +191,10 @@
   background: var(--hover);
 }
 
+.graphql-console .graphiql-container .graphiql-editor-tools button svg {
+  margin-block: 0;
+}
+
 /* Response pane: sunken, with the status bar under it. */
 .graphql-console .graphiql-container .graphiql-response {
   padding-top: 10px;

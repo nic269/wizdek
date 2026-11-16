@@ -1,17 +1,9 @@
 "use client";
 
-import { authFeatureConfig } from "@repo/config";
-import { cn, Settings, ShellHeader, Shield, Users } from "@repo/design-system";
-import Link from "next/link";
+import { PageHeader, ShellHeader } from "@repo/design-system";
 import { useActiveOrganization } from "../lib/active-organization";
 
 export type SettingsTab = "general" | "members" | "access";
-
-const TABS = [
-  { href: "/settings", icon: Settings, label: "General", tab: "general" },
-  { href: "/settings/members", icon: Users, label: "Members", tab: "members" },
-  { href: "/settings/access", icon: Shield, label: "Access", tab: "access" },
-] as const;
 
 const describe = (tab: SettingsTab, organizationName: string) => {
   if (tab === "members") {
@@ -32,60 +24,17 @@ const describe = (tab: SettingsTab, organizationName: string) => {
   };
 };
 
-/** One header over General, Members and Access, with underline tabs. */
+/** The breadcrumb and page title shared by Settings, Members and Access. */
 export function SettingsHeader({ tab }: { tab: SettingsTab }) {
   const { organization } = useActiveOrganization();
   const { description, title } = describe(
     tab,
     organization?.name ?? "your organization"
   );
-  // Members lives behind the invitations feature, like its page.
-  const tabs = TABS.filter(
-    (item) =>
-      item.tab !== "members" || authFeatureConfig.organizationInvitations
-  );
-  const currentTab = TABS.find((item) => item.tab === tab);
   return (
-    <header className="flex flex-col gap-3.5 border-border border-b">
-      <ShellHeader
-        crumbs={[
-          { label: "Organization" },
-          { label: currentTab?.label ?? title },
-        ]}
-      />
-      <div className="flex min-w-[min(100%,240px)] flex-col">
-        <h1 className="m-0 font-semibold text-[20px] leading-7 tracking-[-0.018em]">
-          {title}
-        </h1>
-        <p className="mt-1 text-[13px] text-muted-foreground leading-normal">
-          {description}
-        </p>
-      </div>
-      <nav
-        aria-label="Settings"
-        className="-mb-px flex gap-0.5 overflow-x-auto"
-      >
-        {tabs.map((item) => {
-          const current = item.tab === tab;
-          const Icon = item.icon;
-          return (
-            <Link
-              aria-current={current ? "page" : undefined}
-              className={cn(
-                "inline-flex h-9 shrink-0 items-center gap-[7px] border-b-2 px-3 font-medium text-[13px] leading-none transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/15",
-                current
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground"
-              )}
-              href={item.href}
-              key={item.tab}
-            >
-              <Icon className="size-[15px]" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </header>
+    <>
+      <ShellHeader crumbs={[{ label: "Organization" }, { label: title }]} />
+      <PageHeader description={description} title={title} />
+    </>
   );
 }

@@ -62,7 +62,7 @@ export function StorePicker({
                 {store.shopDomain}
               </span>
             </span>
-            <EnvTag environment={store.environment} />
+            <EnvTag compact environment={store.environment} />
           </label>
         );
       })}

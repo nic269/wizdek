@@ -1,9 +1,8 @@
 import { PageHeader } from "@repo/design-system";
 import type { Metadata } from "next";
 import { AppShellLayout } from "../../../app-shell-layout";
-import { BackLink } from "../../../lib/back-link";
 import { requireFlowAccess } from "../flow-access";
-import { RunsPanel } from "./runs-panel";
+import { RunsHeader, RunsPanel } from "./runs-panel";
 
 export const metadata: Metadata = { title: "Runs" };
 
@@ -17,9 +16,9 @@ export default async function FlowRunsPage({
 
   return (
     <AppShellLayout>
+      <RunsHeader flowId={flowId} flowName={flowName} />
       <PageHeader
-        back={<BackLink href={`/flows/${flowId}`}>{flowName}</BackLink>}
-        description="Every run of this flow, newest first."
+        description={`Every run of ${flowName}, newest first.`}
         title="Runs"
       />
       <RunsPanel flowId={flowId} />

@@ -1,9 +1,12 @@
 import { getCurrentSession } from "@repo/auth/session";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShellLayout } from "../app-shell-layout";
 import { GeneralSettings } from "./general-settings";
 import { SettingsHeader } from "./settings-header";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const session = await getCurrentSession(await headers());

@@ -44,7 +44,7 @@ type AuditPage = Awaited<ReturnType<typeof apiClient.organizations.auditLogs>>;
 type AuditEvent = AuditPage["data"][number];
 
 const PAGE_SIZE = 20;
-const COLUMNS = "140px 28px minmax(0,1fr) 190px";
+const COLUMNS = "22px minmax(0,1fr)";
 
 type Metadata = Record<string, unknown>;
 
@@ -223,34 +223,33 @@ const AuditRow = ({ event }: { event: AuditEvent }) => {
   const Icon = known?.icon ?? Activity;
   const object = objectText(event.metadata, known?.object);
   return (
-    <div
-      className="grid items-center gap-3 border-border border-b px-4 py-2.5 last:border-b-0"
-      style={{ gridTemplateColumns: COLUMNS }}
-    >
-      <time
-        className="text-muted-foreground text-xs tabular-nums leading-[1.3]"
-        dateTime={new Date(event.createdAt).toISOString()}
-        title={formatDateTime(event.createdAt)}
-      >
-        {auditTime(event.createdAt)}
-      </time>
-      <span className="grid size-[26px] place-items-center rounded-[7px] border border-border bg-sunken text-foreground-2">
-        <Icon className="size-[13px]" />
+    <div className="flex items-start gap-2.5 border-border border-b px-4 py-2.5 last:border-b-0">
+      <span className="mt-px grid size-[22px] shrink-0 place-items-center rounded-md bg-sunken text-foreground-2 shadow-[inset_0_0_0_1px_var(--border)]">
+        <Icon className="size-3" />
       </span>
-      <span className="min-w-0 text-[13px] leading-[1.4]">
-        <strong className="font-semibold">
-          {event.actor?.name ?? "System"}
-        </strong>{" "}
-        {known?.what ?? "recorded"}{" "}
-        {object ? (
-          <span className="break-all text-foreground-2 text-xs tabular-nums">
-            {object}
-          </span>
-        ) : null}
-      </span>
-      <span className="truncate text-right text-[11.5px] text-faint tabular-nums leading-none">
-        {event.action}
-      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[13px] leading-[1.4]">
+          <strong className="font-[550]">
+            {event.actor?.name ?? "System"}
+          </strong>{" "}
+          {known?.what ?? "recorded"}{" "}
+          {object ? (
+            <span className="break-all text-foreground-2 text-xs tabular-nums">
+              {object}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex flex-wrap gap-x-1.5 text-[11px] text-faint tabular-nums">
+          <span className="truncate">{event.action}</span>
+          <span aria-hidden="true">·</span>
+          <time
+            dateTime={new Date(event.createdAt).toISOString()}
+            title={formatDateTime(event.createdAt)}
+          >
+            {auditTime(event.createdAt)}
+          </time>
+        </span>
+      </div>
     </div>
   );
 };
@@ -299,7 +298,7 @@ export function AuditLog({ organizationId }: { organizationId: string }) {
           title="Couldn't load the audit log."
         />
       ) : (
-        <ListFrame minWidth={680}>
+        <ListFrame minWidth={0}>
           {events.isPending ? (
             <SkeletonRows columns={COLUMNS} count={5} rowHeight={47} />
           ) : null}

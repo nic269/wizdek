@@ -8,7 +8,7 @@
   --xy-background-pattern-dots-color-default: var(--input);
   --xy-edge-stroke: #b4b6bb;
   --xy-edge-stroke-selected: var(--accent);
-  --xy-edge-stroke-width: 1.5;
+  --xy-edge-stroke-width: 2;
   --xy-connectionline-stroke: var(--accent);
   --xy-node-boxshadow-selected: none;
   --xy-selection-background-color: color-mix(
@@ -62,42 +62,44 @@
 }
 
 .flow-canvas .react-flow__edge.selected .react-flow__edge-path {
-  stroke-width: 2;
+  stroke-width: 2.5;
 }
 
-/* Edge counts in a run trace: mono pills. */
+/* Edge labels and run-trace counts: small tags in the UI face. */
 .flow-canvas .react-flow__edge-textbg {
-  rx: 9;
-  ry: 9;
+  rx: 5;
+  ry: 5;
   stroke: var(--trace-edge-border, var(--input));
   stroke-width: 1;
 }
 
 .flow-canvas .react-flow__edge-text {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   fill: var(--trace-edge-ink, var(--foreground-2));
 }
 
-/* Zoom controls, bottom left: a white stack with hairlines. */
+/* Zoom controls, bottom left: one white pill of ghost icon buttons. */
 .flow-canvas .react-flow__controls {
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-menu);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  flex-direction: row;
+  gap: 2px;
+  padding: 3px;
+  background: #fff;
+  border-radius: 9px;
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 4px 12px -6px rgba(0, 0, 0, 0.15);
 }
 
 .flow-canvas .react-flow__controls-button {
-  width: 32px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   color: var(--foreground-2);
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-}
-
-.flow-canvas .react-flow__controls-button:last-child {
-  border-bottom: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
 }
 
 .flow-canvas .react-flow__controls-button:hover {

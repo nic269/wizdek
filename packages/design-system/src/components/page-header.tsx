@@ -17,9 +17,9 @@ export const Page = ({
     className={cn(
       width === "full"
         ? "flex min-h-0 flex-1 flex-col"
-        : "mx-auto flex w-full flex-col gap-6 px-4 pt-6 pb-10 sm:px-8 sm:pt-7",
-      width === "default" && "max-w-[1400px]",
-      width === "narrow" && "max-w-[1180px] gap-[22px]",
+        : "mx-auto flex w-full flex-col gap-6 pt-6 pb-10 pr-4 pl-5 sm:pt-7",
+      width === "default",
+      width === "narrow" && "max-w-[1280px] gap-[22px]",
       className
     )}
   >
@@ -49,6 +49,7 @@ export const PageHeader = ({
   title,
   description,
   actions,
+  aside,
   back,
   eyebrow,
   titleAdornment,
@@ -60,6 +61,8 @@ export const PageHeader = ({
   size?: "display" | "title" | undefined;
   description?: ReactNode | undefined;
   actions?: ReactNode | undefined;
+  /** Status content at the end of the title row; it stays in the page. */
+  aside?: ReactNode | undefined;
   /** A back link shown above the title. */
   back?: ReactNode | undefined;
   /** A label above the title, such as the date on the dashboard. */
@@ -100,6 +103,7 @@ export const PageHeader = ({
         </p>
       ) : null}
     </div>
+    {aside ? <div className="flex flex-none items-center">{aside}</div> : null}
     {actions ? <ShellActions>{actions}</ShellActions> : null}
   </header>
 );

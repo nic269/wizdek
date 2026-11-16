@@ -244,12 +244,29 @@ export function RunDialog({
           <DialogHeader>
             <DialogTitle>Run “{flowName}”</DialogTitle>
             <DialogDescription>
-              Version {version} · manual trigger
+              Runs saved version{" "}
+              <span className="tabular-nums">v{version}</span>. One run starts
+              per store, in parallel.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <div className="flex flex-col gap-2">
-              <span className="font-medium text-[13px]">Stores</span>
+              <div className="flex min-h-7 items-center gap-2">
+                <span className="flex-1 font-medium text-[12.5px] text-foreground-2">
+                  Stores
+                </span>
+                {connected.length > 1 ? (
+                  <Button
+                    disabled={isStarting}
+                    onClick={() => setStoreIds(connected.map(({ id }) => id))}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Select all connected
+                  </Button>
+                ) : null}
+              </div>
               {stores.isPending ? (
                 <p className="text-muted-foreground text-sm">Loading stores…</p>
               ) : null}
@@ -275,9 +292,8 @@ export function RunDialog({
               )}
             </div>
             <p className="text-muted-foreground text-xs">
-              Each selected store gets its own run with the same inputs.
-              Different stores run in parallel; runs for the same store are
-              queued in order.
+              Each selected store gets its own run with the same inputs. Runs
+              for the same store are queued in order.
             </p>
             {inputs.map((input) =>
               input.type === "file" ? (
@@ -331,12 +347,15 @@ export function RunDialog({
               <ErrorAlert message={error} title="Could not start all runs." />
             ) : null}
           </DialogBody>
-          <DialogFooter>
+          <DialogFooter className="sm:items-center">
+            <span className="flex-1 text-[11.5px] text-faint tabular-nums">
+              {plural(selectedStores.length, "store")} selected
+            </span>
             <Button
               disabled={isStarting}
               onClick={() => onOpenChange(false)}
               type="button"
-              variant="outline"
+              variant="ghost"
             >
               Cancel
             </Button>
@@ -345,12 +364,11 @@ export function RunDialog({
                 isStarting || selectedStores.length === 0 || missingInput
               }
               type="submit"
-              variant={liveStores.length > 0 ? "danger" : "default"}
             >
               <Play className="size-[13px]" />
               {isStarting
                 ? "Starting…"
-                : `Run on ${selectedStores.length === 1 ? selectedStores[0]?.name : plural(selectedStores.length, "store")}`}
+                : `Start ${plural(selectedStores.length, "run")}`}
             </Button>
           </DialogFooter>
         </form>

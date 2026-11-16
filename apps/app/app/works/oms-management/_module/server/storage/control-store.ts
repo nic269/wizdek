@@ -85,9 +85,9 @@ export class ControlStore {
       writeFileSync(
         `${this.lock}/owner.json`,
         JSON.stringify({
+          hostname: hostname(),
           owner: this.owner,
           pid: process.pid,
-          hostname: hostname(),
           runtime: process.env.NODE_ENV,
           startedAt: new Date().toISOString(),
         }),

@@ -1,10 +1,13 @@
 import { getCurrentSession } from "@repo/auth/session";
 import { authFeatureConfig } from "@repo/config";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { AppShellLayout } from "../../app-shell-layout";
 import { SettingsHeader } from "../settings-header";
 import { MembersPanel } from "./members-panel";
+
+export const metadata: Metadata = { title: "Members" };
 
 export default async function MembersPage() {
   if (!authFeatureConfig.organizationInvitations) {

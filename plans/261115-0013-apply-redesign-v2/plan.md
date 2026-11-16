@@ -74,6 +74,16 @@ These are recorded as phases land.
 | OMS Tools horizontal tabs | vertical tab list named "Tools" (same tab names) | OMS Tools |
 | OMS panel "Cronjob" | "Cron jobs" | OMS Site config |
 | Flows "Show archived (n)" / "Hide archived" button | tabs "All", "Active", "Drafts", "Archived" in a `nav` named "Flow status" | Flows list |
+| Sidebar `nav` "Primary" | `nav` "Main"; group headings are buttons with `aria-expanded` | shell |
+| "Search or jump to…" button | "Search and commands" | shell |
+| Env tag text "Prod" / "Stag" | "Production" / "Staging"; the short form stays in dense rows (`compact`) | `EnvTag` |
+| No-organization button "Create" | "Create organization"; the field has a visible "Organization name" label | shell |
+| OMS logs "Reset filters" | "Clear"; search field is "Search runs"; "Refresh runs" removed (header Refresh) | OMS debug logs |
+| OMS logs "Previous" / "Next" | "Newer" / "Load older" | OMS debug logs |
+| OMS tabs `nav` "OMS management" | "OMS sections" | OMS management |
+| Metafields row buttons "Edit …" / "Delete …" | menu button "Actions for …" with "Edit" and "Delete" | Metafields |
+| Metafields "Copy selected (n)" | "Copy to store" (header and bulk bar) | Metafields |
+| Run dialog "Run on …" | "Start n run(s)" | Flow run dialog |
 
 ## Verification (2026-11-15)
 
@@ -83,3 +93,15 @@ These are recorded as phases land.
 - Second pass: Metafields, GraphQL console and the expanded sidebar logo checked in the browser.
 - Third pass (full canvas check): Dashboard checklist and store health, Stores page tabs, Database detail, OMS overview, logs, run detail, Tools and Site config layout, Flows status tabs, Access layout and Auth split. Lint, types, unit tests, isolation and the OMS E2E harness (20 of 20) pass again; the OMS run caught a Panel header overlap, now fixed.
 - Not checked visually: the flow builder canvas, the run trace, the run dialog and the OMS screens with live data, because the review account has no flows, stores or OMS access. The root `tests/e2e` suite was not run.
+
+## Canvas audit (2026-11-15, second session)
+
+The canvas was unchanged (same version), so this pass compared every artboard with the code and closed the gaps.
+
+- Shell: 240px sidebar, collapsible groups, logo links to Dashboard, warning count pill, organization and account rows, no-organization state, flat empty state.
+- OMS: debug logs as a full-width tool (filter bar, runs list, run detail with metric grid and compact logs), cron rows and syntax help, operation history, typed-confirm dialog, empty connection state.
+- Metafields: flush table, type tags, row menu, floating bulk bar.
+- Flows: 240×64 nodes with a category edge, one-line palette, pill zoom controls, run dialog store list, run trace summary strip.
+- `pnpm check:ci`, `pnpm check-types`, `pnpm test:unit`, `check:oms-isolation` and the OMS E2E harness (20 of 20) pass.
+- Not checked with live data: Metafields table, flow canvas, run dialog and run trace (the review account has no stores or flows). The root `tests/e2e` suite was not run; three selectors in it were updated.
+- Not built because no behaviour exists for it: bulk delete of definitions, the run dialog's store search, and the partial-start summary dialog.

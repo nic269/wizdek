@@ -65,7 +65,7 @@ const StorePicker = ({
                 {store.shopDomain}
               </span>
             </span>
-            <EnvTag environment={store.environment} />
+            <EnvTag compact environment={store.environment} />
           </>
         ) : (
           <span className="flex-1 text-left text-muted-foreground">
@@ -103,7 +103,7 @@ const StorePicker = ({
                       : describeStatus(item.status).label}
                   </span>
                 </span>
-                <EnvTag environment={item.environment} />
+                <EnvTag compact environment={item.environment} />
                 {item.id === store?.id ? <Check className="size-3.5" /> : null}
               </DropdownMenuItem>
             );

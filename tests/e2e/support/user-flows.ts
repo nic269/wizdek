@@ -124,7 +124,7 @@ export const createOrganization = async ({
   await expect(firstName.or(switcher)).toBeVisible();
   if (await firstName.isVisible()) {
     await firstName.fill(name);
-    await page.getByRole("button", { exact: true, name: "Create" }).click();
+    await page.getByRole("button", { name: "Create organization" }).click();
   } else {
     await switcher.click();
     await page.getByRole("menuitem", { name: "Create organization" }).click();
