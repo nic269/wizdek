@@ -2,7 +2,9 @@ import { serve } from "@hono/node-server";
 import { createApiApp } from "@repo/api/app";
 import { assertApiProviderConfiguration } from "@repo/api/health";
 import {
+  abortFunctionRuns,
   failInterruptedDatabaseBackups,
+  failInterruptedFunctionRuns,
   getJobProvider,
   registerJobs,
 } from "@repo/api/jobs";
@@ -22,6 +24,9 @@ const main = async () => {
   await failInterruptedDatabaseBackups().catch((error: unknown) => {
     console.error("database_backups.sweep_failed", error);
   });
+  await failInterruptedFunctionRuns().catch((error: unknown) => {
+    console.error("function_runs.sweep_failed", error);
+  });
 
   const server = serve({ fetch: app.fetch, hostname: "0.0.0.0", port });
   console.log(`API listening on http://localhost:${port}`);
@@ -33,6 +38,7 @@ const main = async () => {
     }
     shuttingDown = true;
     console.log(`Received ${signal}; stopping jobs and the API.`);
+    abortFunctionRuns();
     // Running handlers see their signal abort and get time to checkpoint.
     await jobs.stop().catch((error: unknown) => {
       console.error("jobs.stop_failed", error);

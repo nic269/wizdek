@@ -155,8 +155,8 @@ export const createApiApp = () => {
     return auth.handler(context.req.raw);
   });
   app.get("/api/identity", handleIdentity);
-  // Writes that change store data, reach a database or accept files must
-  // come from the app.
+  // Writes that change store data, reach a database, run code or accept
+  // files must come from the app.
   for (const path of [
     "/api/shopify/*",
     "/api/databases/*",
@@ -166,6 +166,10 @@ export const createApiApp = () => {
     "/api/organizations/:organizationId/flows",
     "/api/organizations/:organizationId/flows/*",
     "/api/organizations/:organizationId/files",
+    "/api/functions/*",
+    "/api/function-runs/*",
+    "/api/organizations/:organizationId/functions",
+    "/api/organizations/:organizationId/functions/*",
   ]) {
     app.use(path, requireAppOrigin);
   }

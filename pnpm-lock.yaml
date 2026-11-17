@@ -311,6 +311,9 @@ importers:
       '@repo/flows':
         specifier: workspace:*
         version: link:../flows
+      '@repo/functions':
+        specifier: workspace:*
+        version: link:../functions
       '@repo/jobs':
         specifier: workspace:*
         version: link:../jobs

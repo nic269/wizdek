@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Phase 4: API Contracts and Routers"
-status: todo
+status: completed
 priority: P1
 effort: "1d"
 dependencies: [3]
@@ -68,11 +68,11 @@ Error mapping (`routers/function-errors.ts`): `FUNCTIONS_DISABLED` to 409 with t
 
 ## Todo
 
-- [ ] Contract
-- [ ] Authorization helpers
-- [ ] Router and error mapping
-- [ ] Registration, sweep and shutdown
-- [ ] Integration tests
+- [x] Contract
+- [x] Authorization helpers
+- [x] Router and error mapping
+- [x] Registration, sweep and shutdown
+- [x] Integration tests
 
 ## Success Criteria
 
@@ -92,6 +92,13 @@ Error mapping (`routers/function-errors.ts`): `FUNCTIONS_DISABLED` to 409 with t
 ## Security Considerations
 
 - Run params and results are returned only to callers with `functions:read` in the run's organization.
+
+## Implementation Notes
+
+- Errors keep the shared contract codes; the functions failure is in `error.details.reason` (e.g. `CONFLICT` with reason `FUNCTIONS_DISABLED`), like the database routes.
+- `outputOffset` and `outputLength` count JavaScript string length, so the browser can append the tail it receives directly.
+- An outsider gets 404 on record routes and 403 on organization routes, matching the other modules.
+- `assertApiProviderConfiguration` also checks the functions settings, so a URL without a token, or plain http in production, stops the API at startup.
 
 ## Next Steps
 

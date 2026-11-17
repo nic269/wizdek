@@ -9,6 +9,7 @@ import {
   createFlowRunJob,
   createFlowScheduleJob,
 } from "@repo/flows";
+import { abortAllRuns, failInterruptedRuns } from "@repo/functions";
 import {
   createLocalJobProvider,
   getJobProviderStatus,
@@ -62,3 +63,13 @@ export const failInterruptedDatabaseBackups = (): Promise<number> => {
     new Date(Date.now() - (lostEverything ? 0 : BACKUP_TIMEOUT_SECONDS * 1000))
   );
 };
+
+/**
+ * Fails function runs that a stopped process left queued or running. Runs
+ * execute inside this process, so after a restart none of them can finish.
+ */
+export const failInterruptedFunctionRuns = (): Promise<number> =>
+  failInterruptedRuns();
+
+/** Cuts the streams of running function runs when the server stops. */
+export const abortFunctionRuns = (): void => abortAllRuns();

@@ -1,5 +1,6 @@
 import { authMailRequired, featureConfig } from "@repo/config";
 import { prisma } from "@repo/database";
+import { assertFunctionsConfiguration } from "@repo/functions";
 import { getJobProviderStatus } from "@repo/jobs";
 import {
   assertMailProviderConfiguration,
@@ -19,6 +20,7 @@ export const assertApiProviderConfiguration = () => {
   const providers = getApiProviderReadiness();
   assertMailProviderConfiguration({ required: authMailRequired });
   assertStorageProviderConfiguration();
+  assertFunctionsConfiguration();
   const unhealthy = Object.entries(providers)
     .filter(([, provider]) => !provider.healthy)
     .map(([name]) => name);

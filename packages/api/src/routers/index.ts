@@ -1,6 +1,7 @@
 import { databaseBackupsRouter, databaseConnectionsRouter } from "./databases";
 import { filesRouter } from "./files";
 import { flowsRouter } from "./flows";
+import { functionRunsRouter, functionsRouter } from "./functions";
 import { healthRouter } from "./health";
 import { os } from "./implementer";
 import { invitationsRouter } from "./invitations";
@@ -16,6 +17,8 @@ export const router = os.router({
   databaseConnections: databaseConnectionsRouter,
   files: filesRouter,
   flows: flowsRouter,
+  functionRuns: functionRunsRouter,
+  functions: functionsRouter,
   health: healthRouter,
   invitations: invitationsRouter,
   jobs: jobsRouter,
