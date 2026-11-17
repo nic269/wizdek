@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { access } from "node:fs/promises";
+import { access, mkdtemp, realpath, rm } from "node:fs/promises";
+import { request as httpsRequest } from "node:https";
 import net from "node:net";
-import { dirname, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
@@ -314,6 +316,138 @@ const surfaces = [
     : []),
 ];
 
+const hasRunner = await pathExists("apps/runner");
+const runnerPort = hasRunner ? await findOpenPort(3103) : null;
+const runnerImageTag = `${imagePrefix}:runner`;
+const runnerTempDirs = [];
+
+const getInsecureJson = (url) =>
+  new Promise((resolveResponse, reject) => {
+    // The agent serves a throwaway self-signed certificate here.
+    const req = httpsRequest(url, { rejectUnauthorized: false }, (res) => {
+      let body = "";
+      res.on("data", (chunk) => {
+        body += chunk;
+      });
+      res.on("end", () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`${url} answered ${res.statusCode}`));
+          return;
+        }
+        try {
+          resolveResponse(JSON.parse(body));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+
+const waitForInsecureJson = async (url) => {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    try {
+      return await getInsecureJson(url);
+    } catch {
+      await delay(1000);
+    }
+  }
+  throw new Error(`Timed out waiting for ${url}`);
+};
+
+const validateRunnerAgent = async () => {
+  await run("docker", [
+    "build",
+    "--target",
+    "runner-agent",
+    "--build-arg",
+    "APP_SCOPE=@repo/runner-app",
+    "-t",
+    runnerImageTag,
+    ".",
+  ]);
+  const token = "validation-token-with-at-least-32-characters";
+
+  await assertContainerRejectsConfiguration({
+    containerName: `${imagePrefix}-runner-no-tls`,
+    env: [`RUNNER_TOKEN=${token}`],
+    expectedMessage: "RUNNER_TLS_CERT and RUNNER_TLS_KEY are required",
+    imageTag: runnerImageTag,
+  });
+
+  const tlsDir = await realpath(await mkdtemp(join(tmpdir(), "runner-tls-")));
+  const workDir = await realpath(await mkdtemp(join(tmpdir(), "runner-work-")));
+  runnerTempDirs.push(tlsDir, workDir);
+  await runQuiet("openssl", [
+    "req",
+    "-x509",
+    "-newkey",
+    "rsa:2048",
+    "-nodes",
+    "-days",
+    "1",
+    "-subj",
+    "/CN=localhost",
+    "-keyout",
+    join(tlsDir, "key.pem"),
+    "-out",
+    join(tlsDir, "cert.pem"),
+  ]);
+
+  const containerName = `${imagePrefix}-runner`;
+  await removeIfExists("container", containerName);
+  await run("docker", [
+    "run",
+    "--detach",
+    "--name",
+    containerName,
+    "--publish",
+    `${runnerPort}:3003`,
+    "--volume",
+    "/var/run/docker.sock:/var/run/docker.sock",
+    "--volume",
+    `${tlsDir}:/tls:ro`,
+    "--volume",
+    `${workDir}:${workDir}`,
+    "--env",
+    `RUNNER_TOKEN=${token}`,
+    "--env",
+    "RUNNER_TLS_CERT=/tls/cert.pem",
+    "--env",
+    "RUNNER_TLS_KEY=/tls/key.pem",
+    "--env",
+    `RUNNER_WORK_DIR=${workDir}`,
+    runnerImageTag,
+  ]);
+  containerNames.push(containerName);
+  try {
+    const health = await waitForInsecureJson(
+      `https://127.0.0.1:${runnerPort}/health`
+    );
+    if (!(health.ok && Array.isArray(health.runtimes))) {
+      throw new Error(`Unexpected runner health: ${JSON.stringify(health)}`);
+    }
+    const version = await runQuiet("docker", [
+      "exec",
+      containerName,
+      "docker",
+      "version",
+      "--format",
+      "{{.Server.Version}}",
+    ]);
+    console.log(`runner docker daemon: ${version}`);
+  } catch (error) {
+    const details = await describeContainerFailure(containerName);
+    throw new Error(
+      `${error instanceof Error ? error.message : String(error)}${
+        details ? `\n${details}` : ""
+      }`
+    );
+  }
+};
+
 let primaryError;
 const cleanupErrors = [];
 try {
@@ -469,6 +603,10 @@ try {
       );
     }
   }
+
+  if (hasRunner) {
+    await validateRunnerAgent();
+  }
 } catch (error) {
   primaryError = error;
 } finally {
@@ -484,7 +622,17 @@ try {
   } catch (error) {
     cleanupErrors.push(error);
   }
-  for (const surface of surfaces) {
+  for (const dir of runnerTempDirs) {
+    try {
+      await rm(dir, { force: true, recursive: true });
+    } catch (error) {
+      cleanupErrors.push(error);
+    }
+  }
+  for (const surface of [
+    ...surfaces,
+    ...(hasRunner ? [{ imageTag: runnerImageTag }] : []),
+  ]) {
     try {
       await removeImageIfExists(surface.imageTag);
     } catch (error) {

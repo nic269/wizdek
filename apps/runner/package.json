@@ -1,0 +1,29 @@
+{
+  "name": "@repo/runner-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.cjs",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.8",
+    "@t3-oss/env-core": "^0.13.11",
+    "hono": "^4.12.27",
+    "typescript": "^6.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.0",
+    "vitest": "^4.1.9"
+  }
+}

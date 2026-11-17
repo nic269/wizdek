@@ -97,3 +97,24 @@ RUN client_dir="$(dirname "$(node -p "require.resolve('@prisma/client/default.js
 USER app
 EXPOSE 3002
 CMD ["node", "/app/apps/api/dist/index.cjs"]
+
+# Runs functions on the runner VM. It drives the host's Docker daemon through
+# the mounted socket, which is root-equivalent on that host, so the process
+# runs as root: a non-root user in the docker group would hold the same power.
+# Mount RUNNER_WORK_DIR at the same path inside and outside the container,
+# because the daemon resolves the run directories' bind mounts on the host.
+FROM base AS runner-agent
+ENV NODE_ENV=production
+ENV RUNNER_HOST=0.0.0.0
+ENV RUNNER_PORT=3003
+ENV RUNNER_RUNTIMES_DIR=/app/apps/runner/runtimes
+ENV RUNNER_WORK_DIR=/var/lib/fn-runner
+RUN apk add --no-cache docker-cli docker-cli-buildx
+COPY --from=pruner /app/out/json/ .
+RUN mkdir -p scripts
+COPY scripts/postinstall.mjs ./scripts/postinstall.mjs
+RUN pnpm install --prod --frozen-lockfile --filter @repo/runner-app
+COPY --from=installer /app/apps/runner/dist ./apps/runner/dist
+COPY --from=pruner /app/out/full/apps/runner/runtimes ./apps/runner/runtimes
+EXPOSE 3003
+CMD ["node", "/app/apps/runner/dist/index.cjs"]
