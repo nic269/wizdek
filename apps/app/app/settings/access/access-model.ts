@@ -66,6 +66,15 @@ export const PERMISSION_GROUPS = [
       { key: "databases:backup", label: "Run and download backups" },
     ],
   },
+  {
+    group: "Functions",
+    icon: "functions",
+    items: [
+      { key: "functions:read", label: "View functions and runs" },
+      { key: "functions:manage", label: "Create and edit functions" },
+      { key: "functions:run", label: "Run functions" },
+    ],
+  },
 ] as const;
 
 export type PermissionGroupIcon = (typeof PERMISSION_GROUPS)[number]["icon"];

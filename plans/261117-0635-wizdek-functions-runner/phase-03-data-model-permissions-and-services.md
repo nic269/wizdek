@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Phase 3: Data Model, Permissions and Services"
-status: todo
+status: completed
 priority: P1
 effort: "2d"
 dependencies: [2]
@@ -111,13 +111,13 @@ Audit actions: `function.created`, `function.updated`, `function.deleted`, `func
 
 ## Todo
 
-- [ ] Catalog and presets
-- [ ] Models and migration
-- [ ] `definition` entry and validator
-- [ ] Runner client and fake runner
-- [ ] Function and file services
-- [ ] Run, execute, cancel, prune, startup sweep
-- [ ] Tests and boundaries
+- [x] Catalog and presets
+- [x] Models and migration
+- [x] `definition` entry and validator
+- [x] Runner client and fake runner
+- [x] Function and file services
+- [x] Run, execute, cancel, prune, startup sweep
+- [x] Tests and boundaries
 
 ## Success Criteria
 
@@ -139,6 +139,13 @@ Audit actions: `function.created`, `function.updated`, `function.deleted`, `func
 
 - The runner token is read only by `keys()` and sent only to the configured URL.
 - Source and run output are organization data readable with `functions:read`; neither is logged.
+
+## Implementation Notes
+
+- The `functions` group was also added to the role grid in `apps/app/app/settings/access` (its test requires every catalog permission there), with a `SquareCode` icon exported from the design system.
+- `@repo/functions/testing` is a real HTTP server on a random port, so integration tests exercise the HTTP client too.
+- Calling `failInterruptedRuns`, `abortAllRuns` and `assertFunctionsConfiguration` from API startup and shutdown is wired in phase 4.
+- The API trusts the runner's private CA through `NODE_EXTRA_CA_CERTS`; no code option is needed.
 
 ## Next Steps
 

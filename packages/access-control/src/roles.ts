@@ -24,9 +24,13 @@ export const MEMBER_PERMISSIONS = [
   { action: "run", module: "flows" },
 ] as const satisfies readonly KnownPermission[];
 
+/** Modules whose read access alone exposes sensitive data. */
+const VIEWER_EXCLUDED_MODULES = new Set<string>(["databases", "functions"]);
+
 export const VIEWER_PERMISSIONS = withoutLabels(
   PERMISSION_CATALOG.filter(
-    ({ action, module }) => action === "read" && module !== "databases"
+    ({ action, module }) =>
+      action === "read" && !VIEWER_EXCLUDED_MODULES.has(module)
   )
 );
 

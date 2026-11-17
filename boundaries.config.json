@@ -6,6 +6,7 @@
     "@repo/database": [],
     "@repo/database-tools": [],
     "@repo/flows": ["./definition"],
+    "@repo/functions": ["./definition"],
     "@repo/jobs": [],
     "@repo/mail": [],
     "@repo/shopify": [],
@@ -23,6 +24,7 @@
       "@repo/database",
       "@repo/database-tools",
       "@repo/flows",
+      "@repo/functions",
       "@repo/jobs",
       "@repo/logger",
       "@repo/mail",
@@ -57,6 +59,7 @@
       "@repo/shopify",
       "@repo/storage"
     ],
+    "@repo/functions": ["@repo/database"],
     "@repo/helpers": [],
     "@repo/i18n": [],
     "@repo/jobs": [],

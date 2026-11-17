@@ -78,6 +78,7 @@ export {
   ShoppingBag,
   SlidersHorizontal,
   Split,
+  SquareCode,
   Store,
   Tag,
   Trash2,

@@ -20,6 +20,7 @@ import {
   Shield,
   ShieldCheck,
   Shimmer,
+  SquareCode,
   Store,
   toast,
   User,
@@ -46,6 +47,7 @@ import {
 const GROUP_ICONS: Record<PermissionGroupIcon, LucideIcon> = {
   databases: Database,
   flows: Workflow,
+  functions: SquareCode,
   graphql: Braces,
   members: Users,
   organization: Building2,

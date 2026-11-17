@@ -134,6 +134,8 @@ model Organization {
   flowRuns            FlowRun[]
   databaseConnections DatabaseConnection[]
   databaseBackups     DatabaseBackup[]
+  codeFunctions       CodeFunction[]
+  codeFunctionRuns    CodeFunctionRun[]
 
   @@map("organization")
 }
@@ -707,4 +709,96 @@ model DatabaseBackup {
   @@index([connectionId, createdAt])
   @@index([status, startedAt])
   @@map("database_backup")
+}
+
+enum CodeFunctionRuntime {
+  NODE
+  PYTHON
+}
+
+enum CodeFunctionRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+  CANCELED
+}
+
+enum CodeFunctionRunTrigger {
+  MANUAL
+  HTTP
+  SCHEDULE
+}
+
+/// A script an organization runs on the function runner. Named CodeFunction
+/// because `Function` collides with the JavaScript global in generated code.
+model CodeFunction {
+  id             String              @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  runtime        CodeFunctionRuntime
+  timeoutSeconds Int                 @default(60)
+  memoryMb       Int                 @default(256)
+  /// Hash of every file's path and content; a save must present the current one.
+  sourceHash     String
+  /// Form schema read from the entry file's `main`, or why it could not be read.
+  paramsSchema   Json?
+  paramsError    String?             @db.Text
+  /// True when the runner could not be reached to read the latest source.
+  paramsStale    Boolean             @default(false)
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  files        CodeFunctionFile[]
+  runs         CodeFunctionRun[]
+
+  @@unique([organizationId, name])
+  @@map("code_function")
+}
+
+model CodeFunctionFile {
+  id         String @id @default(cuid())
+  functionId String
+  path       String
+  content    String @db.Text
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, path])
+  @@map("code_function_file")
+}
+
+model CodeFunctionRun {
+  id                String                 @id @default(cuid())
+  functionId        String
+  organizationId    String
+  number            Int
+  trigger           CodeFunctionRunTrigger
+  status            CodeFunctionRunStatus  @default(QUEUED)
+  params            Json
+  result            Json?
+  output            String                 @default("") @db.Text
+  outputTruncated   Boolean                @default(false)
+  exitCode          Int?
+  error             String?                @db.Text
+  durationMs        Int?
+  sourceHash        String
+  cancelRequestedAt DateTime?
+  startedById       String?
+  createdAt         DateTime               @default(now())
+  startedAt         DateTime?
+  finishedAt        DateTime?
+
+  function     CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, number])
+  @@index([functionId, createdAt])
+  @@index([status, createdAt])
+  @@map("code_function_run")
 }

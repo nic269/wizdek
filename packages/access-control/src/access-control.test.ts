@@ -88,4 +88,22 @@ describe("access-control policy", () => {
       ).toEqual([]);
     }
   });
+
+  it("keeps functions to owners and admins", () => {
+    const keysOf = (role: keyof typeof ROLE_PERMISSION_PRESETS) =>
+      ROLE_PERMISSION_PRESETS[role].map(permissionKey);
+    const functionKeys = [
+      "functions:read",
+      "functions:manage",
+      "functions:run",
+    ];
+
+    expect(keysOf("Owner")).toEqual(expect.arrayContaining(functionKeys));
+    expect(keysOf("Admin")).toEqual(expect.arrayContaining(functionKeys));
+    for (const role of ["Member", "Viewer"] as const) {
+      expect(
+        keysOf(role).filter((key) => key.startsWith("functions:"))
+      ).toEqual([]);
+    }
+  });
 });

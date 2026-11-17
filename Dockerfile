@@ -80,6 +80,7 @@ RUN pnpm install --prod --frozen-lockfile \
       --filter @repo/auth \
       --filter @repo/database \
       --filter @repo/database-tools \
+      --filter @repo/functions \
       --filter @repo/jobs \
       --filter @repo/logger \
       --filter @repo/mail \
