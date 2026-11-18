@@ -69,6 +69,46 @@ describe("running a function", () => {
   );
 
   it(
+    "resolves relative imports written without an extension",
+    async () => {
+      const files = (entry: string) => [
+        { content: entry, path: "index.ts" },
+        {
+          content: "export const plus = (a: number, b: number) => a + b;",
+          path: "lib/util.ts",
+        },
+        { content: "export const two = 2;", path: "helpers/index.ts" },
+      ];
+      const { exit } = await agent.run({
+        files: files(`
+          import { plus } from "./lib/util";
+          import { two } from "./helpers";
+          export function main(limit: number) { return plus(two, limit); }
+        `),
+        paramOrder: ["limit"],
+        params: { limit: 10 },
+        runtime: "NODE",
+      });
+      expect(exit).toMatchObject({ result: 12, status: "SUCCEEDED" });
+
+      const missing = await agent.run({
+        files: files(`
+          import { plus } from "./lib/utils";
+          export function main() { return plus(1, 1); }
+        `),
+        paramOrder: [],
+        params: {},
+        runtime: "NODE",
+      });
+      expect(missing.exit).toMatchObject({ exitCode: 1, status: "FAILED" });
+      expect(missing.stderr).toContain(
+        "Cannot find module '/fn/lib/utils' imported from /fn/index.ts"
+      );
+    },
+    RUN_TIMEOUT_MS
+  );
+
+  it(
     "runs a Python function made of two files",
     async () => {
       const { exit, stdout } = await agent.run({

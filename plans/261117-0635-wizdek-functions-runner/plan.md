@@ -56,7 +56,7 @@ Paths in phase files are relative to this repository unless they start with `inf
 | 2 | [Phase 2: Runner Agent and Runtime Images](./phase-02-runner-agent-and-runtime-images.md) | Completed |
 | 3 | [Phase 3: Data Model, Permissions and Services](./phase-03-data-model-permissions-and-services.md) | Completed |
 | 4 | [Phase 4: API Contracts and Routers](./phase-04-api-contracts-and-routers.md) | Completed |
-| 5 | [Phase 5: Functions UI and Editor](./phase-05-functions-ui-and-editor.md) | Pending |
+| 5 | [Phase 5: Functions UI and Editor](./phase-05-functions-ui-and-editor.md) | Completed |
 | 6 | [Phase 6: Package Install and Cache](./phase-06-package-install-and-cache.md) | Pending |
 | 7 | [Phase 7: Triggers, Schedules and Env Vars](./phase-07-triggers-schedules-and-env-vars.md) | Pending |
 | 8 | [Phase 8: Deploy, Docs and Release Check](./phase-08-deploy-docs-and-release-check.md) | Pending |

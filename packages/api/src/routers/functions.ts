@@ -178,7 +178,12 @@ export const functionsRouter = {
       "read"
     );
     const functions = await listFunctions(input.organizationId);
-    return { data: functions.map(toPublicSummary) };
+    return {
+      data: functions.map((fn) => ({
+        ...toPublicSummary(fn),
+        lastRun: fn.lastRun,
+      })),
+    };
   }),
   saveFiles: os.functions.saveFiles.handler(async ({ context, input }) => {
     const { fn, user } = await requireFunctionPermission(

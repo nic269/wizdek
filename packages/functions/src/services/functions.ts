@@ -151,13 +151,32 @@ const paramsColumnsFor = async (
   }
 };
 
-export const listFunctions = (
+export type CodeFunctionListItem = CodeFunctionRecord & {
+  lastRun: { createdAt: Date; status: CodeFunctionRunStatus } | null;
+};
+
+type CodeFunctionRunStatus = Prisma.CodeFunctionRunGetPayload<object>["status"];
+
+/** An organization's functions by name, each with its newest run. */
+export const listFunctions = async (
   organizationId: string
-): Promise<CodeFunctionRecord[]> =>
-  prisma.codeFunction.findMany({
+): Promise<CodeFunctionListItem[]> => {
+  const functions = await prisma.codeFunction.findMany({
+    include: {
+      runs: {
+        orderBy: { number: "desc" },
+        select: { createdAt: true, status: true },
+        take: 1,
+      },
+    },
     orderBy: [{ name: "asc" }, { id: "asc" }],
     where: { organizationId },
   });
+  return functions.map(({ runs, ...fn }) => ({
+    ...fn,
+    lastRun: runs[0] ?? null,
+  }));
+};
 
 /** Unscoped lookup, for deciding which organization a function belongs to. */
 export const findFunctionById = (

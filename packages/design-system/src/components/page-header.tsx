@@ -17,7 +17,7 @@ export const Page = ({
     className={cn(
       width === "full"
         ? "flex min-h-0 flex-1 flex-col"
-        : "mx-auto flex w-full flex-col gap-6 pt-6 pb-10 pr-4 pl-5 sm:pt-7",
+        : "mx-auto flex w-full flex-col gap-6 pt-6 pr-4 pb-10 pl-5 sm:pt-7",
       width === "default",
       width === "narrow" && "max-w-[1280px] gap-[22px]",
       className

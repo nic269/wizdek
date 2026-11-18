@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   createOrganization,
   createTestSuffix,
+  expectActiveOrganization,
   signUp,
 } from "./support/user-flows";
 
@@ -37,11 +38,7 @@ test("organization lists stay scoped to each authenticated member", async ({
     ).toHaveCount(0);
 
     await page.reload();
-    await expect(
-      page.getByRole("button", {
-        name: `Switch organization, current: ${firstOrganization}`,
-      })
-    ).toBeVisible();
+    await expectActiveOrganization(page, firstOrganization);
     await expect(
       page.getByText(secondOrganization, { exact: true })
     ).toHaveCount(0);

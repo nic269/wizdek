@@ -61,6 +61,12 @@ export const functionSummarySchema = z.object({
   updatedAt: z.date(),
 });
 
+export const functionListItemSchema = functionSummarySchema.extend({
+  lastRun: z
+    .object({ createdAt: z.date(), status: functionRunStatusSchema })
+    .nullable(),
+});
+
 export const functionSchema = functionSummarySchema.extend({
   files: z.array(functionFileSchema),
   paramsSchema: paramsSchemaSchema.nullable(),
@@ -173,7 +179,7 @@ export const functionsContract = {
       summary: "List an organization's functions",
     })
     .input(organizationIdInput)
-    .output(dataEnvelope(z.array(functionSummarySchema))),
+    .output(dataEnvelope(z.array(functionListItemSchema))),
   saveFiles: apiContract
     .route({
       method: "PUT",

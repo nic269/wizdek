@@ -1,7 +1,52 @@
 // Runs inside the sandbox container. Reads one JSON request from stdin,
 // calls the function's `main`, and ends stdout with one line holding the
 // result: `<marker> <json>`.
+import { registerHooks } from "node:module";
 import { pathToFileURL } from "node:url";
+
+const RELATIVE = /^\.{1,2}\//;
+const TRAILING_SLASH = /\/$/;
+const NOT_FOUND = new Set([
+  "ERR_MODULE_NOT_FOUND",
+  "ERR_UNSUPPORTED_DIR_IMPORT",
+]);
+const CANDIDATE_SUFFIXES = [
+  ".ts",
+  ".mts",
+  ".js",
+  ".mjs",
+  "/index.ts",
+  "/index.mts",
+  "/index.js",
+  "/index.mjs",
+];
+
+// Node wants the full file name in an import. Function authors write
+// `./lib/util` as TypeScript and the editor do, so a relative import that
+// does not resolve as written is tried with the usual extensions and as a
+// folder with an index file.
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    try {
+      return nextResolve(specifier, context);
+    } catch (error) {
+      if (!(RELATIVE.test(specifier) && NOT_FOUND.has(error?.code))) {
+        throw error;
+      }
+      const base = specifier.replace(TRAILING_SLASH, "");
+      for (const suffix of CANDIDATE_SUFFIXES) {
+        try {
+          return nextResolve(`${base}${suffix}`, context);
+        } catch (candidateError) {
+          if (!NOT_FOUND.has(candidateError?.code)) {
+            throw candidateError;
+          }
+        }
+      }
+      throw error;
+    }
+  },
+});
 
 const readRequest = async () => {
   const chunks = [];

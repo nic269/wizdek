@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
     "@repo/config",
     "@repo/design-system",
     "@repo/flows",
+    "@repo/functions",
     "@t3-oss/env-core",
     "@t3-oss/env-nextjs",
   ],

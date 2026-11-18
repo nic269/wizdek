@@ -11,6 +11,7 @@ import {
 } from "@repo/design-system";
 import type { FlowIssue } from "@repo/flows/definition";
 import { type ComponentType, useEffect, useState } from "react";
+import { type ConfigFormProps, Field } from "../../lib/form-parts";
 import { asCategory, CategoryChip } from "../node-visuals";
 import { AddTagsForm } from "./config-forms/add-tags-form";
 import {
@@ -18,7 +19,6 @@ import {
   FetchCustomersForm,
 } from "./config-forms/customer-export-forms";
 import { FindOrderForm } from "./config-forms/find-order-form";
-import { type ConfigFormProps, Field } from "./config-forms/form-parts";
 import { GenericForm } from "./config-forms/generic-form";
 import { FilterForm, IfForm } from "./config-forms/if-form";
 import { ParseCsvForm } from "./config-forms/parse-csv-form";

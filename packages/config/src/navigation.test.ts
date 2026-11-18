@@ -28,6 +28,10 @@ describe("dashboard navigation", () => {
     });
     expect(dashboardNav).toContainEqual({ href: "/flows", label: "Flows" });
     expect(dashboardNav).toContainEqual({
+      href: "/functions",
+      label: "Functions",
+    });
+    expect(dashboardNav).toContainEqual({
       href: "/database",
       label: "Database",
     });
@@ -49,7 +53,7 @@ describe("dashboard navigation groups", () => {
     ).toEqual([
       ["Dashboard"],
       ["Stores", "Metafields", "GraphQL console"],
-      ["Flows"],
+      ["Flows", "Functions"],
       ["Database"],
       ["OMS management"],
       ["Settings", "Members", "Access"],

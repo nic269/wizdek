@@ -8,7 +8,7 @@ import {
   Field,
   removeAt,
   replaceAt,
-} from "./form-parts";
+} from "../../../lib/form-parts";
 import { GenericForm } from "./generic-form";
 
 export function FetchCustomersForm({

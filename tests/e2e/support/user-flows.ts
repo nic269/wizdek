@@ -8,6 +8,8 @@ import {
 } from "@playwright/test";
 
 const SWITCHER_NAME = /^Switch organization/;
+/** Below this width the sidebar becomes a top bar with a navigation sheet. */
+const SHEET_NAVIGATION_WIDTH = 820;
 export const DASHBOARD_URL_PATTERN = /\/dashboard$/;
 export const E2E_PASSWORD = "Password123!";
 const VERIFICATION_SUBJECT_PREFIX = "Verify your ";
@@ -108,6 +110,47 @@ export const signUp = async ({
   await completeEmailVerification({ email, page });
 };
 
+const usesNavigationSheet = (page: Page) =>
+  (page.viewportSize()?.width ?? SHEET_NAVIGATION_WIDTH) <
+  SHEET_NAVIGATION_WIDTH;
+
+/**
+ * On phones the organization switcher and account menu live in the
+ * navigation sheet. Opens it there; resolves to whether it was opened here.
+ */
+export const openNavigation = async (page: Page): Promise<boolean> => {
+  if (!usesNavigationSheet(page)) {
+    return false;
+  }
+  const close = page.getByRole("button", { name: "Close navigation" });
+  if (await close.isVisible()) {
+    return false;
+  }
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await expect(close).toBeVisible();
+  return true;
+};
+
+const closeNavigation = async (page: Page) => {
+  if (!usesNavigationSheet(page)) {
+    return;
+  }
+  const close = page.getByRole("button", { name: "Close navigation" });
+  if (await close.isVisible()) {
+    await close.click();
+    await expect(close).toBeHidden();
+  }
+};
+
+/** Checks which organization is active, as its switcher names it. */
+export const expectActiveOrganization = async (page: Page, name: string) => {
+  await openNavigation(page);
+  await expect(
+    page.getByRole("button", { name: `Switch organization, current: ${name}` })
+  ).toBeVisible();
+  await closeNavigation(page);
+};
+
 /**
  * Creates an organization and makes it the active one: from the empty state
  * for someone without one, otherwise from the switcher's menu.
@@ -120,21 +163,25 @@ export const createOrganization = async ({
   page: Page;
 }) => {
   const firstName = page.getByLabel("Organization name", { exact: true });
-  const switcher = page.getByRole("button", { name: SWITCHER_NAME });
-  await expect(firstName.or(switcher)).toBeVisible();
+  // The page heading stands in for the switcher, which phones keep in the
+  // closed navigation sheet.
+  const loaded = usesNavigationSheet(page)
+    ? page.getByRole("main").getByRole("heading", { level: 1 })
+    : page.getByRole("button", { name: SWITCHER_NAME });
+  await expect(firstName.or(loaded).first()).toBeVisible();
   if (await firstName.isVisible()) {
     await firstName.fill(name);
     await page.getByRole("button", { name: "Create organization" }).click();
   } else {
-    await switcher.click();
+    await openNavigation(page);
+    await page.getByRole("button", { name: SWITCHER_NAME }).click();
     await page.getByRole("menuitem", { name: "Create organization" }).click();
-    const dialog = page.getByRole("dialog");
+    const dialog = page.getByRole("dialog", { name: "Create organization" });
     await dialog.getByLabel("Name", { exact: true }).fill(name);
     await dialog.getByRole("button", { exact: true, name: "Create" }).click();
+    await expect(dialog).toBeHidden();
   }
-  await expect(
-    page.getByRole("button", { name: `Switch organization, current: ${name}` })
-  ).toBeVisible();
+  await expectActiveOrganization(page, name);
 };
 
 export const connectStoreWithToken = async ({

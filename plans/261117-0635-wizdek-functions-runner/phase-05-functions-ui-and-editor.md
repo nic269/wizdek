@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Phase 5: Functions UI and Editor"
-status: todo
+status: completed
 priority: P1
 effort: "3d"
 dependencies: [4]
@@ -76,13 +76,52 @@ The schema-driven fields of `generic-form.tsx` move to `apps/app/app/lib/schema-
 
 ## Todo
 
-- [ ] Monaco spike recorded
-- [ ] Navigation and queries
-- [ ] Shared schema form
-- [ ] List page and states
-- [ ] Workbench editor
-- [ ] Test, Output, History, Settings tabs
-- [ ] Browser test
+- [x] Monaco spike recorded
+- [x] Navigation and queries
+- [x] Shared schema form
+- [x] List page and states
+- [x] Workbench editor
+- [x] Test, Output, History, Settings tabs
+- [x] Browser test
+
+## Outcome (2026-11-17)
+
+Monaco spike, for decision 0006 in phase 8. The standalone editor imports `monaco-editor` 0.52.2 and starts workers with `new Worker(new URL("monaco-editor/esm/vs/language/typescript/ts.worker.js", import.meta.url))`, as GraphiQL's webpack setup does. It needs no bundler override and no prebuilt `min/vs` fallback.
+
+| Check | `next dev` | `next build` + `next start` |
+|-------|-----------|------------|
+| TypeScript and editor workers start | yes | yes |
+| Completion across files (`greet` from `lib/util.ts`) | yes | yes |
+| Type errors underlined; unresolved package import not | yes | yes |
+| Uncaught page errors | none | none |
+| Switching between GraphiQL and the editor without reload | yes | yes |
+
+- GraphiQL installs its own `MonacoEnvironment`. The functions editor installs its environment on every mount and passes labels it does not handle, such as `graphql`, to the one that was there before. The check above confirmed GraphiQL still gets its GraphQL worker after visiting the editor.
+- Disposing an editor rejects Monaco's pending timers with a `Canceled` error. Those rejections are filtered.
+- The editor owns the text while it is open. File contents from the server overwrite open models only after a load; otherwise a render trailing fast typing rolled keystrokes back. Saving no longer replaces drafts, so edits made while a save is in flight are kept.
+
+Other changes made along the way:
+
+- `playwright.config.ts` reads the app and API addresses from `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_API_URL`. The local stack moved to ports 4000/4002 earlier, and the suite could no longer start its servers.
+- It also starts the fake runner (`pnpm --filter @repo/functions fake-runner`) and points the API at it.
+- The fake runner's inspector reads defaults. Defaulted parameters are optional, as with the real inspector.
+
+Verification: `tests/e2e/functions.spec.ts` passes (author flow, not-enabled state, read-only reader). The flow builder specs pass with the shared schema form. App unit tests, the functions and API integration suites, typecheck, lint and boundaries pass.
+
+The full browser suite passes (34 passed; the 8 skipped are the desktop-only editor specs on the phone project). Nine older specs failed before this was fixed:
+
+- The password recovery spec still sent the old app origin, so the API refused it.
+- The sign-up smoke spec looked for the user's email on the dashboard. It now opens the account menu, which is where the redesigned shell shows the email.
+- On phones, the organization switcher and account menu sit in the navigation sheet. The helpers in `tests/e2e/support/user-flows.ts` open the sheet first.
+
+Disposing an editor rejected an internal Monaco timer promise with "Canceled", and the Next.js dev overlay reported it on every mount. `monaco-setup.ts` now catches Monaco's own cancellations at the source and lets every other error through.
+
+Local development turns functions on with `RUNNER_TOKEN`, `FUNCTIONS_RUNNER_URL=http://127.0.0.1:3003` and the matching `FUNCTIONS_RUNNER_TOKEN` in `.env`. `pnpm dev` then starts the agent against local Docker.
+
+Imports: Node runs TypeScript only when the import names the full file, but the editor's completion writes `./lib/util`.
+- The Node runtime's wrapper registers a resolve hook. When a relative import does not resolve as written, the hook tries `.ts`, `.mts`, `.js`, `.mjs` and a folder's `index` file. A path to a missing file still fails with Node's own message.
+- The editor allows `.ts` in imports and types package imports loosely through `declare module "*"`. Relative imports never match that declaration, so a missing file is now underlined. Before, "cannot find module" was switched off for every import, which hid mistyped paths.
+- Tests: `apps/runner/integration/run.integration.test.ts` and the imports case in `tests/e2e/functions.spec.ts`.
 
 ## Success Criteria
 

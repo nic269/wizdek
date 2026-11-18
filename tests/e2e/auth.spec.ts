@@ -2,9 +2,18 @@ import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { prisma } from "../../packages/database/src/client";
-import { createTestSuffix, E2E_PASSWORD, signUp } from "./support/user-flows";
+import {
+  createTestSuffix,
+  E2E_PASSWORD,
+  openNavigation,
+  signUp,
+} from "./support/user-flows";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+// The API accepts auth requests only from the app's own origin.
+const APP_ORIGIN = new URL(
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+).origin;
 const RESET_SUBJECT_PREFIX = "Reset your ";
 const SIGN_IN_URL_PATTERN = /\/sign-in$/;
 const VERIFICATION_URL_PATTERN = /\/verify-email\?/;
@@ -79,8 +88,8 @@ const requestPasswordReset = async ({
   const response = await page.request.post(
     `${API_URL}/api/auth/request-password-reset`,
     {
-      data: { email, redirectTo: "http://localhost:3000/reset-password" },
-      headers: { Origin: "http://localhost:3000" },
+      data: { email, redirectTo: `${APP_ORIGIN}/reset-password` },
+      headers: { Origin: APP_ORIGIN },
     }
   );
   expect(response.ok()).toBe(true);
@@ -111,11 +120,13 @@ test("user can sign up, view dashboard session, and sign out", async ({
   const email = `auth-smoke-${createTestSuffix(testInfo)}@example.com`;
 
   await signUp({ email, name: "Auth Smoke", page });
-  await expect(page.getByText(email, { exact: true })).toBeVisible();
 
+  // The account menu shows who is signed in.
+  await openNavigation(page);
   await page
     .getByRole("button", { name: "Open account menu for Auth Smoke" })
     .click();
+  await expect(page.getByText(email, { exact: true })).toBeVisible();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(SIGN_IN_URL_PATTERN);
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
@@ -167,7 +178,7 @@ test("password recovery rejects expired and reused tokens", async ({
   const reset = (token: string, newPassword: string) =>
     page.request.post(`${API_URL}/api/auth/reset-password`, {
       data: { newPassword, token },
-      headers: { Origin: "http://localhost:3000" },
+      headers: { Origin: APP_ORIGIN },
     });
   expect((await reset(first.token, "UpdatedPassword123!")).ok()).toBe(true);
   expect((await reset(first.token, "ReusedPassword123!")).status()).toBe(400);

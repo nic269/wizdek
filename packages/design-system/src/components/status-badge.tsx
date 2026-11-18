@@ -37,6 +37,7 @@ const STATUSES: Record<string, { label: string; tone: StatusTone }> = {
   RUNNING: { label: "Running", tone: "info" },
   SKIPPED: { label: "Skipped", tone: "neutral" },
   SUCCEEDED: { label: "Succeeded", tone: "success" },
+  TIMED_OUT: { label: "Timed out", tone: "danger" },
   UNKNOWN: { label: "Unknown", tone: "unknown" },
   UNREACHABLE: { label: "Unreachable", tone: "danger" },
 };

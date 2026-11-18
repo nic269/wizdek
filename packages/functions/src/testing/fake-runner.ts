@@ -52,9 +52,20 @@ export const succeed: FakeRunScript = function* () {
 };
 
 const MAIN = /main\s*\(([^)]*)\)/;
-const PARAM = /(\w+)\s*:\s*(string|number|boolean)/g;
+const PARAM = /(\w+)\s*:\s*(string|number|boolean)(?:\s*=\s*([^,]+))?/g;
+const QUOTED = /^(["'])(.*)\1$/;
 
 type SimpleType = "string" | "number" | "boolean";
+
+/** A literal default such as `10`, `false` or `"x"`. */
+const literal = (text: string): unknown => {
+  const value = text.trim();
+  if (value === "true" || value === "false") {
+    return value === "true";
+  }
+  const quoted = QUOTED.exec(value);
+  return quoted ? quoted[2] : Number(value);
+};
 
 /** Reads `main(a: string, b: number = 1)` style signatures, enough for tests. */
 const defaultInspect: FakeInspect = (_runtime, source) => {
@@ -62,16 +73,25 @@ const defaultInspect: FakeInspect = (_runtime, source) => {
   if (!match) {
     return { error: "No function named main was found." };
   }
-  const properties: Record<string, { type: SimpleType }> = {};
+  const properties: Record<string, { default?: unknown; type: SimpleType }> =
+    {};
   const order: string[] = [];
-  for (const [, name, type] of (match[1] ?? "").matchAll(PARAM)) {
-    if (name && type) {
-      properties[name] = { type: type as SimpleType };
-      order.push(name);
+  const required: string[] = [];
+  for (const [, name, type, fallback] of (match[1] ?? "").matchAll(PARAM)) {
+    if (!(name && type)) {
+      continue;
+    }
+    properties[name] =
+      fallback === undefined
+        ? { type: type as SimpleType }
+        : { default: literal(fallback), type: type as SimpleType };
+    order.push(name);
+    if (fallback === undefined) {
+      required.push(name);
     }
   }
   return {
-    schema: { properties, required: order, type: "object", "x-order": order },
+    schema: { properties, required, type: "object", "x-order": order },
   };
 };
 
@@ -101,8 +121,13 @@ const HEALTH = {
  * Tests change `state` to choose how runs and inspections behave, or to make
  * the runner refuse runs with an HTTP status.
  */
-export const startFakeRunner = async () => {
-  const token = randomBytes(24).toString("hex");
+export const startFakeRunner = async ({
+  port: requestedPort = 0,
+  token = randomBytes(24).toString("hex"),
+}: {
+  port?: number;
+  token?: string;
+} = {}) => {
   const cancels = new Map<string, () => void>();
   const state = {
     canceledRunIds: [] as string[],
@@ -204,7 +229,7 @@ export const startFakeRunner = async () => {
       }
     });
   });
-  server.listen(0, "127.0.0.1");
+  server.listen(requestedPort, "127.0.0.1");
   await once(server, "listening");
   const { port } = server.address() as AddressInfo;
 

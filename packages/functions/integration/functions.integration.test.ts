@@ -61,7 +61,8 @@ describe("functions", () => {
       name: "Greeter",
       paramsError: null,
       paramsSchema: {
-        required: ["name", "times"],
+        properties: { times: { default: 1, type: "number" } },
+        required: ["name"],
         "x-order": ["name", "times"],
       },
       paramsStale: false,

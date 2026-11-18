@@ -27,7 +27,13 @@ export const createDashboardNavGroups = (
     ],
     label: "Shopify",
   },
-  { items: [{ href: "/flows", label: "Flows" }], label: "Automation" },
+  {
+    items: [
+      { href: "/flows", label: "Flows" },
+      { href: "/functions", label: "Functions" },
+    ],
+    label: "Automation",
+  },
   { items: [{ href: "/database", label: "Database" }], label: "Data" },
   // OMS_NAV_START
   {
