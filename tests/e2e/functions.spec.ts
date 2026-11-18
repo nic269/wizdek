@@ -149,6 +149,48 @@ test("the editor accepts the imports the runner resolves and flags missing files
   await expect(errors).toHaveCount(1);
 });
 
+test("packages from package.json install, show their log and are used by runs", async ({
+  page,
+}, testInfo) => {
+  test.slow();
+  const suffix = createTestSuffix(testInfo);
+  await signUp({
+    email: `fn-packages-${suffix}@example.com`,
+    name: "Package Author",
+    page,
+  });
+  await createOrganization({ name: `Package Studio ${suffix}`, page });
+  await createFunction(page, "Uses ms");
+
+  await replaceEditorText(
+    page,
+    'import ms from "ms";\nexport function main() { return ms("2h"); }'
+  );
+  await page.getByRole("button", { name: "New file" }).click();
+  await page.getByLabel("New file path").fill("package.json");
+  await page.getByLabel("New file path").press("Enter");
+  await page.keyboard.type('{"dependencies": {"ms": "2.1.3"');
+  await page.keyboard.press("ControlOrMeta+S");
+  await expect(saveButton(page)).toBeDisabled();
+
+  // Installing takes a while on a real runner.
+  await expect(page.getByTestId("packages-ready")).toBeVisible({
+    timeout: 120_000,
+  });
+  await page.getByText("Install log").click();
+  await expect(page.getByTestId("packages-log")).not.toBeEmpty();
+
+  await page
+    .getByRole("button", { exact: true, name: "Run ⌘↵" })
+    .last()
+    .click();
+  await expect(page.getByText("Run #1")).toBeVisible();
+  await page.getByRole("button", { exact: true, name: "History" }).click();
+  await expect(page.getByTestId("history-run-1")).toContainText("Succeeded", {
+    timeout: 30_000,
+  });
+});
+
 test("the page says when functions are not enabled", async ({
   page,
 }, testInfo) => {

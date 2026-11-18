@@ -231,6 +231,66 @@ describe("a function's life cycle", () => {
   });
 });
 
+describe("packages", () => {
+  const waitForPackages = async (actor: Actor, functionId: string) => {
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      const response = await call(actor, "GET", `/api/functions/${functionId}`);
+      if (response.json.data.depsStatus !== "BUILDING") {
+        return response.json.data;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("The packages did not finish installing in time.");
+  };
+
+  it("installs on save, refuses runs until ready and installs again on request", async () => {
+    const fn = (await createFunction(owner, "Packages")).json.data;
+    expect(fn).toMatchObject({ depsLog: "", depsStatus: "NONE" });
+    let finish: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const script = fake.state.depsScript;
+    fake.state.depsScript = async function* (request) {
+      await gate;
+      yield* script(request);
+    };
+
+    const saved = await call(owner, "PUT", `/api/functions/${fn.id}/files`, {
+      baseHash: fn.sourceHash,
+      files: [
+        ...fn.files,
+        { content: '{"dependencies":{"ms":"2.1.3"}}', path: "package.json" },
+      ],
+    });
+    expect(saved.json.data.depsStatus).toBe("BUILDING");
+    const refused = await call(owner, "POST", `/api/functions/${fn.id}/runs`, {
+      params: { name: "x", times: 1 },
+    });
+    expect(refused.status).toBe(409);
+    expect(refused.json.error.details.reason).toBe("DEPS_NOT_READY");
+
+    finish();
+    const ready = await waitForPackages(owner, fn.id);
+    expect(ready).toMatchObject({
+      depsError: null,
+      depsLog: "added 1 package\n",
+      depsStatus: "READY",
+    });
+    expect(ready).not.toHaveProperty("depsKey");
+
+    const again = await call(
+      owner,
+      "POST",
+      `/api/functions/${fn.id}/deps/rebuild`
+    );
+    expect(again.status).toBe(200);
+    expect(again.json.data.depsStatus).toBe("BUILDING");
+    expect((await waitForPackages(owner, fn.id)).depsStatus).toBe("READY");
+  });
+});
+
 describe("authorization", () => {
   it("keeps every route to members with the functions permissions", async () => {
     const fn = (await createFunction(owner, "Guarded")).json.data;
@@ -253,6 +313,7 @@ describe("authorization", () => {
         `/api/functions/${fn.id}/files`,
         { baseHash: fn.sourceHash, files: [{ content: "", path: "index.ts" }] },
       ],
+      ["POST", `/api/functions/${fn.id}/deps/rebuild`],
       ["GET", `/api/functions/${fn.id}/runs`],
       ["POST", `/api/functions/${fn.id}/runs`, { params: {} }],
       ["GET", `/api/function-runs/${run.id}`],
@@ -293,6 +354,7 @@ describe("authorization", () => {
         { baseHash: fn.sourceHash, files: [{ content: "", path: "index.ts" }] },
       ],
       ["POST", `/api/functions/${fn.id}/runs`, { params: {} }],
+      ["POST", `/api/functions/${fn.id}/deps/rebuild`, {}],
       ["POST", "/api/function-runs/any/cancel", {}],
       ["DELETE", `/api/functions/${fn.id}`, undefined],
     ];

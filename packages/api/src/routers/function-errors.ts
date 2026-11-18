@@ -5,6 +5,8 @@ const FAILURE_RESPONSES: Record<
   FunctionsFailure,
   { code: string; status: 404 | 409 | 422 | 503 }
 > = {
+  DEPS_MISSING: { code: "SERVICE_UNAVAILABLE", status: 503 },
+  DEPS_NOT_READY: { code: "CONFLICT", status: 409 },
   FUNCTION_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   FUNCTIONS_DISABLED: { code: "CONFLICT", status: 409 },
   INVALID_FILES: { code: "VALIDATION_ERROR", status: 422 },

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { once } from "node:events";
 import {
   createServer,
@@ -8,6 +8,8 @@ import {
 import type { AddressInfo } from "node:net";
 import type { FunctionRuntime } from "../definition";
 import type {
+  RunnerDepsEvent,
+  RunnerDepsRequest,
   RunnerEvent,
   RunnerInspectResult,
   RunnerRunRequest,
@@ -25,6 +27,29 @@ export interface FakeRunContext {
 export type FakeRunScript = (
   context: FakeRunContext
 ) => AsyncIterable<RunnerEvent> | Iterable<RunnerEvent>;
+
+/** The events one package install streams, in order. */
+export type FakeDepsScript = (
+  request: RunnerDepsRequest
+) => AsyncIterable<RunnerDepsEvent> | Iterable<RunnerDepsEvent>;
+
+/** The cache key the fake gives a set of manifests. */
+export const fakeDepsKey = (request: RunnerDepsRequest): string =>
+  `${request.runtime.toLowerCase()}-${createHash("sha256")
+    .update(JSON.stringify(request.manifests))
+    .digest("hex")
+    .slice(0, 32)}`;
+
+/** An install that prints one line and succeeds. */
+export const installed: FakeDepsScript = function* (request) {
+  yield { data: "added 1 package\n", stream: "stdout", type: "output" };
+  yield {
+    key: fakeDepsKey(request),
+    sizeBytes: 1024,
+    status: "READY",
+    type: "done",
+  };
+};
 
 export type FakeInspect = (
   runtime: FunctionRuntime,
@@ -131,6 +156,10 @@ export const startFakeRunner = async ({
   const cancels = new Map<string, () => void>();
   const state = {
     canceledRunIds: [] as string[],
+    /** Keys of installed packages; runs naming another key are refused. */
+    depsEntries: new Set<string>(),
+    depsRequests: [] as RunnerDepsRequest[],
+    depsScript: installed,
     inspect: defaultInspect,
     inspectCalls: 0,
     refuseWith: undefined as number | undefined,
@@ -160,11 +189,34 @@ export const startFakeRunner = async ({
     response.writeHead(204).end();
   };
 
+  const deps = async (request: IncomingMessage, response: ServerResponse) => {
+    const body = await readBody<RunnerDepsRequest>(request);
+    state.depsRequests.push(body);
+    response.writeHead(200, { "content-type": "application/x-ndjson" });
+    try {
+      for await (const event of state.depsScript(body)) {
+        if (event.type === "done" && event.status === "READY") {
+          state.depsEntries.add(event.key);
+        }
+        response.write(`${JSON.stringify(event)}\n`);
+      }
+    } finally {
+      response.end();
+    }
+  };
+
   const run = async (request: IncomingMessage, response: ServerResponse) => {
     const body = await readBody<RunnerRunRequest>(request);
     state.requests.push(body);
     if (state.refuseWith) {
       json(response, state.refuseWith, { error: "Refused by the fake." });
+      return;
+    }
+    if (body.depsKey && !state.depsEntries.has(body.depsKey)) {
+      json(response, 409, {
+        code: "DEPS_MISSING",
+        error: "The function's packages are not installed on the runner.",
+      });
       return;
     }
     const disconnected = new AbortController();
@@ -210,6 +262,9 @@ export const startFakeRunner = async ({
     if (method === "POST" && pathname === "/inspect") {
       return inspect(request, response);
     }
+    if (method === "POST" && pathname === "/deps") {
+      return deps(request, response);
+    }
     if (method === "POST" && pathname === "/runs") {
       return run(request, response);
     }
@@ -242,6 +297,9 @@ export const startFakeRunner = async ({
     /** Resets behaviour and recorded calls between tests. */
     reset() {
       state.canceledRunIds = [];
+      state.depsEntries = new Set();
+      state.depsRequests = [];
+      state.depsScript = installed;
       state.inspect = defaultInspect;
       state.inspectCalls = 0;
       state.refuseWith = undefined;

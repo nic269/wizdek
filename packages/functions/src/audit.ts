@@ -5,6 +5,7 @@ export type FunctionAuditAction =
   | "function.updated"
   | "function.deleted"
   | "function.files_saved"
+  | "function.deps.reinstalled"
   | "function.run.started"
   | "function.run.canceled";
 

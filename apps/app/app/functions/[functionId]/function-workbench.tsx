@@ -27,6 +27,7 @@ import { EditorTabs } from "./editor-tabs";
 import { FileTree } from "./file-tree";
 import { HistoryTab } from "./history-tab";
 import { OutputTab } from "./output-tab";
+import { PackagesStatus } from "./packages-status";
 import { SettingsTab } from "./settings-tab";
 import { SidePanel, type SidePanelTab } from "./side-panel";
 import { paramsToSend, TestTab } from "./test-tab";
@@ -91,6 +92,10 @@ const ConflictDialog = ({ editor }: { editor: FunctionEditor }) => (
   </Dialog>
 );
 
+/** Runs wait for packages that are installing or failed to install. */
+const packagesAllowRun = (fn: FunctionEditor["fn"]) =>
+  fn?.depsStatus !== "BUILDING" && fn?.depsStatus !== "FAILED";
+
 const HeaderActions = ({
   canManage,
   canRun,
@@ -142,7 +147,9 @@ const HeaderActions = ({
       <Button
         aria-keyshortcuts="Meta+Enter"
         className="h-8 text-[13px]"
-        disabled={run.isStarting || editor.isSaving}
+        disabled={
+          run.isStarting || editor.isSaving || !packagesAllowRun(editor.fn)
+        }
         onClick={onRun}
         type="button"
       >
@@ -317,10 +324,23 @@ export function FunctionWorkbench({
               canRun={canRun}
               error={run.startError}
               fn={fn}
-              isBusy={run.isStarting || run.isActive || editor.isSaving}
+              isBusy={
+                run.isStarting ||
+                run.isActive ||
+                editor.isSaving ||
+                !packagesAllowRun(fn)
+              }
               isDirty={isDirty && canManage}
               onRun={startRun}
               onValuesChange={setValues}
+              packages={
+                <PackagesStatus
+                  canManage={canManage}
+                  fn={fn}
+                  isReinstalling={editor.isReinstalling}
+                  onReinstall={editor.reinstallPackages}
+                />
+              }
               values={values}
             />
           ) : null}

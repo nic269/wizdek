@@ -10,7 +10,9 @@ export type FunctionsFailure =
   | "PARAMS_INVALID"
   | "RUNNER_UNAVAILABLE"
   | "RUNNER_BUSY"
-  | "RUN_NOT_ACTIVE";
+  | "RUN_NOT_ACTIVE"
+  | "DEPS_NOT_READY"
+  | "DEPS_MISSING";
 
 /**
  * A functions request that cannot be carried out. The message is safe to

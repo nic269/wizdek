@@ -1,7 +1,15 @@
 import { randomBytes } from "node:crypto";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { Admission } from "./admission";
-import { runDocker, spawnDocker } from "./docker-cli";
+import { DEPS_MOUNTS, type DepsCache } from "./deps-cache";
+import {
+  killContainer,
+  runDocker,
+  spawnDocker,
+  wasOomKilled,
+} from "./docker-cli";
 import { createOutputLimiter, createResultSplitter } from "./output";
 import {
   ENTRY_FILES,
@@ -14,14 +22,14 @@ import {
 import type { RuntimeImages } from "./runtime-images";
 import { removeRunFiles, writeRunFiles } from "./workspace";
 
-const KILL_RETRY_MS = 1000;
-const KILL_ATTEMPTS = 30;
 const MILLISECONDS = 1000;
 
 const COMMANDS: Record<RuntimeId, readonly string[]> = {
   NODE: [
     "node",
     "--disable-warning=ExperimentalWarning",
+    // A package.json written for its dependencies rarely sets "type".
+    "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
     "/opt/fn/wrapper.mjs",
   ],
   // -P keeps the wrapper's own directory off the import path.
@@ -36,6 +44,7 @@ export interface RunnerConfig {
 
 export type RefusalCode =
   | "BUSY"
+  | "DEPS_MISSING"
   | "DUPLICATE_RUN"
   | "NO_ENTRY_FILE"
   | "RUNTIME_NOT_READY";
@@ -82,16 +91,21 @@ const parseWrapperResult = (text: string | null): WrapperResult | null => {
   }
 };
 
-const containerArguments = (input: {
+/** Mounts the hardening shared by runs and installs, then image and command. */
+export const sandboxArguments = (input: {
   command: readonly string[];
   config: RunnerConfig;
+  env?: readonly string[];
   image: string;
   memoryMb: number;
   name: string;
-  source: string;
+  pids: number;
+  tmpfsMb: number;
+  user: string;
+  volumes: readonly string[];
+  workdir?: string;
 }): string[] => [
   "run",
-  "--interactive",
   "--name",
   input.name,
   "--init",
@@ -104,7 +118,7 @@ const containerArguments = (input: {
   input.config.dns,
   "--read-only",
   "--tmpfs",
-  "/tmp:rw,size=64m,mode=1777",
+  `/tmp:rw,size=${input.tmpfsMb}m,mode=1777`,
   "--memory",
   `${input.memoryMb}m`,
   // Equal to the memory limit, so the container gets no swap.
@@ -113,7 +127,7 @@ const containerArguments = (input: {
   "--cpus",
   "1",
   "--pids-limit",
-  "128",
+  String(input.pids),
   "--ulimit",
   "nofile=1024:1024",
   "--cap-drop",
@@ -121,12 +135,47 @@ const containerArguments = (input: {
   "--security-opt",
   "no-new-privileges",
   "--user",
-  "10001:10001",
-  "--volume",
-  `${input.source}:/fn:ro`,
+  input.user,
+  ...input.volumes.flatMap((volume) => ["--volume", volume]),
+  ...(input.env ?? []).flatMap((variable) => ["--env", variable]),
+  ...(input.workdir ? ["--workdir", input.workdir] : []),
   input.image,
   ...input.command,
 ];
+
+const containerArguments = (input: {
+  command: readonly string[];
+  config: RunnerConfig;
+  deps: { path: string; runtime: RuntimeId } | null;
+  image: string;
+  memoryMb: number;
+  name: string;
+  source: string;
+}): string[] => {
+  const volumes = [`${input.source}:/fn:ro`];
+  const env: string[] = [];
+  if (input.deps) {
+    const mount = DEPS_MOUNTS[input.deps.runtime];
+    volumes.push(`${input.deps.path}/${mount.directory}:${mount.target}:ro`);
+    if (mount.env) {
+      env.push(mount.env);
+    }
+  }
+  const args = sandboxArguments({
+    command: input.command,
+    config: input.config,
+    env,
+    image: input.image,
+    memoryMb: input.memoryMb,
+    name: input.name,
+    pids: 128,
+    tmpfsMb: 64,
+    user: "10001:10001",
+    volumes,
+  });
+  // The request reaches the wrapper on stdin.
+  return [args[0] as string, "--interactive", ...args.slice(1)];
+};
 
 const outcomeOf = (input: {
   code: number | null;
@@ -173,9 +222,10 @@ const outcomeOf = (input: {
 export const createRunner = (dependencies: {
   admission: Admission;
   config: RunnerConfig;
+  deps: DepsCache;
   images: RuntimeImages;
 }): Runner => {
-  const { admission, config, images } = dependencies;
+  const { admission, config, deps, images } = dependencies;
   const active = new Map<string, () => void>();
 
   const execute = async (
@@ -184,6 +234,7 @@ export const createRunner = (dependencies: {
     entry: string,
     emit: Emit
   ): Promise<void> => {
+    const depsPath = request.depsKey ? deps.pathOf(request.depsKey) : null;
     const name = `fn-${request.runId}`;
     const marker = `__FN_RESULT_${randomBytes(16).toString("hex")}__`;
     const startedAt = Date.now();
@@ -194,21 +245,7 @@ export const createRunner = (dependencies: {
     let workRoot: string | undefined;
     let dockerError = "";
 
-    // The container may not exist yet when the first kill arrives, so keep
-    // trying until the docker CLI has exited.
-    const kill = () => {
-      let attempts = 0;
-      const attempt = () => {
-        if (closed || attempts >= KILL_ATTEMPTS) {
-          return;
-        }
-        attempts += 1;
-        runDocker(["kill", name])
-          .catch(() => undefined)
-          .finally(() => setTimeout(attempt, KILL_RETRY_MS).unref());
-      };
-      attempt();
-    };
+    const kill = () => killContainer(name, () => closed);
     const stop = (reason: "canceled" | "timedOut") => {
       if (state === "running") {
         state = reason;
@@ -230,12 +267,17 @@ export const createRunner = (dependencies: {
         request.files
       );
       workRoot = files.root;
+      if (depsPath && request.runtime === "NODE") {
+        // The mount point, inside a directory that is mounted read-only.
+        await mkdir(join(files.source, "node_modules"));
+      }
       emit({ type: "started" });
 
       const child = spawnDocker(
         containerArguments({
           command: COMMANDS[request.runtime],
           config,
+          deps: depsPath ? { path: depsPath, runtime: request.runtime } : null,
           image,
           memoryMb: request.memoryMb,
           name,
@@ -287,13 +329,7 @@ export const createRunner = (dependencies: {
       emit({ data: remaining, stream: "stdout", type: "output" });
     }
 
-    const inspection = await runDocker([
-      "inspect",
-      "--format",
-      "{{.State.OOMKilled}}",
-      name,
-    ]).catch(() => null);
-    const oomKilled = inspection?.stdout.trim() === "true";
+    const oomKilled = await wasOomKilled(name);
 
     await runDocker(["rm", "--force", name]).catch(() => undefined);
     if (workRoot) {
@@ -355,10 +391,25 @@ export const createRunner = (dependencies: {
           `Add ${ENTRY_FILES[request.runtime].join(" or ")}.`
         );
       }
+      const { depsKey } = request;
+      if (
+        depsKey &&
+        !(
+          depsKey.startsWith(`${request.runtime.toLowerCase()}-`) &&
+          deps.readySize(depsKey) !== null
+        )
+      ) {
+        throw new RunRefusedError(
+          "DEPS_MISSING",
+          "The function's packages are not installed on the runner."
+        );
+      }
       const release = admission.tryAcquire(request.memoryMb);
       if (!release) {
         throw new RunRefusedError("BUSY", "The runner is busy.");
       }
+      // Kept from eviction until the run ends.
+      const releaseDeps = depsKey ? deps.acquire(depsKey) : () => undefined;
       // Reserve the id now, so a second request cannot slip in before the
       // run starts. `execute` replaces this with the real stop function.
       active.set(request.runId, () => undefined);
@@ -367,6 +418,7 @@ export const createRunner = (dependencies: {
           await execute(request, runtime.image, entry, emit);
         } finally {
           active.delete(request.runId);
+          releaseDeps();
           release();
         }
       };

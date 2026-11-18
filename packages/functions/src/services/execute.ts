@@ -94,13 +94,62 @@ export const pruneRuns = async (functionId: string): Promise<void> => {
   }
 };
 
+export interface ExecuteOptions {
+  /**
+   * Installs the packages again when the runner no longer has them, and
+   * resolves with the new key, or null when the install failed.
+   */
+  reinstallDeps?: () => Promise<string | null>;
+}
+
+const isDepsMissing = (error: unknown) =>
+  error instanceof FunctionsError && error.failure === "DEPS_MISSING";
+
+/**
+ * Streams a run's events. When the runner evicted the packages, they are
+ * installed again and the run is tried once more.
+ */
+const streamRun = async (
+  runner: FunctionRunner,
+  request: RunnerRunRequest,
+  signal: AbortSignal,
+  onEvent: (event: RunnerEvent) => void,
+  options: ExecuteOptions
+): Promise<void> => {
+  try {
+    for await (const event of runner.run(request, signal)) {
+      onEvent(event);
+    }
+  } catch (error) {
+    if (!(options.reinstallDeps && isDepsMissing(error))) {
+      throw error;
+    }
+    onEvent({
+      data: "The runner no longer had this function's packages. Installing them again…\n",
+      stream: "stderr",
+      type: "output",
+    });
+    const depsKey = await options.reinstallDeps();
+    if (!depsKey) {
+      throw new FunctionsError(
+        "DEPS_NOT_READY",
+        "The packages could not be installed again."
+      );
+    }
+    for await (const event of runner.run({ ...request, depsKey }, signal)) {
+      onEvent(event);
+    }
+  }
+};
+
 /**
  * Runs a queued run on the runner and records everything it reports. Output
  * is appended to the row about every 500 ms; the final status, result and
  * timing are written when the runner reports the exit. Never throws.
  */
 export const executeRun = async (
-  request: RunnerRunRequest
+  request: RunnerRunRequest,
+  options: ExecuteOptions = {}
 ): Promise<CodeFunctionRunRecord> => {
   const { runId } = request;
   const controller = new AbortController();
@@ -132,13 +181,19 @@ export const executeRun = async (
     if (started.count === 0) {
       outcome = { status: "CANCELED" };
     } else {
-      for await (const event of runner.run(request, controller.signal)) {
-        if (event.type === "output") {
-          buffer.append(event.data);
-        } else if (event.type === "exit") {
-          outcome = outcomeOfExit(event);
-        }
-      }
+      await streamRun(
+        runner,
+        request,
+        controller.signal,
+        (event) => {
+          if (event.type === "output") {
+            buffer.append(event.data);
+          } else if (event.type === "exit") {
+            outcome = outcomeOfExit(event);
+          }
+        },
+        options
+      );
       outcome ??= {
         error: "The function runner ended the run without a result.",
         status: "FAILED",

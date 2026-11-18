@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Phase 6: Package Install and Cache"
-status: todo
+status: completed
 priority: P1
 effort: "1.5d"
 dependencies: [2, 4, 5]
@@ -71,12 +71,48 @@ startRun  -> BUILDING: refuse | READY: pass depsKey | entry evicted: rebuild, th
 
 ## Todo
 
-- [ ] Cache and eviction
-- [ ] Build container and route
-- [ ] Mounts in runs
-- [ ] Model, service and API
-- [ ] Workbench status and log
-- [ ] Tests
+- [x] Cache and eviction
+- [x] Build container and route
+- [x] Mounts in runs
+- [x] Model, service and API
+- [x] Workbench status and log
+- [x] Tests
+
+## Outcome (2026-11-18)
+
+Built as planned, with these differences:
+
+- `CodeFunction` also stores `depsHash` (the hash of the manifests), so a save installs again only when the manifests change and a late install cannot overwrite the status of newer manifests. It stores `depsError` apart from `depsLog`, so the workbench can lead with one sentence.
+- The rebuild route is `POST /api/functions/{functionId}/deps/rebuild` (operation `functions.reinstallDeps`). It needs `functions:manage` and is audited as `function.deps.reinstalled`. The API never returns `depsKey` or `depsHash`.
+- A run is refused while packages install or after an install failed (`DEPS_NOT_READY`, 409). The Run buttons are disabled in both states.
+- When the runner answers `DEPS_MISSING` because it evicted the entry, the run installs again, notes that in its output and retries once.
+- An install the API process was driving when it stopped is marked failed at startup, next to interrupted runs.
+- The install runs as the agent's own user, so the agent can delete what it wrote when it evicts the entry. An agent running as root hands the directory to the sandbox user instead.
+- When the runner already has the packages, or the same manifests are already installing, the agent writes one line saying so. Without it the log would be empty and look broken.
+- `monaco-setup.ts` needed no change. The `declare module "*"` added in phase 5 already keeps package imports from being underlined.
+- Node no longer prints `MODULE_TYPELESS_PACKAGE_JSON` for a `package.json` without `"type"`.
+- Fixed in passing: choosing the run already shown in History left the Output tab on "Loading the run…".
+
+Verification:
+
+| Suite | Result |
+|-------|--------|
+| Runner, local Docker | 22 integration tests and 32 unit tests pass |
+| Functions service, fake runner | 35 tests pass |
+| API functions routes | 6 tests pass |
+| Browser suite, fake runner | 36 passed, 10 skipped (desktop-only specs on the phone project) |
+| Typecheck, lint, boundaries | clean |
+
+What the runner tests cover:
+
+- They install `ms` from npm and `six` from PyPI, and run functions that import each.
+- Repeating an install with the same manifests answers from the cache, and a changed manifest gets a new key.
+- An install over the size cap fails and leaves nothing behind.
+- A package that does not exist fails, with its output kept.
+- A root `preinstall` script that dumps its environment finds neither the token nor any `RUNNER_` setting.
+- Eviction order, and keeping an entry that is in use, are unit-tested on real directories.
+
+The new browser test also passed against the real runner in `pnpm dev`. It installed `ms`, showed the log and ran the function.
 
 ## Success Criteria
 

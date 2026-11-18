@@ -1,13 +1,20 @@
 import { readFileSync } from "node:fs";
 import { createServer as createHttpsServer } from "node:https";
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { env } from "../env";
 import { createAdmission } from "./admission";
 import { createRunnerApp } from "./app";
+import { createDepsBuilder } from "./build-deps";
+import { createDepsCache } from "./deps-cache";
 import { runDocker } from "./docker-cli";
 import { createRunner } from "./run-container";
 import { createRuntimeImages } from "./runtime-images";
 import { clearRunFiles } from "./workspace";
+
+const MEGABYTE = 1024 * 1024;
+const GIGABYTE = 1024 * MEGABYTE;
+const EVICT_INTERVAL_MS = 60 * 60 * 1000;
 
 /** Removes containers and files a previous agent process left behind. */
 const sweepLeftovers = async (workDir: string): Promise<void> => {
@@ -45,17 +52,50 @@ const main = async () => {
 
   await sweepLeftovers(env.RUNNER_WORK_DIR);
 
+  const minFreeBytes = env.RUNNER_DEPS_MIN_FREE_GB * GIGABYTE;
+  const cache = createDepsCache({
+    minFreeBytes,
+    root: join(env.RUNNER_WORK_DIR, "deps"),
+    targetFreeBytes: 2 * minFreeBytes,
+  });
+  await cache.sweepIncomplete();
+  const evict = () => {
+    cache.evict().then(
+      (removed) => {
+        if (removed.length > 0) {
+          console.log(`Removed ${removed.length} unused package installs.`);
+        }
+      },
+      (error: unknown) => console.error("runner.deps_evict_failed", error)
+    );
+  };
+  evict();
+  setInterval(evict, EVICT_INTERVAL_MS).unref();
+
   const images = createRuntimeImages(env.RUNNER_RUNTIMES_DIR);
-  const runner = createRunner({
-    admission: createAdmission(env.RUNNER_MEMORY_BUDGET_MB),
+  const admission = createAdmission(env.RUNNER_MEMORY_BUDGET_MB);
+  const config = {
+    dns: env.RUNNER_DNS,
+    sandboxNetwork: env.RUNNER_SANDBOX_NETWORK,
+    workDir: env.RUNNER_WORK_DIR,
+  };
+  const runner = createRunner({ admission, config, deps: cache, images });
+  const deps = createDepsBuilder({
+    admission,
+    cache,
     config: {
-      dns: env.RUNNER_DNS,
-      sandboxNetwork: env.RUNNER_SANDBOX_NETWORK,
-      workDir: env.RUNNER_WORK_DIR,
+      ...config,
+      maxBytes: env.RUNNER_DEPS_MAX_MB * MEGABYTE,
+      minFreeBytes,
     },
     images,
   });
-  const app = createRunnerApp({ images, runner, token: env.RUNNER_TOKEN });
+  const app = createRunnerApp({
+    deps,
+    images,
+    runner,
+    token: env.RUNNER_TOKEN,
+  });
 
   // Built in the background; `/health` reports each runtime once it is ready.
   images.ensureAll().then(() => {

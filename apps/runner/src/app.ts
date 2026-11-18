@@ -2,9 +2,12 @@ import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { stream } from "hono/streaming";
 import { isAuthorized } from "./auth";
+import type { DepsBuilder } from "./build-deps";
 import { inspectPython } from "./inspect-python";
 import { inspectTypeScript } from "./inspect-typescript";
 import {
+  type DepsEvent,
+  depsRequestSchema,
   inspectRequestSchema,
   type RunEvent,
   runRequestSchema,
@@ -21,18 +24,39 @@ const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
 const REFUSAL_STATUS: Record<RefusalCode, 409 | 422 | 429 | 503> = {
   BUSY: 429,
+  DEPS_MISSING: 409,
   DUPLICATE_RUN: 409,
   NO_ENTRY_FILE: 422,
   RUNTIME_NOT_READY: 503,
 };
 
 export interface RunnerAppDependencies {
+  deps: DepsBuilder;
   images: RuntimeImages;
   runner: Runner;
   token: string;
 }
 
+const refused = (error: RunRefusedError) => ({
+  body: { code: error.code, error: error.message },
+  status: REFUSAL_STATUS[error.code],
+});
+
+/** Writes NDJSON events in the order they were emitted. */
+const createEmitter = <T>(write: (line: string) => Promise<unknown>) => {
+  let written: Promise<unknown> = Promise.resolve();
+  return {
+    emit(event: T) {
+      written = written
+        .then(() => write(`${JSON.stringify(event)}\n`))
+        .catch(() => undefined);
+    },
+    flushed: () => written,
+  };
+};
+
 export const createRunnerApp = ({
+  deps,
   images,
   runner,
   token,
@@ -97,10 +121,8 @@ export const createRunnerApp = ({
       execute = runner.prepare(request);
     } catch (error) {
       if (error instanceof RunRefusedError) {
-        return context.json(
-          { code: error.code, error: error.message },
-          REFUSAL_STATUS[error.code]
-        );
+        const { body, status } = refused(error);
+        return context.json(body, status);
       }
       throw error;
     }
@@ -111,15 +133,46 @@ export const createRunnerApp = ({
       output.onAbort(() => {
         runner.cancel(request.runId);
       });
-      let written: Promise<unknown> = Promise.resolve();
-      const emit = (event: RunEvent) => {
-        // Chained so events are written in the order they were emitted.
-        written = written
-          .then(() => output.write(`${JSON.stringify(event)}\n`))
-          .catch(() => undefined);
-      };
+      const { emit, flushed } = createEmitter<RunEvent>((line) =>
+        output.write(line)
+      );
       await execute(emit);
-      await written;
+      await flushed();
+    });
+  });
+
+  /**
+   * Installs a function's packages, or reuses an entry with the same key.
+   * The install continues when the caller goes away, so a later request for
+   * the same manifests finds it finished.
+   */
+  app.post("/deps", async (context) => {
+    const parsed = depsRequestSchema.safeParse(
+      await context.req.json().catch(() => null)
+    );
+    if (!parsed.success) {
+      return context.json(
+        { error: parsed.error.issues[0]?.message ?? "Invalid request." },
+        422
+      );
+    }
+    let install: ReturnType<DepsBuilder["prepare"]>;
+    try {
+      install = deps.prepare(parsed.data);
+    } catch (error) {
+      if (error instanceof RunRefusedError) {
+        const { body, status } = refused(error);
+        return context.json(body, status);
+      }
+      throw error;
+    }
+    context.header("Content-Type", "application/x-ndjson");
+    return stream(context, async (output) => {
+      const { emit, flushed } = createEmitter<DepsEvent>((line) =>
+        output.aborted ? Promise.resolve() : output.write(line)
+      );
+      await install(emit);
+      await flushed();
     });
   });
 

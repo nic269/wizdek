@@ -279,3 +279,38 @@ export const ACTIVE_RUN_STATUSES = [
 
 export const isActiveRunStatus = (status: FunctionRunStatus): boolean =>
   (ACTIVE_RUN_STATUSES as readonly FunctionRunStatus[]).includes(status);
+
+/**
+ * Files a runtime installs packages from, at the function's root. The first
+ * one starts an install; the others are sent along when present.
+ */
+export const DEPS_MANIFESTS: Record<FunctionRuntime, readonly string[]> = {
+  NODE: ["package.json", "package-lock.json"],
+  PYTHON: ["requirements.txt"],
+};
+
+export const FUNCTION_DEPS_STATUSES = [
+  "NONE",
+  "BUILDING",
+  "READY",
+  "FAILED",
+] as const;
+export type FunctionDepsStatus = (typeof FUNCTION_DEPS_STATUSES)[number];
+
+/** How much of an install's output is kept, from its end. */
+export const DEPS_LOG_CHARACTERS = 16 * 1024;
+
+/** The manifests among a function's files; empty when it installs nothing. */
+export const manifestsOf = (
+  runtime: FunctionRuntime,
+  files: readonly FunctionFileInput[]
+): FunctionFileInput[] => {
+  const [required] = DEPS_MANIFESTS[runtime];
+  if (!files.some((file) => file.path === required)) {
+    return [];
+  }
+  return DEPS_MANIFESTS[runtime].flatMap((path) => {
+    const file = files.find((candidate) => candidate.path === path);
+    return file ? [{ content: file.content, path }] : [];
+  });
+};

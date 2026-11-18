@@ -8,6 +8,7 @@ import {
 } from "../definition";
 import { FunctionsError, runNotFound } from "../errors";
 import { functionsDisabled, functionsEnabled } from "../keys";
+import { reinstallForRun } from "./deps";
 import {
   type CodeFunctionRunRecord,
   executeRun,
@@ -93,6 +94,18 @@ export const startRun = async (
     throw functionsDisabled();
   }
   const fn = await getFunction(input);
+  if (fn.depsStatus === "BUILDING") {
+    throw new FunctionsError(
+      "DEPS_NOT_READY",
+      "The packages are still installing. Run it again when they are ready."
+    );
+  }
+  if (fn.depsStatus === "FAILED") {
+    throw new FunctionsError(
+      "DEPS_NOT_READY",
+      "The packages failed to install. Fix the manifest or install them again."
+    );
+  }
   const schema = isParamsSchema(fn.paramsSchema) ? fn.paramsSchema : null;
   const validation = validateParams(schema, input.params);
   if (!validation.ok) {
@@ -136,16 +149,20 @@ export const startRun = async (
     return created;
   });
 
-  const completion = executeRun({
-    env: {},
-    files: fn.files.map(({ content, path }) => ({ content, path })),
-    memoryMb: fn.memoryMb,
-    params: validation.params,
-    runId: run.id,
-    runtime: fn.runtime,
-    timeoutSeconds: fn.timeoutSeconds,
-    ...(schema ? { paramOrder: schema["x-order"] } : {}),
-  });
+  const completion = executeRun(
+    {
+      env: {},
+      files: fn.files.map(({ content, path }) => ({ content, path })),
+      memoryMb: fn.memoryMb,
+      params: validation.params,
+      runId: run.id,
+      runtime: fn.runtime,
+      timeoutSeconds: fn.timeoutSeconds,
+      ...(schema ? { paramOrder: schema["x-order"] } : {}),
+      ...(fn.depsKey ? { depsKey: fn.depsKey } : {}),
+    },
+    fn.depsKey ? { reinstallDeps: () => reinstallForRun(fn) } : {}
+  );
   return { completion, run };
 };
 

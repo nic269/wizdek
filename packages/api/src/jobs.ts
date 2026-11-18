@@ -9,7 +9,11 @@ import {
   createFlowRunJob,
   createFlowScheduleJob,
 } from "@repo/flows";
-import { abortAllRuns, failInterruptedRuns } from "@repo/functions";
+import {
+  abortAllRuns,
+  failInterruptedInstalls,
+  failInterruptedRuns,
+} from "@repo/functions";
 import {
   createLocalJobProvider,
   getJobProviderStatus,
@@ -65,11 +69,17 @@ export const failInterruptedDatabaseBackups = (): Promise<number> => {
 };
 
 /**
- * Fails function runs that a stopped process left queued or running. Runs
- * execute inside this process, so after a restart none of them can finish.
+ * Fails function runs that a stopped process left queued or running, and
+ * package installs it left in progress. Both are driven from this process,
+ * so after a restart none of them can finish. Returns the number of runs.
  */
-export const failInterruptedFunctionRuns = (): Promise<number> =>
-  failInterruptedRuns();
+export const failInterruptedFunctionRuns = async (): Promise<number> => {
+  const [runs] = await Promise.all([
+    failInterruptedRuns(),
+    failInterruptedInstalls(),
+  ]);
+  return runs;
+};
 
 /** Cuts the streams of running function runs when the server stops. */
 export const abortFunctionRuns = (): void => abortAllRuns();

@@ -12,6 +12,7 @@ import {
   getRunner,
   listFunctions,
   listRuns,
+  reinstallDeps,
   saveFiles,
   startRun,
   updateFunction,
@@ -31,6 +32,9 @@ import { os } from "./implementer";
 
 const toPublicSummary = (fn: CodeFunctionRecord) => ({
   createdAt: fn.createdAt,
+  depsBuiltAt: fn.depsBuiltAt,
+  depsError: fn.depsError,
+  depsStatus: fn.depsStatus,
   description: fn.description,
   id: fn.id,
   memoryMb: fn.memoryMb,
@@ -45,6 +49,7 @@ const toPublicSummary = (fn: CodeFunctionRecord) => ({
 
 const toPublicFunction = (fn: CodeFunctionWithFiles) => ({
   ...toPublicSummary(fn),
+  depsLog: fn.depsLog,
   files: fn.files.map(({ content, path }) => ({ content, path })),
   paramsSchema: isParamsSchema(fn.paramsSchema) ? fn.paramsSchema : null,
   sourceHash: fn.sourceHash,
@@ -185,6 +190,19 @@ export const functionsRouter = {
       })),
     };
   }),
+  reinstallDeps: os.functions.reinstallDeps.handler(
+    async ({ context, input }) => {
+      const { fn, user } = await requireFunctionPermission(
+        context.headers,
+        input.functionId,
+        "manage"
+      );
+      const updated = await withFunctionErrors(() =>
+        reinstallDeps({ ...scopeOf(fn), actorId: user.id })
+      );
+      return { data: toPublicFunction(updated) };
+    }
+  ),
   saveFiles: os.functions.saveFiles.handler(async ({ context, input }) => {
     const { fn, user } = await requireFunctionPermission(
       context.headers,

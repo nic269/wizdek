@@ -10,6 +10,13 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    /** An install whose packages take more than this is discarded. */
+    RUNNER_DEPS_MAX_MB: z.coerce.number().int().positive().default(500),
+    /**
+     * Installs are refused below this much free disk; unused packages are
+     * removed until twice this much is free.
+     */
+    RUNNER_DEPS_MIN_FREE_GB: z.coerce.number().positive().default(4),
     /** Resolver given to sandbox containers, so LAN names never resolve. */
     RUNNER_DNS: z.string().min(1).default("1.1.1.1"),
     RUNNER_HOST: z.string().min(1).default("127.0.0.1"),

@@ -4,8 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAdmission } from "../src/admission";
 import { createRunnerApp } from "../src/app";
+import { createDepsBuilder } from "../src/build-deps";
+import { createDepsCache } from "../src/deps-cache";
 import { runDocker } from "../src/docker-cli";
-import type { RunEvent } from "../src/protocol";
+import type { DepsEvent, RunEvent } from "../src/protocol";
 import { createRunner } from "../src/run-container";
 import { createRuntimeImages } from "../src/runtime-images";
 
@@ -19,7 +21,13 @@ export const AUTHORIZED = {
 type ExitEvent = Extract<RunEvent, { type: "exit" }>;
 
 /** Builds the runtime images once and returns an agent wired to local Docker. */
-export const createTestAgent = async (budgetMb = 2560) => {
+export const createTestAgent = async ({
+  budgetMb = 2560,
+  depsMaxBytes = 500 * 1024 * 1024,
+}: {
+  budgetMb?: number;
+  depsMaxBytes?: number;
+} = {}) => {
   const images = createRuntimeImages(join(process.cwd(), "runtimes"));
   await images.ensureAll();
   for (const runtime of images.list()) {
@@ -31,12 +39,21 @@ export const createTestAgent = async (budgetMb = 2560) => {
   const workDir = await realpath(
     await mkdtemp(join(tmpdir(), "fn-runner-test-"))
   );
-  const runner = createRunner({
-    admission: createAdmission(budgetMb),
-    config: { dns: "1.1.1.1", sandboxNetwork: "bridge", workDir },
+  const admission = createAdmission(budgetMb);
+  const config = { dns: "1.1.1.1", sandboxNetwork: "bridge", workDir };
+  const cache = createDepsCache({
+    minFreeBytes: 0,
+    root: join(workDir, "deps"),
+    targetFreeBytes: 0,
+  });
+  const runner = createRunner({ admission, config, deps: cache, images });
+  const deps = createDepsBuilder({
+    admission,
+    cache,
+    config: { ...config, maxBytes: depsMaxBytes, minFreeBytes: 0 },
     images,
   });
-  const app = createRunnerApp({ images, runner, token: TOKEN });
+  const app = createRunnerApp({ deps, images, runner, token: TOKEN });
 
   const start = (body: Record<string, unknown>) => {
     const runId = `test_${randomBytes(6).toString("hex")}`;
@@ -58,7 +75,32 @@ export const createTestAgent = async (budgetMb = 2560) => {
     return { runId, ...(await readRun(await response)) };
   };
 
-  return { app, run, start, workDir };
+  /** Installs packages and returns the stream's events. */
+  const install = async (body: Record<string, unknown>) => {
+    const response = await app.request("/deps", {
+      body: JSON.stringify(body),
+      headers: AUTHORIZED,
+      method: "POST",
+    });
+    const text = await response.text();
+    if (response.status !== 200) {
+      throw new Error(`Install refused with ${response.status}: ${text}`);
+    }
+    const events = text
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as DepsEvent);
+    const done = events.at(-1);
+    if (done?.type !== "done") {
+      throw new Error("The stream did not end with a done event.");
+    }
+    const output = events
+      .flatMap((event) => (event.type === "output" ? event.data : []))
+      .join("");
+    return { done, events, output };
+  };
+
+  return { app, cache, install, run, start, workDir };
 };
 
 export const readRun = async (response: Response) => {

@@ -416,7 +416,7 @@ describe("refusals", () => {
   });
 
   it("answers busy when the memory budget is spent", async () => {
-    const small = await createTestAgent(512);
+    const small = await createTestAgent({ budgetMb: 512 });
     const response = await small.app.request("/runs", {
       body: JSON.stringify({ ...JSON.parse(body), memoryMb: 1024 }),
       headers: AUTHORIZED,

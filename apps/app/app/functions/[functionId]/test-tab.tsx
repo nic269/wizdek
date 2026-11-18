@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, ErrorAlert, InlineAlert, Play } from "@repo/design-system";
-import { useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 import { JsonField, SchemaForm } from "../../lib/schema-form";
 import type { CodeFunction } from "./use-function-editor";
 
@@ -70,6 +70,7 @@ export function TestTab({
   isDirty,
   onRun,
   onValuesChange,
+  packages,
   values,
 }: {
   canRun: boolean;
@@ -79,6 +80,8 @@ export function TestTab({
   isDirty: boolean;
   onRun: () => void;
   onValuesChange: (values: Params) => void;
+  /** How the function's packages stand, shown above the form. */
+  packages?: ReactNode;
   values: Params;
 }) {
   const schema = fn.paramsSchema;
@@ -94,6 +97,7 @@ export function TestTab({
 
   return (
     <div className="space-y-4 p-4">
+      {packages}
       <ParamsNotice fn={fn} />
       {schema ? null : (
         <JsonField

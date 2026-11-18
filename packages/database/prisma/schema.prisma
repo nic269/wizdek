@@ -652,12 +652,12 @@ enum DatabaseBackupStatus {
 /// A database the organization can run tools against. The URL, password
 /// included, is stored only encrypted; the other columns are for display.
 model DatabaseConnection {
-  id             String         @id @default(cuid())
+  id             String            @id @default(cuid())
   organizationId String
   name           String
   engine         DatabaseEngine
   environment    TargetEnvironment @default(DEV)
-  urlEncrypted   String         @db.Text
+  urlEncrypted   String            @db.Text
   host           String
   port           Int
   databaseName   String
@@ -666,10 +666,10 @@ model DatabaseConnection {
   sslMode        String?
   serverVersion  String?
   lastCheckedAt  DateTime?
-  lastCheckError String?        @db.Text
+  lastCheckError String?           @db.Text
   createdById    String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   backups      DatabaseBackup[]
@@ -725,6 +725,13 @@ enum CodeFunctionRunStatus {
   CANCELED
 }
 
+enum CodeFunctionDepsStatus {
+  NONE
+  BUILDING
+  READY
+  FAILED
+}
+
 enum CodeFunctionRunTrigger {
   MANUAL
   HTTP
@@ -734,24 +741,34 @@ enum CodeFunctionRunTrigger {
 /// A script an organization runs on the function runner. Named CodeFunction
 /// because `Function` collides with the JavaScript global in generated code.
 model CodeFunction {
-  id             String              @id @default(cuid())
+  id             String                 @id @default(cuid())
   organizationId String
   name           String
   description    String?
   runtime        CodeFunctionRuntime
-  timeoutSeconds Int                 @default(60)
-  memoryMb       Int                 @default(256)
+  timeoutSeconds Int                    @default(60)
+  memoryMb       Int                    @default(256)
   /// Hash of every file's path and content; a save must present the current one.
   sourceHash     String
   /// Form schema read from the entry file's `main`, or why it could not be read.
   paramsSchema   Json?
-  paramsError    String?             @db.Text
+  paramsError    String?                @db.Text
   /// True when the runner could not be reached to read the latest source.
-  paramsStale    Boolean             @default(false)
+  paramsStale    Boolean                @default(false)
+  /// Packages from package.json or requirements.txt, installed on the runner.
+  depsStatus     CodeFunctionDepsStatus @default(NONE)
+  /// Hash of the manifests the status describes; NULL without manifests.
+  depsHash       String?
+  /// The runner's cache entry for the installed packages.
+  depsKey        String?
+  /// Why the install failed, and the end of its output.
+  depsError      String?                @db.Text
+  depsLog        String                 @default("") @db.Text
+  depsBuiltAt    DateTime?
   createdById    String?
   updatedById    String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   files        CodeFunctionFile[]

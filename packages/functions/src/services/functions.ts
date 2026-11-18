@@ -13,6 +13,7 @@ import { FunctionsError, functionNotFound } from "../errors";
 import { functionsEnabled } from "../keys";
 import { getRunner } from "../runner/client";
 import { sourceHashOf } from "../source";
+import { depsHashOf, freshDepsColumns, startDepsInstall } from "./deps";
 
 export type CodeFunctionRecord = Prisma.CodeFunctionGetPayload<object>;
 export type CodeFunctionWithFiles = Prisma.CodeFunctionGetPayload<{
@@ -335,8 +336,11 @@ export const saveFiles = async (
   const current = await getFunction(input);
   const sourceHash = sourceHashOf(input.files);
   const params = await paramsColumnsFor(current.runtime, input.files);
+  // Packages install again only when the manifests changed.
+  const depsHash = depsHashOf(current.runtime, input.files);
+  const deps = depsHash === current.depsHash ? {} : freshDepsColumns(depsHash);
 
-  return prisma.$transaction(async (db) => {
+  const saved = await prisma.$transaction(async (db) => {
     // Locks the row, so the hash check and the write cannot interleave.
     const locked = await db.$queryRaw<{ sourceHash: string }[]>`
       SELECT "sourceHash" FROM "code_function" WHERE "id" = ${current.id} FOR UPDATE`;
@@ -347,9 +351,10 @@ export const saveFiles = async (
       );
     }
     await db.codeFunctionFile.deleteMany({ where: { functionId: current.id } });
-    const saved = await db.codeFunction.update({
+    const updated = await db.codeFunction.update({
       data: {
         ...params,
+        ...deps,
         files: { create: input.files },
         sourceHash,
         updatedById: input.actorId,
@@ -365,6 +370,10 @@ export const saveFiles = async (
       targetId: current.id,
       targetType: "CodeFunction",
     });
-    return saved;
+    return updated;
   });
+  if ("depsStatus" in deps) {
+    startDepsInstall(saved);
+  }
+  return saved;
 };

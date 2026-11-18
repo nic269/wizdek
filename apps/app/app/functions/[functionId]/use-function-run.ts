@@ -137,11 +137,20 @@ export const useFunctionRun = (functionId: string) => {
     }
   }, [runId]);
 
-  /** Shows a past run in place of the current one. */
-  const select = useCallback((id: string) => {
-    setRun(null);
-    setRunId(id);
-  }, []);
+  /**
+   * Shows a past run in place of the current one. Choosing the run already
+   * shown keeps it, since nothing would load it again.
+   */
+  const select = useCallback(
+    (id: string) => {
+      if (id === runId) {
+        return;
+      }
+      setRun(null);
+      setRunId(id);
+    },
+    [runId]
+  );
 
   return {
     cancel,

@@ -78,3 +78,36 @@ export const runDocker = (
     child.stdin.on("error", () => undefined);
     child.stdin.end(options.input ?? "");
   });
+
+const KILL_RETRY_MS = 1000;
+const KILL_ATTEMPTS = 30;
+
+/**
+ * Kills a container started with `docker run --name`. The container may not
+ * exist yet when the kill arrives, so it keeps trying until `isDone` says
+ * the docker CLI has exited.
+ */
+export const killContainer = (name: string, isDone: () => boolean): void => {
+  let attempts = 0;
+  const attempt = () => {
+    if (isDone() || attempts >= KILL_ATTEMPTS) {
+      return;
+    }
+    attempts += 1;
+    runDocker(["kill", name])
+      .catch(() => undefined)
+      .finally(() => setTimeout(attempt, KILL_RETRY_MS).unref());
+  };
+  attempt();
+};
+
+/** Whether the kernel killed a container for exceeding its memory limit. */
+export const wasOomKilled = async (name: string): Promise<boolean> => {
+  const inspection = await runDocker([
+    "inspect",
+    "--format",
+    "{{.State.OOMKilled}}",
+    name,
+  ]).catch(() => null);
+  return inspection?.stdout.trim() === "true";
+};

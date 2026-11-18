@@ -18,6 +18,8 @@ export type CodeFunction = Awaited<
 export type FunctionFile = CodeFunction["files"][number];
 export type FunctionSettings = Parameters<typeof apiClient.functions.update>[0];
 
+const PACKAGES_POLL_MS = 2000;
+
 const byPath = (a: FunctionFile, b: FunctionFile) =>
   a.path.localeCompare(b.path);
 
@@ -51,6 +53,7 @@ export const useFunctionEditor = (functionId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
+  const [isReinstalling, setIsReinstalling] = useState(false);
   /**
    * Counts loads from the server. The editor owns the text while it is open
    * and takes file contents from here only when this changes.
@@ -212,6 +215,48 @@ export const useFunctionEditor = (functionId: string) => {
     }
   }, [drafts, fn, functionId]);
 
+  /** Takes the package fields from the server, leaving files alone. */
+  const applyPackages = useCallback((data: CodeFunction) => {
+    setFn((current) =>
+      current
+        ? {
+            ...current,
+            depsBuiltAt: data.depsBuiltAt,
+            depsError: data.depsError,
+            depsLog: data.depsLog,
+            depsStatus: data.depsStatus,
+          }
+        : current
+    );
+  }, []);
+
+  // While packages install, check on them until they finish.
+  const depsStatus = fn?.depsStatus;
+  useEffect(() => {
+    if (depsStatus !== "BUILDING") {
+      return;
+    }
+    const timer = setInterval(() => {
+      apiClient.functions
+        .get({ functionId })
+        .then(({ data }) => applyPackages(data))
+        .catch(() => undefined);
+    }, PACKAGES_POLL_MS);
+    return () => clearInterval(timer);
+  }, [applyPackages, depsStatus, functionId]);
+
+  const reinstallPackages = useCallback(async () => {
+    setIsReinstalling(true);
+    try {
+      const { data } = await apiClient.functions.reinstallDeps({ functionId });
+      applyPackages(data);
+    } catch (cause) {
+      setError(getApiErrorMessage(cause, "Could not install the packages."));
+    } finally {
+      setIsReinstalling(false);
+    }
+  }, [applyPackages, functionId]);
+
   const updateSettings = useCallback(
     async (settings: Omit<FunctionSettings, "functionId">) => {
       const { data } = await apiClient.functions.update({
@@ -239,10 +284,12 @@ export const useFunctionEditor = (functionId: string) => {
     fn,
     hasConflict,
     isDirty,
+    isReinstalling,
     isSaving,
     loadError,
     open,
     openPaths,
+    reinstallPackages,
     reload: load,
     renameFile,
     restoreFile,

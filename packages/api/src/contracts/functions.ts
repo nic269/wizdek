@@ -1,4 +1,5 @@
 import {
+  FUNCTION_DEPS_STATUSES,
   FUNCTION_LIMITS,
   FUNCTION_RUN_STATUSES,
   FUNCTION_RUNTIMES,
@@ -14,6 +15,7 @@ import { organizationIdInput } from "./shopify-shared";
 
 export const functionRuntimeSchema = z.enum(FUNCTION_RUNTIMES);
 export const functionRunStatusSchema = z.enum(FUNCTION_RUN_STATUSES);
+export const functionDepsStatusSchema = z.enum(FUNCTION_DEPS_STATUSES);
 export const functionRunTriggerSchema = z.enum(["MANUAL", "HTTP", "SCHEDULE"]);
 
 const paramTypeSchema = z.enum([
@@ -47,6 +49,12 @@ export const functionFileSchema = z.object({
 
 export const functionSummarySchema = z.object({
   createdAt: z.date(),
+  /** When the installed packages were built. */
+  depsBuiltAt: z.date().nullable(),
+  /** Why the last package install failed. */
+  depsError: z.string().nullable(),
+  /** Packages from package.json or requirements.txt; NONE without one. */
+  depsStatus: functionDepsStatusSchema,
   description: z.string().nullable(),
   id: z.string(),
   memoryMb: z.number().int(),
@@ -68,6 +76,8 @@ export const functionListItemSchema = functionSummarySchema.extend({
 });
 
 export const functionSchema = functionSummarySchema.extend({
+  /** The end of the last package install's output. */
+  depsLog: z.string(),
   files: z.array(functionFileSchema),
   paramsSchema: paramsSchemaSchema.nullable(),
   /** Send back as `baseHash` when saving files. */
@@ -180,6 +190,15 @@ export const functionsContract = {
     })
     .input(organizationIdInput)
     .output(dataEnvelope(z.array(functionListItemSchema))),
+  reinstallDeps: apiContract
+    .route({
+      method: "POST",
+      operationId: "functions.reinstallDeps",
+      path: "/api/functions/{functionId}/deps/rebuild",
+      summary: "Install a function's packages again",
+    })
+    .input(functionIdInput)
+    .output(dataEnvelope(functionSchema)),
   saveFiles: apiContract
     .route({
       method: "PUT",
