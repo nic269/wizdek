@@ -18,6 +18,7 @@ const FAILURE_RESPONSES: Record<
   INVALID_NAME: { code: "VALIDATION_ERROR", status: 422 },
   INVALID_URL: { code: "VALIDATION_ERROR", status: 422 },
   NAME_TAKEN: { code: "CONFLICT", status: 409 },
+  QUERY_FAILED: { code: "VALIDATION_ERROR", status: 422 },
   TOOL_FAILED: { code: "INTERNAL_SERVER_ERROR", status: 500 },
   TOOL_NOT_FOUND: { code: "INTERNAL_SERVER_ERROR", status: 500 },
   TOOL_TOO_OLD: { code: "INTERNAL_SERVER_ERROR", status: 500 },

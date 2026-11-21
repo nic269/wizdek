@@ -3,7 +3,7 @@
 import { Input } from "@repo/design-system";
 import { Textarea } from "@repo/design-system/components/ui/textarea";
 import { mayMutate } from "@repo/flows/definition";
-import { asString, type ConfigFormProps, Field } from "./form-parts";
+import { asString, type ConfigFormProps, Field } from "../../../lib/form-parts";
 
 export function ShopifyGraphqlForm({
   config,

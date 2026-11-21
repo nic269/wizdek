@@ -21,18 +21,28 @@ import { countGraphqlErrors, countUserErrors } from "./user-errors";
  */
 export const CONSOLE_EXECUTE_TIMEOUT_MS = 25_000;
 
+/** The longest any caller may wait, such as a function's run. */
+export const MAX_EXECUTE_TIMEOUT_MS = 60_000;
+
 export const SUPPORTED_API_VERSIONS_QUERY =
   "query ApiVersions { publicApiVersions { handle displayName supported } }";
 
 export interface GraphqlExecutionInput {
-  actorId: string;
+  /** Null when no person acted, e.g. a scheduled function run. */
+  actorId: string | null;
   apiVersion?: string | undefined;
+  /** Extra non-sensitive audit metadata, such as the function and run. */
+  auditMetadata?: Prisma.InputJsonObject | undefined;
+  /** Queries are audited unless this is false; mutations always are. */
+  auditQueries?: boolean | undefined;
   /** Asked only when the document turns out to be a mutation. */
   canMutate: () => Promise<boolean>;
   costDebug?: boolean | undefined;
   operationName?: string | undefined;
   query: string;
   scope: StoreScope;
+  /** Defaults to the console timeout; capped at MAX_EXECUTE_TIMEOUT_MS. */
+  timeoutMs?: number | undefined;
   variables?: Record<string, unknown> | undefined;
 }
 
@@ -108,7 +118,10 @@ export const executeGraphqlForUser = async (
   const apiVersion = input.apiVersion ?? client.store.apiVersion;
   const startedAt = Date.now();
   const audit = (outcome: Prisma.InputJsonObject) => {
-    if (classified.type === "introspection") {
+    if (
+      classified.type === "introspection" ||
+      (classified.type === "query" && input.auditQueries === false)
+    ) {
       return;
     }
     return recordShopifyAudit(prisma, {
@@ -126,6 +139,7 @@ export const executeGraphqlForUser = async (
         operationType: classified.type,
         shopDomain: client.store.shopDomain,
         variables: (input.variables ?? null) as Prisma.InputJsonValue | null,
+        ...input.auditMetadata,
         ...outcome,
       },
       organizationId: client.store.organizationId,
@@ -140,7 +154,10 @@ export const executeGraphqlForUser = async (
       costDebug: input.costDebug,
       operationName: input.operationName,
       query: input.query,
-      timeoutMs: CONSOLE_EXECUTE_TIMEOUT_MS,
+      timeoutMs: Math.min(
+        input.timeoutMs ?? CONSOLE_EXECUTE_TIMEOUT_MS,
+        MAX_EXECUTE_TIMEOUT_MS
+      ),
       variables: input.variables,
     });
     const graphqlErrorCount = countGraphqlErrors(result.body);

@@ -5,9 +5,9 @@ import { redactSecrets } from "../../redact";
 import type { DatabaseTarget, ServerVersion } from "../types";
 
 const TIMEOUT_MS = 10_000;
-const NO_SSL_SUPPORT = /does not support SSL/i;
+export const NO_SSL_SUPPORT = /does not support SSL/i;
 
-type TlsSetting = false | ConnectionOptions;
+export type TlsSetting = false | ConnectionOptions;
 
 /**
  * TLS settings that match what libpq, and so pg_dump, does for each sslmode.
@@ -15,7 +15,7 @@ type TlsSetting = false | ConnectionOptions;
  * would fail where the dump succeeds. Modes that tolerate either answer are
  * tried with TLS first, then without.
  */
-const tlsAttempts = (sslMode: string | undefined): TlsSetting[] => {
+export const tlsAttempts = (sslMode: string | undefined): TlsSetting[] => {
   switch (sslMode) {
     case "disable":
       return [false];

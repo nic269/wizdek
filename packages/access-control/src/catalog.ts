@@ -29,4 +29,9 @@ export const PERMISSION_CATALOG = [
     label: "Run and download database backups",
     module: "databases",
   },
+  // Function source can hold hard-coded credentials and a run executes code
+  // with internet access, so functions also stay out of the Viewer preset.
+  { action: "read", label: "View functions and runs", module: "functions" },
+  { action: "manage", label: "Create and edit functions", module: "functions" },
+  { action: "run", label: "Run functions", module: "functions" },
 ] as const;

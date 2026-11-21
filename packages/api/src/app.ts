@@ -2,6 +2,7 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError, ValidationError } from "@orpc/server";
 import { auth } from "@repo/auth/server";
 import { MAX_WEBHOOK_BYTES } from "@repo/flows";
+import { HTTP_TRIGGER } from "@repo/functions/definition";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -13,6 +14,10 @@ import {
 import { ApiError, type ApiErrorResponse } from "./errors";
 import { requireAuthEndpointEnabled } from "./feature-guards";
 import { handleFlowFileDownload } from "./flow-file-download-route";
+import {
+  createFunctionTriggerRoutes,
+  type FunctionTriggerOptions,
+} from "./function-trigger-route";
 import { handleIdentity } from "./identity-route";
 import { getOpenApiDocument } from "./openapi";
 import { requireAppOrigin } from "./origin-check";
@@ -127,7 +132,11 @@ const withRequestId = async (response: Response, requestId: string) => {
   );
 };
 
-export const createApiApp = () => {
+export interface ApiAppOptions {
+  functionTrigger?: FunctionTriggerOptions;
+}
+
+export const createApiApp = (options: ApiAppOptions = {}) => {
   const app = new Hono();
 
   app.use("*", requestContext);
@@ -155,8 +164,8 @@ export const createApiApp = () => {
     return auth.handler(context.req.raw);
   });
   app.get("/api/identity", handleIdentity);
-  // Writes that change store data, reach a database or accept files must
-  // come from the app.
+  // Writes that change store data, reach a database, run code or accept
+  // files must come from the app.
   for (const path of [
     "/api/shopify/*",
     "/api/databases/*",
@@ -166,6 +175,12 @@ export const createApiApp = () => {
     "/api/organizations/:organizationId/flows",
     "/api/organizations/:organizationId/flows/*",
     "/api/organizations/:organizationId/files",
+    "/api/functions/*",
+    "/api/function-runs/*",
+    "/api/function-schedules/*",
+    "/api/function-grants/*",
+    "/api/organizations/:organizationId/functions",
+    "/api/organizations/:organizationId/functions/*",
   ]) {
     app.use(path, requireAppOrigin);
   }
@@ -185,6 +200,12 @@ export const createApiApp = () => {
       onError: (context) => context.body(null, 413),
     }),
     handleShopifyWebhook
+  );
+  // The public trigger of functions: its token is the authentication, so it
+  // is not behind the app-origin check and sets no cookies.
+  app.route(
+    HTTP_TRIGGER.pathPrefix,
+    createFunctionTriggerRoutes(options.functionTrigger)
   );
   app.use("*", async (context, next) => {
     const { matched, response } = await orpcHandler.handle(context.req.raw, {
@@ -258,3 +279,5 @@ export const createApiApp = () => {
 };
 
 export type ApiApp = ReturnType<typeof createApiApp>;
+
+export { createFunctionRuntimeApp } from "./function-runtime-route";

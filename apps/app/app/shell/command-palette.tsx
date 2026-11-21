@@ -6,6 +6,7 @@ import {
   Database,
   HardDriveDownload,
   Plus,
+  SquareCode,
   Store,
   UserPlus,
   Workflow,
@@ -23,7 +24,12 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect } from "react";
 import { useActiveOrganization } from "../lib/active-organization";
 import { type Permission, usePermissions } from "../lib/permissions";
-import { useDatabaseConnections, useFlows, useStores } from "../lib/queries";
+import {
+  useDatabaseConnections,
+  useFlows,
+  useFunctions,
+  useStores,
+} from "../lib/queries";
 import type { ShellNavGroup } from "./nav";
 
 interface Entry {
@@ -55,6 +61,13 @@ const ACTIONS: Entry[] = [
     icon: <Workflow />,
     label: "Create a flow",
     permission: "flows:manage",
+  },
+  {
+    hint: "Functions",
+    href: "/functions?new=1",
+    icon: <SquareCode />,
+    label: "Create a function",
+    permission: "functions:manage",
   },
   {
     hint: "Database",
@@ -107,6 +120,7 @@ export const CommandPalette = ({
   const organizationId = organization?.id ?? null;
   const stores = useStores(organizationId, open && can("stores:read"));
   const flows = useFlows(organizationId, open && can("flows:read"));
+  const functions = useFunctions(organizationId, open && can("functions:read"));
   const databases = useDatabaseConnections(
     organizationId,
     open && can("databases:read")
@@ -204,6 +218,22 @@ export const CommandPalette = ({
                     onPick={pick}
                   />
                 ))}
+            </CommandGroup>
+          ) : null}
+          {functions.data?.length ? (
+            <CommandGroup heading="Functions">
+              {functions.data.map((fn) => (
+                <Row
+                  entry={{
+                    hint: "Function",
+                    href: `/functions/${fn.id}`,
+                    icon: <SquareCode />,
+                    label: `Open function: ${fn.name}`,
+                  }}
+                  key={fn.id}
+                  onPick={pick}
+                />
+              ))}
             </CommandGroup>
           ) : null}
           {databases.data?.length ? (

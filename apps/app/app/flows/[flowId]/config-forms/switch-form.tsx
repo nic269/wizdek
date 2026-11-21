@@ -1,7 +1,6 @@
 "use client";
 
 import { Button, Input } from "@repo/design-system";
-import { TemplateInput } from "../template-input";
 import {
   asArray,
   asString,
@@ -9,7 +8,8 @@ import {
   Field,
   removeAt,
   replaceAt,
-} from "./form-parts";
+} from "../../../lib/form-parts";
+import { TemplateInput } from "../template-input";
 
 interface SwitchCase {
   name: string;

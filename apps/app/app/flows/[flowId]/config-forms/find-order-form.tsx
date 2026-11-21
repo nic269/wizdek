@@ -1,8 +1,8 @@
 "use client";
 
+import { asString, type ConfigFormProps, Field } from "../../../lib/form-parts";
 import { OptionSelect } from "../../../lib/option-select";
 import { TemplateInput } from "../template-input";
-import { asString, type ConfigFormProps, Field } from "./form-parts";
 
 export function FindOrderForm({ config, disabled, onChange }: ConfigFormProps) {
   const by = asString(config.by, "name");

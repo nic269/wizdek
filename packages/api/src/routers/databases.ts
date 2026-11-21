@@ -11,6 +11,7 @@ import {
   startBackup,
   updateConnection,
 } from "@repo/database-tools";
+import { removeGrantsOf } from "@repo/functions";
 import { getStorageProvider } from "@repo/storage";
 import { getJobProvider } from "../jobs";
 import {
@@ -109,6 +110,8 @@ export const databaseConnectionsRouter = {
     await withDatabaseErrors(() =>
       deleteConnection({ actorId: user.id, scope: scopeOf(connection) })
     );
+    // Functions lose the connection with it.
+    await removeGrantsOf("DATABASE", connection.id);
     return { data: { id: connection.id } };
   }),
   get: os.databaseConnections.get.handler(async ({ context, input }) => {

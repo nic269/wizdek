@@ -8,7 +8,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@repo/design-system/components/ui/combobox";
-import { asString, type ConfigFormProps, Field } from "./form-parts";
+import { asString, type ConfigFormProps, Field } from "../../../lib/form-parts";
 
 /** Topics people reach for first; any other topic name can be typed. */
 const COMMON_TOPICS = [

@@ -1,0 +1,33 @@
+{
+  "name": "@repo/functions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./definition": "./src/definition/index.ts",
+    "./testing": "./src/testing/fake-runner.ts"
+  },
+  "scripts": {
+    "build": "echo '@repo/functions is source-only'",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:unit": "vitest run --exclude 'integration/**' --passWithNoTests",
+    "test:integration": "vitest run integration",
+    "fake-runner": "tsx src/testing/run-fake-runner.ts"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "@repo/jobs": "workspace:*",
+    "@repo/security": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.1.0",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  }
+}

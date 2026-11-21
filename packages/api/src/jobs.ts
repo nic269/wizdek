@@ -10,6 +10,12 @@ import {
   createFlowScheduleJob,
 } from "@repo/flows";
 import {
+  abortAllRuns,
+  createFunctionScheduleJob,
+  failInterruptedInstalls,
+  failInterruptedRuns,
+} from "@repo/functions";
+import {
   createLocalJobProvider,
   getJobProviderStatus,
   type JobQueueProvider,
@@ -50,6 +56,7 @@ export const registerJobs = (target: JobQueueProvider): void => {
   );
   target.register(createFlowScheduleJob(target));
   target.register(createDatabaseBackupJob());
+  target.register(createFunctionScheduleJob());
 };
 
 /**
@@ -62,3 +69,19 @@ export const failInterruptedDatabaseBackups = (): Promise<number> => {
     new Date(Date.now() - (lostEverything ? 0 : BACKUP_TIMEOUT_SECONDS * 1000))
   );
 };
+
+/**
+ * Fails function runs that a stopped process left queued or running, and
+ * package installs it left in progress. Both are driven from this process,
+ * so after a restart none of them can finish. Returns the number of runs.
+ */
+export const failInterruptedFunctionRuns = async (): Promise<number> => {
+  const [runs] = await Promise.all([
+    failInterruptedRuns(),
+    failInterruptedInstalls(),
+  ]);
+  return runs;
+};
+
+/** Cuts the streams of running function runs when the server stops. */
+export const abortFunctionRuns = (): void => abortAllRuns();

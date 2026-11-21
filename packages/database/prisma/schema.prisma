@@ -134,6 +134,8 @@ model Organization {
   flowRuns            FlowRun[]
   databaseConnections DatabaseConnection[]
   databaseBackups     DatabaseBackup[]
+  codeFunctions       CodeFunction[]
+  codeFunctionRuns    CodeFunctionRun[]
 
   @@map("organization")
 }
@@ -650,12 +652,12 @@ enum DatabaseBackupStatus {
 /// A database the organization can run tools against. The URL, password
 /// included, is stored only encrypted; the other columns are for display.
 model DatabaseConnection {
-  id             String         @id @default(cuid())
+  id             String            @id @default(cuid())
   organizationId String
   name           String
   engine         DatabaseEngine
   environment    TargetEnvironment @default(DEV)
-  urlEncrypted   String         @db.Text
+  urlEncrypted   String            @db.Text
   host           String
   port           Int
   databaseName   String
@@ -664,10 +666,10 @@ model DatabaseConnection {
   sslMode        String?
   serverVersion  String?
   lastCheckedAt  DateTime?
-  lastCheckError String?        @db.Text
+  lastCheckError String?           @db.Text
   createdById    String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   backups      DatabaseBackup[]
@@ -707,4 +709,188 @@ model DatabaseBackup {
   @@index([connectionId, createdAt])
   @@index([status, startedAt])
   @@map("database_backup")
+}
+
+enum CodeFunctionRuntime {
+  NODE
+  PYTHON
+}
+
+enum CodeFunctionRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  TIMED_OUT
+  CANCELED
+}
+
+enum CodeFunctionDepsStatus {
+  NONE
+  BUILDING
+  READY
+  FAILED
+}
+
+enum CodeFunctionRunTrigger {
+  MANUAL
+  HTTP
+  SCHEDULE
+}
+
+/// A script an organization runs on the function runner. Named CodeFunction
+/// because `Function` collides with the JavaScript global in generated code.
+model CodeFunction {
+  id             String                 @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  runtime        CodeFunctionRuntime
+  timeoutSeconds Int                    @default(60)
+  memoryMb       Int                    @default(256)
+  /// Hash of every file's path and content; a save must present the current one.
+  sourceHash     String
+  /// Form schema read from the entry file's `main`, or why it could not be read.
+  paramsSchema   Json?
+  paramsError    String?                @db.Text
+  /// True when the runner could not be reached to read the latest source.
+  paramsStale    Boolean                @default(false)
+  /// Packages from package.json or requirements.txt, installed on the runner.
+  depsStatus     CodeFunctionDepsStatus @default(NONE)
+  /// Hash of the manifests the status describes; NULL without manifests.
+  depsHash       String?
+  /// The runner's cache entry for the installed packages.
+  depsKey        String?
+  /// Why the install failed, and the end of its output.
+  depsError      String?                @db.Text
+  depsLog        String                 @default("") @db.Text
+  depsBuiltAt    DateTime?
+  /// The HTTP trigger is on while a token exists. Only its SHA-256 is stored.
+  httpTokenHash  String?                @unique
+  /// The token's last four characters, to tell tokens apart.
+  httpTokenHint  String?
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  files        CodeFunctionFile[]
+  runs         CodeFunctionRun[]
+  envVars      CodeFunctionEnvVar[]
+  schedules    CodeFunctionSchedule[]
+  grants       CodeFunctionGrant[]
+
+  @@unique([organizationId, name])
+  @@map("code_function")
+}
+
+model CodeFunctionFile {
+  id         String @id @default(cuid())
+  functionId String
+  path       String
+  content    String @db.Text
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, path])
+  @@map("code_function_file")
+}
+
+model CodeFunctionRun {
+  id                String                 @id @default(cuid())
+  functionId        String
+  organizationId    String
+  number            Int
+  trigger           CodeFunctionRunTrigger
+  status            CodeFunctionRunStatus  @default(QUEUED)
+  params            Json
+  result            Json?
+  output            String                 @default("") @db.Text
+  outputTruncated   Boolean                @default(false)
+  exitCode          Int?
+  error             String?                @db.Text
+  durationMs        Int?
+  sourceHash        String
+  cancelRequestedAt DateTime?
+  startedById       String?
+  /// The schedule that started the run; kept when the schedule is deleted.
+  scheduleId        String?
+  /// SHA-256 of the token the run's code uses for the built-in helpers;
+  /// cleared when the run ends.
+  runtimeTokenHash  String?                @unique
+  /// How many database and Shopify calls the run made through the helpers.
+  dbCallCount       Int                    @default(0)
+  shopifyCallCount  Int                    @default(0)
+  createdAt         DateTime               @default(now())
+  startedAt         DateTime?
+  finishedAt        DateTime?
+
+  function     CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, number])
+  @@index([functionId, createdAt])
+  @@index([status, createdAt])
+  @@map("code_function_run")
+}
+
+/// A variable a function's runs read from their environment. The value is
+/// encrypted and never returned.
+model CodeFunctionEnvVar {
+  id             String   @id @default(cuid())
+  functionId     String
+  name           String
+  valueEncrypted String   @db.Text
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, name])
+  @@map("code_function_env_var")
+}
+
+enum CodeFunctionGrantKind {
+  STORE
+  DATABASE
+}
+
+/// A store or database connection a function's code may use through the
+/// built-in helpers, by alias. resourceId points at a ShopifyStore or a
+/// DatabaseConnection, depending on kind.
+model CodeFunctionGrant {
+  id          String                @id @default(cuid())
+  functionId  String
+  kind        CodeFunctionGrantKind
+  resourceId  String
+  alias       String
+  createdById String?
+  createdAt   DateTime              @default(now())
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, kind, resourceId])
+  @@unique([functionId, alias])
+  @@index([kind, resourceId])
+  @@map("code_function_grant")
+}
+
+/// A cron schedule that starts runs of a function with fixed parameters.
+model CodeFunctionSchedule {
+  id          String   @id @default(cuid())
+  functionId  String
+  cron        String
+  timezone    String
+  params      Json
+  enabled     Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@index([functionId])
+  @@map("code_function_schedule")
 }

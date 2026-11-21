@@ -11,6 +11,10 @@ import {
 } from "./support/user-flows";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
+// The API accepts auth requests only from the app's own origin.
+const APP_ORIGIN = new URL(
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+).origin;
 const RESET_SUBJECT_PREFIX = "Reset your ";
 const SIGN_IN_URL_PATTERN = /\/sign-in$/;
 const VERIFICATION_URL_PATTERN = /\/verify-email\?/;
@@ -85,8 +89,8 @@ const requestPasswordReset = async ({
   const response = await page.request.post(
     `${API_URL}/api/auth/request-password-reset`,
     {
-      data: { email, redirectTo: "http://localhost:3000/reset-password" },
-      headers: { Origin: "http://localhost:3000" },
+      data: { email, redirectTo: `${APP_ORIGIN}/reset-password` },
+      headers: { Origin: APP_ORIGIN },
     }
   );
   expect(response.ok()).toBe(true);
@@ -176,7 +180,7 @@ test("password recovery rejects expired and reused tokens", async ({
   const reset = (token: string, newPassword: string) =>
     page.request.post(`${API_URL}/api/auth/reset-password`, {
       data: { newPassword, token },
-      headers: { Origin: "http://localhost:3000" },
+      headers: { Origin: APP_ORIGIN },
     });
   expect((await reset(first.token, "UpdatedPassword123!")).ok()).toBe(true);
   expect((await reset(first.token, "ReusedPassword123!")).status()).toBe(400);

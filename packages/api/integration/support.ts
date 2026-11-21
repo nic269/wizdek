@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getCurrentSession } from "@repo/auth/session";
 import { prisma, syncSystemRoles } from "@repo/database";
 import { vi } from "vitest";
-import { createApiApp } from "../src/app";
+import { type ApiAppOptions, createApiApp } from "../src/app";
 
 export interface Actor {
   organizationId: string;
@@ -17,8 +17,8 @@ export type TestOrganization = Awaited<
  * Drives the real API app against Postgres. The test file must mock
  * `@repo/auth/session`; everything else, permissions included, is real.
  */
-export const createApiHarness = () => {
-  const app = createApiApp();
+export const createApiHarness = (options: ApiAppOptions = {}) => {
+  const app = createApiApp(options);
   const organizationIds: string[] = [];
   const userIds: string[] = [];
   /** Every response body seen, for scanning that no secret was returned. */

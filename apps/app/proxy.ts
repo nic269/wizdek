@@ -2,7 +2,13 @@ import { createAuthGuard } from "@repo/auth/middleware";
 
 export default createAuthGuard({
   dashboard: "/dashboard",
-  protectedPrefixes: ["/settings", "/stores", "/graphql", "/flows"],
+  protectedPrefixes: [
+    "/settings",
+    "/stores",
+    "/graphql",
+    "/flows",
+    "/functions",
+  ],
   signIn: "/sign-in",
 });
 
@@ -13,5 +19,6 @@ export const config = {
     "/stores/:path*",
     "/graphql/:path*",
     "/flows/:path*",
+    "/functions/:path*",
   ],
 };

@@ -1,14 +1,14 @@
 "use client";
 
 import { Button, Input } from "@repo/design-system";
-import { OptionSelect, type SelectOption } from "../../../lib/option-select";
 import {
   asArray,
   type ConfigFormProps,
   Field,
   removeAt,
   replaceAt,
-} from "./form-parts";
+} from "../../../lib/form-parts";
+import { OptionSelect, type SelectOption } from "../../../lib/option-select";
 
 interface ManualInput {
   key: string;

@@ -10,6 +10,7 @@ export const env = createEnv({
   extends: [auth(), database(), jobs(), shopify()],
   runtimeEnv: process.env,
   server: {
+    FUNCTIONS_RUNTIME_PORT: z.coerce.number().int().positive().default(3004),
     NEXT_PUBLIC_API_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])

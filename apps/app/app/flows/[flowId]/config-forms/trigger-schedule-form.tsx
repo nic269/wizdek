@@ -1,8 +1,8 @@
 "use client";
 
 import { Input } from "@repo/design-system";
+import { asString, type ConfigFormProps, Field } from "../../../lib/form-parts";
 import { OptionSelect } from "../../../lib/option-select";
-import { asString, type ConfigFormProps, Field } from "./form-parts";
 
 const PRESETS = [
   { cron: "0 * * * *", label: "Every hour" },

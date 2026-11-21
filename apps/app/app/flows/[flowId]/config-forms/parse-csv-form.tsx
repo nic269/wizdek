@@ -1,8 +1,13 @@
 "use client";
 
+import {
+  asString,
+  Checkbox,
+  type ConfigFormProps,
+  Field,
+} from "../../../lib/form-parts";
 import { OptionSelect } from "../../../lib/option-select";
 import { TemplateInput } from "../template-input";
-import { asString, Checkbox, type ConfigFormProps, Field } from "./form-parts";
 
 const DELIMITER_OPTIONS = [
   { label: "Comma", value: "," },

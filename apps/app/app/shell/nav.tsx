@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   SlidersHorizontal,
+  SquareCode,
   Store,
   Tag,
   Users,
@@ -33,6 +34,7 @@ const ICONS: Record<string, ReactNode> = {
   "/dashboard": <LayoutGrid />,
   "/database": <Database />,
   "/flows": <Workflow />,
+  "/functions": <SquareCode />,
   "/graphql": <Braces />,
   "/settings": <SlidersHorizontal />,
   "/settings/access": <ShieldCheck />,
@@ -44,6 +46,7 @@ const ICONS: Record<string, ReactNode> = {
 
 /** The rail icon of a group that opens a flyout. */
 const GROUP_ICONS: Record<string, ReactNode> = {
+  Automation: <Workflow />,
   Organization: <Building2 />,
   Shopify: <ShoppingBag />,
 };

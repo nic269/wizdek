@@ -14,6 +14,11 @@ export const queryKeys = {
     organizationId,
   ],
   flows: (organizationId: string | null) => ["flows", organizationId],
+  functions: (organizationId: string | null) => ["functions", organizationId],
+  functionsStatus: (organizationId: string | null) => [
+    "functions-status",
+    organizationId,
+  ],
   runs: (organizationId: string | null) => ["org-runs", organizationId],
   stores: (organizationId: string | null) => ["stores", organizationId],
 } as const;
@@ -30,6 +35,12 @@ export type OrganizationRun = Awaited<
 export type DatabaseConnection = Awaited<
   ReturnType<typeof apiClient.databaseConnections.list>
 >["data"][number];
+export type FunctionListItem = Awaited<
+  ReturnType<typeof apiClient.functions.list>
+>["data"][number];
+export type FunctionsStatus = Awaited<
+  ReturnType<typeof apiClient.functions.status>
+>["data"];
 export type DatabaseBackup = Awaited<
   ReturnType<typeof apiClient.databaseBackups.listForOrganization>
 >["data"][number];
@@ -57,6 +68,32 @@ export const useFlows = (organizationId: string | null, enabled = true) =>
       (await apiClient.flows.list({ organizationId: organizationId ?? "" }))
         .data,
     queryKey: queryKeys.flows(organizationId),
+  });
+
+export const useFunctions = (organizationId: string | null, enabled = true) =>
+  useQuery({
+    enabled: Boolean(organizationId) && enabled,
+    queryFn: async () =>
+      (await apiClient.functions.list({ organizationId: organizationId ?? "" }))
+        .data,
+    queryKey: queryKeys.functions(organizationId),
+  });
+
+/** Whether functions are enabled on this server and the runner answers. */
+export const useFunctionsStatus = (
+  organizationId: string | null,
+  enabled = true
+) =>
+  useQuery({
+    enabled: Boolean(organizationId) && enabled,
+    queryFn: async () =>
+      (
+        await apiClient.functions.status({
+          organizationId: organizationId ?? "",
+        })
+      ).data,
+    queryKey: queryKeys.functionsStatus(organizationId),
+    staleTime: 30_000,
   });
 
 /** The newest runs across the organization's flows; polls while any is active. */

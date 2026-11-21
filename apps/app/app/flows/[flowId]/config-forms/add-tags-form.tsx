@@ -3,8 +3,13 @@
 import { Button, cn, X } from "@repo/design-system";
 import { Input } from "@repo/design-system/components/ui/input";
 import { type KeyboardEvent, useState } from "react";
+import {
+  asArray,
+  asString,
+  type ConfigFormProps,
+  Field,
+} from "../../../lib/form-parts";
 import { TemplateInput } from "../template-input";
-import { asArray, asString, type ConfigFormProps, Field } from "./form-parts";
 
 const TAG_SEPARATOR = /,/;
 

@@ -5,6 +5,7 @@ import { runTool } from "../run-tool";
 import type { DatabaseEngineAdapter, ToolVersion } from "../types";
 import { checkPostgres } from "./check";
 import { libpqEnvironment, pgDumpArguments } from "./env";
+import { queryPostgres } from "./query";
 import { POSTGRES_SCHEMES, parsePostgresUrl } from "./url";
 
 // e.g. "pg_dump (PostgreSQL) 18.6" or "pg_dump (PostgreSQL) 16.4 (Homebrew)".
@@ -38,6 +39,7 @@ export const postgresAdapter: DatabaseEngineAdapter = {
   fileExtension: "dump",
   label: "PostgreSQL",
   parseUrl: parsePostgresUrl,
+  query: queryPostgres,
   schemes: POSTGRES_SCHEMES,
   async toolVersion(signal) {
     const { stdoutTail } = await runTool({

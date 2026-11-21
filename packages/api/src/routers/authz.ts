@@ -13,6 +13,14 @@ import {
   findFlowById,
   findRunById,
 } from "@repo/flows";
+import {
+  type CodeFunctionRecord,
+  type CodeFunctionRunSummary,
+  findFunctionById,
+  findRunById as findFunctionRunById,
+  findGrantById,
+  findScheduleById,
+} from "@repo/functions";
 import { findStoreById, type ShopifyStoreRecord } from "@repo/shopify/stores";
 import { ApiError } from "../errors";
 
@@ -219,4 +227,118 @@ export const requireBackupPermission = async (
     "You do not have permission for this database action."
   );
   return { backup, user };
+};
+
+type FunctionAction = "read" | "manage" | "run";
+
+const functionNotFound = () =>
+  new ApiError("NOT_FOUND", "Function not found.", 404);
+const functionRunNotFound = () =>
+  new ApiError("NOT_FOUND", "Run not found.", 404);
+
+/**
+ * Authorizes an action on a function; the organization comes from the
+ * function row.
+ */
+export const requireFunctionPermission = async (
+  headers: Headers,
+  functionId: string,
+  action: FunctionAction
+): Promise<{
+  fn: CodeFunctionRecord;
+  user: Awaited<ReturnType<typeof requireUser>>;
+}> => {
+  const user = await requireUser(headers);
+  const fn = await findFunctionById(functionId);
+  if (!fn) {
+    throw functionNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    fn.organizationId,
+    "functions",
+    action,
+    functionNotFound,
+    "You do not have permission for this function action."
+  );
+  return { fn, user };
+};
+
+/**
+ * Authorizes an action on a function schedule; the organization comes from
+ * the schedule's function.
+ */
+export const requireFunctionSchedulePermission = async (
+  headers: Headers,
+  scheduleId: string,
+  action: FunctionAction
+) => {
+  const user = await requireUser(headers);
+  const schedule = await findScheduleById(scheduleId);
+  const scheduleNotFound = () =>
+    new ApiError("NOT_FOUND", "Schedule not found.", 404);
+  if (!schedule) {
+    throw scheduleNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    schedule.function.organizationId,
+    "functions",
+    action,
+    scheduleNotFound,
+    "You do not have permission for this function action."
+  );
+  return { schedule, user };
+};
+
+/** Authorizes an action on a function run; the organization comes from the run row. */
+export const requireFunctionRunPermission = async (
+  headers: Headers,
+  runId: string,
+  action: FunctionAction
+): Promise<{
+  run: CodeFunctionRunSummary;
+  user: Awaited<ReturnType<typeof requireUser>>;
+}> => {
+  const user = await requireUser(headers);
+  const run = await findFunctionRunById(runId);
+  if (!run) {
+    throw functionRunNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    run.organizationId,
+    "functions",
+    action,
+    functionRunNotFound,
+    "You do not have permission for this function action."
+  );
+  return { run, user };
+};
+
+/**
+ * Authorizes an action on a function's grant; the organization comes from
+ * the grant's function.
+ */
+export const requireFunctionGrantPermission = async (
+  headers: Headers,
+  grantId: string,
+  action: FunctionAction
+) => {
+  const user = await requireUser(headers);
+  const grant = await findGrantById(grantId);
+  const grantNotFound = () =>
+    new ApiError("NOT_FOUND", "Connection grant not found.", 404);
+  if (!grant) {
+    throw grantNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    grant.function.organizationId,
+    "functions",
+    action,
+    grantNotFound,
+    "You do not have permission for this function action."
+  );
+  return { grant, user };
 };

@@ -6,8 +6,6 @@ import {
   type ConditionOperator,
   UNARY_OPERATORS,
 } from "@repo/flows/definition";
-import { OptionSelect, type SelectOption } from "../../../lib/option-select";
-import { TemplateInput } from "../template-input";
 import {
   asArray,
   asString,
@@ -15,7 +13,9 @@ import {
   Field,
   removeAt,
   replaceAt,
-} from "./form-parts";
+} from "../../../lib/form-parts";
+import { OptionSelect, type SelectOption } from "../../../lib/option-select";
+import { TemplateInput } from "../template-input";
 
 interface ConditionRow {
   left: string;
