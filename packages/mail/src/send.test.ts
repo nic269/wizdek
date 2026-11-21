@@ -10,11 +10,23 @@ import {
   sendMail,
 } from "./send";
 
+const PROVIDER_ENV = [
+  "MAIL_PROVIDER",
+  "RESEND_API_KEY",
+  "RESEND_FROM_EMAIL",
+  "SMTP_URL",
+  "SMTP_FROM_EMAIL",
+] as const;
+
 describe("mail provider", () => {
   let outboxRoot: string;
 
   beforeEach(async () => {
     vi.unstubAllEnvs();
+    // Start every test from no provider settings, whatever the shell or CI sets.
+    for (const name of PROVIDER_ENV) {
+      vi.stubEnv(name, "");
+    }
     outboxRoot = await mkdtemp(join(tmpdir(), "wizloft-mail-outbox-"));
     vi.stubEnv("MAIL_OUTBOX_DIR", outboxRoot);
   });
