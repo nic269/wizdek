@@ -32,7 +32,10 @@ const startFakeRuntime = async () => {
     response.end(JSON.stringify(body));
   };
 
-  const graphql = (body: { query: string; variables?: { cursor?: string } }) => {
+  const graphql = (body: {
+    query: string;
+    variables?: { cursor?: string };
+  }) => {
     graphqlCalls += 1;
     if (graphqlCalls === 1) {
       return {

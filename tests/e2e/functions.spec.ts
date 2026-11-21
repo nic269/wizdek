@@ -8,6 +8,7 @@ import {
 
 const WORKBENCH_URL_PATTERN = /\/functions\/[a-z0-9]+$/;
 const TOKEN_PREFIX = /^wfn_/;
+const ANALYTICS_OPTION = /^Analytics/;
 
 const SAMPLE_MAIN =
   "export function main(orderId: string, limit: number = 10, dryRun: boolean = false) { console.log(orderId); return { orderId, limit }; }";
@@ -296,7 +297,7 @@ test("a database connection is granted to a function and removed again", async (
   const connections = page.getByTestId("function-connections");
   await expect(connections.getByText("No connections yet.")).toBeVisible();
   await connections.getByLabel("Connection resource").click();
-  await page.getByRole("option", { name: /^Analytics/ }).click();
+  await page.getByRole("option", { name: ANALYTICS_OPTION }).click();
   await expect(connections.getByLabel("Connection alias")).toHaveAttribute(
     "placeholder",
     "analytics"

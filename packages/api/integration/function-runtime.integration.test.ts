@@ -67,7 +67,11 @@ const runtime = async (
   });
   const text = await response.text();
   runtimeBodies.push(text);
-  return { json: text ? JSON.parse(text) : null, status: response.status, text };
+  return {
+    json: text ? JSON.parse(text) : null,
+    status: response.status,
+    text,
+  };
 };
 
 const createFunction = async (actor: Actor, name: string) => {
@@ -152,7 +156,7 @@ const waitForRun = async (runId: string) => {
 const auditsOf = (action: string, runId: string) =>
   prisma.auditLog.findMany({
     orderBy: { createdAt: "asc" },
-    where: { action, metadata: { path: ["runId"], equals: runId } },
+    where: { action, metadata: { equals: runId, path: ["runId"] } },
   });
 
 /** A function of the owner's organization granted a database and a store. */
@@ -182,7 +186,7 @@ beforeAll(async () => {
   process.env.SHOPIFY_ADMIN_BASE_URL_OVERRIDE = shopify.url;
   process.env.FUNCTIONS_RUNNER_URL = fake.url;
   process.env.FUNCTIONS_RUNNER_TOKEN = fake.token;
-  process.env.FUNCTIONS_RUNTIME_URL = "http://runtime.test:3003";
+  process.env.FUNCTIONS_RUNTIME_URL = "http://runtime.test:3004";
   await prisma.$executeRawUnsafe(
     `create table ${table} (id serial primary key, note text not null)`
   );
@@ -207,8 +211,8 @@ describe("the run token", () => {
   it("reaches the helpers while the run lasts, is scrubbed from output and dies with the run", async () => {
     const { fn } = await grantedFunction("Token life");
     let seenToken = "";
-    fake.state.script = async function* ({ request }) {
-      seenToken = request.env.WIZDEK_RUNTIME_TOKEN ?? "";
+    fake.state.script = async function* ({ request: runRequest }) {
+      seenToken = runRequest.env.WIZDEK_RUNTIME_TOKEN ?? "";
       yield { type: "started" };
       const context = await runtime(seenToken, "GET", "/context");
       yield {
@@ -225,12 +229,12 @@ describe("the run token", () => {
     expect(started.status).toBe(201);
     const run = await waitForRun(started.json.data.id);
 
-    const request = fake.state.requests.at(-1);
-    expect(request?.env).toMatchObject({
+    const sent = fake.state.requests.at(-1);
+    expect(sent?.env).toMatchObject({
       WIZDEK_FUNCTION_ID: fn.id,
       WIZDEK_ORGANIZATION_ID: owner.organizationId,
       WIZDEK_RUN_ID: run.id,
-      WIZDEK_RUNTIME_URL: "http://runtime.test:3003",
+      WIZDEK_RUNTIME_URL: "http://runtime.test:3004",
       WIZDEK_TRIGGER: "MANUAL",
     });
     expect(seenToken.startsWith("wfr_")).toBe(true);
@@ -429,7 +433,10 @@ describe("database helpers", () => {
 
     const failed = await runtime(token, "POST", "/db/analytics/transaction", {
       statements: [
-        { params: ["rolled-back"], sql: `insert into ${table} (note) values ($1)` },
+        {
+          params: ["rolled-back"],
+          sql: `insert into ${table} (note) values ($1)`,
+        },
         { params: [], sql: "select * from no_such_table_here" },
       ],
     });
@@ -448,7 +455,10 @@ describe("database helpers", () => {
       {
         statements: [
           { params: ["kept"], sql: `insert into ${table} (note) values ($1)` },
-          { params: ["kept"], sql: `select note from ${table} where note = $1` },
+          {
+            params: ["kept"],
+            sql: `select note from ${table} where note = $1`,
+          },
         ],
       }
     );
@@ -507,7 +517,12 @@ describe("database helpers", () => {
 describe("Shopify helpers", () => {
   it("runs a query unaudited and a mutation audited with the run", async () => {
     const { fn, storeId } = await grantedFunction("Shopify calls");
-    shopify.seedOrder({ id: ORDER_ID, name: "#1001", tags: [], totalPrice: "1.00" });
+    shopify.seedOrder({
+      id: ORDER_ID,
+      name: "#1001",
+      tags: [],
+      totalPrice: "1.00",
+    });
     const { runId, token } = await activeRun(fn, owner);
 
     const query = await runtime(token, "POST", "/shopify/main-store/graphql", {
