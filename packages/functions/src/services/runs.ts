@@ -7,7 +7,7 @@ import {
   validateParams,
 } from "../definition";
 import { FunctionsError, runNotFound } from "../errors";
-import { functionsDisabled, functionsEnabled } from "../keys";
+import { functionsDisabled, functionsEnabled, runtimeUrl } from "../keys";
 import { reinstallForRun } from "./deps";
 import { loadEnvForRun } from "./env-vars";
 import {
@@ -16,6 +16,7 @@ import {
   stopActiveRun,
 } from "./execute";
 import { type FunctionScope, getFunction } from "./functions";
+import { newRuntimeToken, runtimeEnvOf } from "./run-token";
 
 export type { CodeFunctionRunRecord } from "./execute";
 export type CodeFunctionRunSummary = Omit<CodeFunctionRunRecord, "output">;
@@ -118,7 +119,9 @@ export const startRun = async (
     );
   }
 
-  const env = await loadEnvForRun(fn.id);
+  const variables = await loadEnvForRun(fn.id);
+  const helpersUrl = runtimeUrl();
+  const runtimeToken = helpersUrl ? newRuntimeToken() : null;
   const run = await prisma.$transaction(async (db) => {
     await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fn.id}, 0))::text AS locked`;
     const last = await db.codeFunctionRun.aggregate({
@@ -131,6 +134,7 @@ export const startRun = async (
         number: (last._max.number ?? 0) + 1,
         organizationId: fn.organizationId,
         params: validation.params as Prisma.InputJsonObject,
+        runtimeTokenHash: runtimeToken?.hash ?? null,
         scheduleId: input.scheduleId ?? null,
         sourceHash: fn.sourceHash,
         startedById: input.actorId ?? null,
@@ -154,6 +158,20 @@ export const startRun = async (
     return created;
   });
 
+  const env =
+    helpersUrl && runtimeToken
+      ? {
+          ...variables,
+          ...runtimeEnvOf({
+            functionId: fn.id,
+            organizationId: fn.organizationId,
+            runId: run.id,
+            token: runtimeToken.token,
+            trigger: input.trigger,
+            url: helpersUrl,
+          }),
+        }
+      : variables;
   const completion = executeRun(
     {
       env,
@@ -197,7 +215,11 @@ export const cancelRun = async (
   if (!stopActiveRun(run.id)) {
     // No process is executing it, so nothing else will finish the row.
     await prisma.codeFunctionRun.updateMany({
-      data: { finishedAt: new Date(), status: "CANCELED" },
+      data: {
+        finishedAt: new Date(),
+        runtimeTokenHash: null,
+        status: "CANCELED",
+      },
       where: { id: run.id, status: { in: [...ACTIVE_RUN_STATUSES] } },
     });
   }
@@ -216,6 +238,7 @@ export const failInterruptedRuns = async (
     data: {
       error: "The server restarted while this run was in progress.",
       finishedAt: new Date(),
+      runtimeTokenHash: null,
       status: "FAILED",
     },
     where: {

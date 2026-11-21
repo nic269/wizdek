@@ -1,5 +1,6 @@
 import { prisma } from "@repo/database";
 import {
+  addGrant,
   type CodeFunctionRecord,
   type CodeFunctionRunSummary,
   type CodeFunctionScheduleRecord,
@@ -19,9 +20,11 @@ import {
   httpTriggerStateOf,
   listEnvVars,
   listFunctions,
+  listGrants,
   listRuns,
   listSchedules,
   reinstallDeps,
+  removeGrant,
   rotateHttpToken,
   saveFiles,
   setEnvVar,
@@ -37,10 +40,12 @@ import {
 } from "@repo/functions/definition";
 import { getJobProvider } from "../jobs";
 import {
+  requireFunctionGrantPermission,
   requireFunctionPermission,
   requireFunctionRunPermission,
   requireFunctionSchedulePermission,
   requireOrganizationAccess,
+  requireOrganizationPermission,
 } from "./authz";
 import { withFunctionErrors } from "./function-errors";
 import { os } from "./implementer";
@@ -96,6 +101,7 @@ const toPublicRunSummary = (
 ) => ({
   cancelRequestedAt: run.cancelRequestedAt,
   createdAt: run.createdAt,
+  dbCallCount: run.dbCallCount,
   durationMs: run.durationMs,
   error: run.error,
   exitCode: run.exitCode,
@@ -108,6 +114,7 @@ const toPublicRunSummary = (
   params: (run.params ?? {}) as Record<string, unknown>,
   result: run.result,
   scheduleId: run.scheduleId,
+  shopifyCallCount: run.shopifyCallCount,
   sourceHash: run.sourceHash,
   startedAt: run.startedAt,
   startedByName: run.startedById ? (names.get(run.startedById) ?? null) : null,
@@ -165,6 +172,43 @@ const runnerStatus = async () => {
 };
 
 export const functionsRouter = {
+  addGrant: os.functions.addGrant.handler(async ({ context, input }) => {
+    const { fn, user } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "manage"
+    );
+    // Granting hands the function what the person may do with the resource,
+    // so the person must hold it: reading a database, or mutating a store.
+    const needed: [module: string, action: string][] =
+      input.kind === "DATABASE"
+        ? [["databases", "read"]]
+        : [
+            ["stores", "read"],
+            ["graphql", "mutate"],
+          ];
+    for (const [module, action] of needed) {
+      await requireOrganizationPermission(
+        user.id,
+        fn.organizationId,
+        module,
+        action,
+        input.kind === "DATABASE"
+          ? "You need permission to view database connections to grant one."
+          : "You need permission to view stores and run GraphQL mutations to grant a store."
+      );
+    }
+    const grant = await withFunctionErrors(() =>
+      addGrant({
+        ...scopeOf(fn),
+        actorId: user.id,
+        alias: input.alias,
+        kind: input.kind,
+        resourceId: input.resourceId,
+      })
+    );
+    return { data: grant };
+  }),
   create: os.functions.create.handler(async ({ context, input }) => {
     const user = await requireOrganizationAccess(
       context.headers,
@@ -268,6 +312,16 @@ export const functionsRouter = {
       data: await withFunctionErrors(() => listEnvVars(scopeOf(fn))),
     };
   }),
+  listGrants: os.functions.listGrants.handler(async ({ context, input }) => {
+    const { fn } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "read"
+    );
+    return {
+      data: await withFunctionErrors(() => listGrants(scopeOf(fn))),
+    };
+  }),
   reinstallDeps: os.functions.reinstallDeps.handler(
     async ({ context, input }) => {
       const { fn, user } = await requireFunctionPermission(
@@ -281,6 +335,21 @@ export const functionsRouter = {
       return { data: toPublicFunction(updated) };
     }
   ),
+  removeGrant: os.functions.removeGrant.handler(async ({ context, input }) => {
+    const { grant, user } = await requireFunctionGrantPermission(
+      context.headers,
+      input.grantId,
+      "manage"
+    );
+    await withFunctionErrors(() =>
+      removeGrant({
+        actorId: user.id,
+        grantId: grant.id,
+        organizationId: grant.function.organizationId,
+      })
+    );
+    return { data: { id: grant.id } };
+  }),
   rotateHttpToken: os.functions.rotateHttpToken.handler(
     async ({ context, input }) => {
       const { fn, user } = await requireFunctionPermission(

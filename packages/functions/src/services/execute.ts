@@ -9,6 +9,7 @@ import {
   type RunnerEvent,
   type RunnerRunRequest,
 } from "../runner/client";
+import { secretValuesOf } from "./run-token";
 
 export type CodeFunctionRunRecord = Prisma.CodeFunctionRunGetPayload<object>;
 
@@ -156,7 +157,7 @@ export const executeRun = async (
   const { runId } = request;
   const controller = new AbortController();
   const buffer = createOutputBuffer(FUNCTION_LIMITS.outputBytes);
-  const secrets = Object.values(request.env);
+  const secrets = secretValuesOf(request.env);
   const scrubber = createStreamScrubber(secrets);
   let writes = Promise.resolve();
   const flush = (final = false) => {
@@ -224,6 +225,8 @@ export const executeRun = async (
       finishedAt: new Date(),
       outputTruncated: buffer.truncated() || outcome.truncated === true,
       result: resultColumn(outcome, secrets),
+      // The run's helper token stops working with the run.
+      runtimeTokenHash: null,
       status: outcome.status,
     },
     where: { id: runId },

@@ -264,6 +264,55 @@ test("variables, the HTTP trigger and schedules are set up from the side panel",
   expect(errors).toEqual([]);
 });
 
+test("a database connection is granted to a function and removed again", async ({
+  page,
+}, testInfo) => {
+  test.slow();
+  const suffix = createTestSuffix(testInfo);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(String(error)));
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL must be set for the connections test.");
+  }
+
+  await signUp({
+    email: `fn-connections-${suffix}@example.com`,
+    name: "Function Connections",
+    page,
+  });
+  await createOrganization({ name: `Function Connections ${suffix}`, page });
+  await page.goto("/database/new");
+  const sheet = page.getByRole("dialog");
+  await sheet.getByLabel("Name", { exact: true }).fill("Analytics");
+  await sheet.getByLabel("Database URL").fill(url);
+  await sheet.getByRole("button", { name: "Test & save" }).click();
+  await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await createFunction(page, "Connected");
+  await page.getByRole("button", { exact: true, name: "Settings" }).click();
+  const connections = page.getByTestId("function-connections");
+  await expect(connections.getByText("No connections yet.")).toBeVisible();
+  await connections.getByLabel("Connection resource").click();
+  await page.getByRole("option", { name: /^Analytics/ }).click();
+  await expect(connections.getByLabel("Connection alias")).toHaveAttribute(
+    "placeholder",
+    "analytics"
+  );
+  await connections.getByRole("button", { name: "Add connection" }).click();
+  const granted = connections.getByTestId("function-grant");
+  await expect(granted).toContainText("analytics");
+  await expect(granted).toContainText("Database · Analytics");
+
+  await connections.getByRole("button", { name: "Remove analytics" }).click();
+  await expect(granted).toHaveCount(0);
+  await expect(connections.getByText("No connections yet.")).toBeVisible();
+
+  expect(errors).toEqual([]);
+});
+
 test("the page says when functions are not enabled", async ({
   page,
 }, testInfo) => {

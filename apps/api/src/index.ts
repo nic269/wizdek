@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { createApiApp } from "@repo/api/app";
+import { createApiApp, createFunctionRuntimeApp } from "@repo/api/app";
 import { assertApiProviderConfiguration } from "@repo/api/health";
 import {
   abortFunctionRuns,
@@ -16,6 +16,7 @@ const configuredPort =
   process.env.PORT ??
   new URL(env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002").port;
 const port = Number(configuredPort || 3002);
+const runtimePort = env.FUNCTIONS_RUNTIME_PORT;
 
 const main = async () => {
   const jobs = getJobProvider();
@@ -30,6 +31,14 @@ const main = async () => {
 
   const server = serve({ fetch: app.fetch, hostname: "0.0.0.0", port });
   console.log(`API listening on http://localhost:${port}`);
+  // Functions' helpers call this port from the sandbox; it serves nothing
+  // else, so it can be published to the runner alone.
+  const runtimeServer = serve({
+    fetch: createFunctionRuntimeApp().fetch,
+    hostname: "0.0.0.0",
+    port: runtimePort,
+  });
+  console.log(`Function runtime listening on port ${runtimePort}`);
 
   let shuttingDown = false;
   const shutdown = async (signal: NodeJS.Signals) => {
@@ -43,6 +52,7 @@ const main = async () => {
     await jobs.stop().catch((error: unknown) => {
       console.error("jobs.stop_failed", error);
     });
+    runtimeServer.close();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   };

@@ -13,6 +13,8 @@ RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin fn
 # Neither file may share a name with a standard-library module: Python puts
 # a script's directory first on the import path unless told otherwise.
 COPY wrapper.py read_params.py /opt/fn/
+# The built-in helpers, imported as `wizdek`.
+COPY wizdek.py /opt/fn/sdk/wizdek.py
 
 USER 10001:10001
 WORKDIR /fn

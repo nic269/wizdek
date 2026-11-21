@@ -45,4 +45,7 @@ export type {
   DatabaseEngine,
   DatabaseEngineAdapter,
   DatabaseTarget,
+  QueryLimits,
+  QueryResult,
+  QueryStatement,
 } from "./types";

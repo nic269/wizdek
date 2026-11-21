@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { Field } from "../../lib/form-parts";
 import { OptionSelect } from "../../lib/option-select";
+import { ConnectionsSection } from "./connections-section";
 import type { CodeFunction, FunctionEditor } from "./use-function-editor";
 
 const MEMORY_OPTIONS = FUNCTION_LIMITS.memoryMb.map((mb) => ({
@@ -177,6 +178,11 @@ export function SettingsTab({
           </Button>
         ) : null}
       </form>
+      <ConnectionsSection
+        canManage={canManage}
+        functionId={fn.id}
+        organizationId={fn.organizationId}
+      />
       {canManage ? <DeleteFunction fn={fn} /> : null}
     </div>
   );

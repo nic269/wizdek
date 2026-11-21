@@ -15,17 +15,22 @@ export type FunctionAuditAction =
   | "function.http.disabled"
   | "function.schedule.created"
   | "function.schedule.updated"
-  | "function.schedule.deleted";
+  | "function.schedule.deleted"
+  | "function.grant.added"
+  | "function.grant.removed"
+  | "function.db.write";
 
 /**
- * Records a function event. Metadata never includes source text, parameter
- * values, output or results; callers pass names, counts and numbers only.
+ * Records a function event. Metadata never includes source files, parameter
+ * values, output or results; callers pass names, counts and numbers, plus
+ * the SQL text of database writes so a change to data can be traced.
  */
 export const recordFunctionAudit = (
   db: Prisma.TransactionClient,
   event: {
     action: FunctionAuditAction;
-    actorId: string;
+    /** Null for calls a run made without a person behind it. */
+    actorId: string | null;
     metadata?: Prisma.InputJsonObject;
     organizationId: string;
     targetId: string;

@@ -779,6 +779,7 @@ model CodeFunction {
   runs         CodeFunctionRun[]
   envVars      CodeFunctionEnvVar[]
   schedules    CodeFunctionSchedule[]
+  grants       CodeFunctionGrant[]
 
   @@unique([organizationId, name])
   @@map("code_function")
@@ -815,6 +816,12 @@ model CodeFunctionRun {
   startedById       String?
   /// The schedule that started the run; kept when the schedule is deleted.
   scheduleId        String?
+  /// SHA-256 of the token the run's code uses for the built-in helpers;
+  /// cleared when the run ends.
+  runtimeTokenHash  String?                @unique
+  /// How many database and Shopify calls the run made through the helpers.
+  dbCallCount       Int                    @default(0)
+  shopifyCallCount  Int                    @default(0)
   createdAt         DateTime               @default(now())
   startedAt         DateTime?
   finishedAt        DateTime?
@@ -843,6 +850,31 @@ model CodeFunctionEnvVar {
 
   @@unique([functionId, name])
   @@map("code_function_env_var")
+}
+
+enum CodeFunctionGrantKind {
+  STORE
+  DATABASE
+}
+
+/// A store or database connection a function's code may use through the
+/// built-in helpers, by alias. resourceId points at a ShopifyStore or a
+/// DatabaseConnection, depending on kind.
+model CodeFunctionGrant {
+  id          String                @id @default(cuid())
+  functionId  String
+  kind        CodeFunctionGrantKind
+  resourceId  String
+  alias       String
+  createdById String?
+  createdAt   DateTime              @default(now())
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, kind, resourceId])
+  @@unique([functionId, alias])
+  @@index([kind, resourceId])
+  @@map("code_function_grant")
 }
 
 /// A cron schedule that starts runs of a function with fixed parameters.

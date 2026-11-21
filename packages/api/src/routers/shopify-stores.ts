@@ -1,6 +1,7 @@
 import { keys } from "@repo/auth/keys";
 import { hasPermission } from "@repo/auth/permissions";
 import { countStoreUsage, deactivateStoreActivations } from "@repo/flows";
+import { removeGrantsOf } from "@repo/functions";
 import { encryptSecret } from "@repo/shopify/crypto";
 import {
   beginOAuthConnection,
@@ -194,6 +195,8 @@ export const shopifyStoresRouter = {
       const disconnected = await withShopifyErrors(() =>
         disconnectStore(scopeOf(store), user.id)
       );
+      // Functions lose the store with its credentials.
+      await removeGrantsOf("STORE", store.id);
       return { data: toPublicStore(disconnected) };
     }
   ),

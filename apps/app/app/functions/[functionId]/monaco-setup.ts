@@ -1,3 +1,4 @@
+import { WIZDEK_SDK_TYPES } from "@repo/functions/definition";
 import { languages } from "monaco-editor";
 import { Delayer } from "monaco-editor/esm/vs/base/common/async.js";
 import { isCancellationError } from "monaco-editor/esm/vs/base/common/errors.js";
@@ -144,6 +145,8 @@ const configureLanguages = () => {
     defaults.setEagerModelSync(true);
     defaults.addExtraLib(NODE_GLOBALS, "file:///node-globals.d.ts");
     defaults.addExtraLib(ANY_PACKAGE, "file:///any-package.d.ts");
+    // A named module wins over the wildcard, so the helpers keep their types.
+    defaults.addExtraLib(WIZDEK_SDK_TYPES, "file:///wizdek.d.ts");
   }
 };
 

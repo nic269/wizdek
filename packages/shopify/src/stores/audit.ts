@@ -23,7 +23,8 @@ export const recordShopifyAudit = (
   db: DbClient,
   event: {
     action: ShopifyAuditAction;
-    actorId: string;
+    /** Null when no person acted, e.g. a scheduled function run. */
+    actorId: string | null;
     metadata?: Prisma.InputJsonObject;
     organizationId: string;
     targetId: string;

@@ -6,6 +6,9 @@ export {
   type DatabaseEngine,
   type DatabaseEngineAdapter,
   type DatabaseTarget,
+  type QueryLimits,
+  type QueryResult,
+  type QueryStatement,
   resolveAdapter,
 } from "./engines";
 export * from "./errors";

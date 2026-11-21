@@ -5,6 +5,8 @@ import {
   FUNCTION_LIMITS,
   FUNCTION_RUN_STATUSES,
   FUNCTION_RUNTIMES,
+  GRANT_ALIAS,
+  GRANT_KINDS,
 } from "@repo/functions/definition";
 import { z } from "zod";
 import {
@@ -96,6 +98,7 @@ export const functionSchema = functionSummarySchema.extend({
 export const functionRunSummarySchema = z.object({
   cancelRequestedAt: z.date().nullable(),
   createdAt: z.date(),
+  dbCallCount: z.number().int(),
   durationMs: z.number().int().nullable(),
   error: z.string().nullable(),
   exitCode: z.number().int().nullable(),
@@ -108,6 +111,7 @@ export const functionRunSummarySchema = z.object({
   params: z.record(z.string(), z.unknown()),
   result: z.unknown(),
   scheduleId: z.string().nullable(),
+  shopifyCallCount: z.number().int(),
   sourceHash: z.string(),
   startedAt: z.date().nullable(),
   startedByName: z.string().nullable(),
@@ -139,6 +143,21 @@ export const functionsStatusSchema = z.object({
 export const functionEnvVarSchema = z.object({
   name: z.string(),
   updatedAt: z.date(),
+});
+
+export const functionGrantKindSchema = z.enum(GRANT_KINDS);
+
+export const functionGrantSchema = z.object({
+  alias: z.string(),
+  createdAt: z.date(),
+  /** The store's domain or the connection's database; null once deleted. */
+  detail: z.string().nullable(),
+  functionId: z.string(),
+  id: z.string(),
+  kind: functionGrantKindSchema,
+  resourceId: z.string(),
+  /** Null once the store or connection was deleted. */
+  resourceName: z.string().nullable(),
 });
 
 export const functionScheduleSchema = z.object({
@@ -193,6 +212,29 @@ const memoryMb = z
   );
 
 export const functionsContract = {
+  addGrant: apiContract
+    .route({
+      method: "POST",
+      operationId: "functions.addGrant",
+      path: "/api/functions/{functionId}/grants",
+      successStatus: 201,
+      summary: "Let a function use a store or database connection",
+    })
+    .input(
+      functionIdInput.extend({
+        alias: z
+          .string()
+          .trim()
+          .regex(
+            GRANT_ALIAS,
+            "Use 1 to 40 lower-case letters, digits and dashes, starting with a letter or digit."
+          )
+          .optional(),
+        kind: functionGrantKindSchema,
+        resourceId: z.string().min(1),
+      })
+    )
+    .output(dataEnvelope(functionGrantSchema)),
   create: apiContract
     .route({
       method: "POST",
@@ -272,6 +314,15 @@ export const functionsContract = {
     })
     .input(functionIdInput)
     .output(dataEnvelope(z.array(functionEnvVarSchema))),
+  listGrants: apiContract
+    .route({
+      method: "GET",
+      operationId: "functions.listGrants",
+      path: "/api/functions/{functionId}/grants",
+      summary: "List the stores and databases a function may use",
+    })
+    .input(functionIdInput)
+    .output(dataEnvelope(z.array(functionGrantSchema))),
   reinstallDeps: apiContract
     .route({
       method: "POST",
@@ -281,6 +332,15 @@ export const functionsContract = {
     })
     .input(functionIdInput)
     .output(dataEnvelope(functionSchema)),
+  removeGrant: apiContract
+    .route({
+      method: "DELETE",
+      operationId: "functions.removeGrant",
+      path: "/api/function-grants/{grantId}",
+      summary: "Stop a function from using a store or database connection",
+    })
+    .input(z.object({ grantId: z.string().min(1) }))
+    .output(dataEnvelope(z.object({ id: z.string() }))),
   rotateHttpToken: apiContract
     .route({
       method: "POST",

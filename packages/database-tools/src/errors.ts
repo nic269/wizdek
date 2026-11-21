@@ -12,7 +12,8 @@ export type DatabaseToolsFailure =
   | "TOOL_NOT_FOUND"
   | "TOOL_TOO_OLD"
   | "TOOL_FAILED"
-  | "ABORTED";
+  | "ABORTED"
+  | "QUERY_FAILED";
 
 /**
  * A database tool request that cannot be carried out. The message is safe to

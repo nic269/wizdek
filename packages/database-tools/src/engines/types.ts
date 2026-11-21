@@ -23,6 +23,32 @@ export interface ToolVersion {
   text: string;
 }
 
+/** One parameterized statement. */
+export interface QueryStatement {
+  params: readonly unknown[];
+  sql: string;
+}
+
+export interface QueryLimits {
+  /** Bytes of rows kept across all statements, about. */
+  maxBytes: number;
+  /** Rows kept across all statements. */
+  maxRows: number;
+  /** The server cancels a statement that runs longer; the whole call ends soon after. */
+  timeoutMs: number;
+}
+
+export interface QueryResult {
+  /** e.g. SELECT, INSERT, UPDATE. */
+  command: string;
+  fields: { dataTypeId: number; name: string }[];
+  /** Rows returned or affected, as the server reports it. */
+  rowCount: number | null;
+  rows: unknown[];
+  /** True when rows were dropped to stay within the limits. */
+  truncated: boolean;
+}
+
 /**
  * Everything the toolkit needs to know about one database engine. Adding an
  * engine means writing one of these; nothing else depends on the engine.
@@ -42,6 +68,15 @@ export interface DatabaseEngineAdapter {
   /** Human-readable engine name for messages. */
   label: string;
   parseUrl(url: string): DatabaseTarget;
+  /**
+   * Runs parameterized statements, several inside one transaction, for a
+   * function's built-in helpers.
+   */
+  query(
+    target: DatabaseTarget,
+    statements: readonly QueryStatement[],
+    limits: QueryLimits
+  ): Promise<QueryResult[]>;
   /** URL schemes this adapter owns, without the trailing colon. */
   schemes: readonly string[];
   /** The version of the dump tool that `dump` runs. */

@@ -363,3 +363,152 @@ export const HTTP_TRIGGER = {
 } as const;
 
 export const SCHEDULE_LIMITS = { perFunction: 5 } as const;
+
+export const GRANT_KINDS = ["STORE", "DATABASE"] as const;
+export type GrantKind = (typeof GRANT_KINDS)[number];
+
+/** How scripts name a granted resource, e.g. `db("analytics")`. */
+export const GRANT_ALIAS = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const NOT_ALIAS = /[^a-z0-9]+/g;
+const EDGE_DASHES = /^-+|-+$/g;
+
+/** A default alias from a resource's name: lower case, dashes, 40 characters. */
+export const aliasOf = (name: string): string => {
+  const slug = name
+    .toLowerCase()
+    .replace(NOT_ALIAS, "-")
+    .replace(EDGE_DASHES, "")
+    .slice(0, 40)
+    .replace(EDGE_DASHES, "");
+  return slug || "resource";
+};
+
+/** What the built-in helpers may do for one run. */
+export const RUNTIME_LIMITS = {
+  /** Most calls a run may have in flight, and of them database calls. */
+  callsInFlight: 20,
+  callTimeoutMs: 60_000,
+  databaseCallsInFlight: 4,
+  maxBodyBytes: 1024 * 1024,
+  maxResponseBytes: 10 * 1024 * 1024,
+  maxRows: 10_000,
+  transactionStatements: 50,
+} as const;
+
+export const RUNTIME_PATH_PREFIX = "/api/fn-runtime";
+
+/** Variables every run gets for the `wizdek` module. */
+export const RUNTIME_ENV = {
+  functionId: "WIZDEK_FUNCTION_ID",
+  organizationId: "WIZDEK_ORGANIZATION_ID",
+  runId: "WIZDEK_RUN_ID",
+  token: "WIZDEK_RUNTIME_TOKEN",
+  trigger: "WIZDEK_TRIGGER",
+  url: "WIZDEK_RUNTIME_URL",
+} as const;
+
+export const RUNTIME_TOKEN_PREFIX = "wfr_";
+
+const READ_KEYWORDS = new Set(["explain", "select", "show"]);
+const LEADING_COMMENTS = /^(?:\s+|--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/)*/;
+const FIRST_WORD = /^[a-z]+/i;
+
+/**
+ * Whether a statement only reads, judged by its first keyword after any
+ * comments. A `with` query may write, so it counts as a write. Each call
+ * carries exactly one statement, which the database enforces.
+ */
+export const isReadStatement = (sql: string): boolean => {
+  const rest = sql.replace(LEADING_COMMENTS, "");
+  const word = FIRST_WORD.exec(rest)?.[0]?.toLowerCase() ?? "";
+  return READ_KEYWORDS.has(word);
+};
+
+/**
+ * Types of the built-in `wizdek` module for the editor. Kept in step with
+ * `apps/runner/runtimes/node/wizdek.mjs`, which the runtime image ships.
+ */
+export const WIZDEK_SDK_TYPES = `
+declare module "wizdek" {
+  /** A helper call that failed; status is the runtime API's HTTP status. */
+  export class WizdekError extends Error {
+    readonly status: number | null;
+    /** Shopify's errors, for a GraphQL call. */
+    readonly errors: unknown[] | null;
+    /** Shopify's whole answer, for a GraphQL call. */
+    readonly response: unknown;
+  }
+
+  /** What the run is: ids, and what started it. */
+  export const ctx: {
+    readonly functionId: string | null;
+    readonly organizationId: string | null;
+    readonly runId: string | null;
+    readonly trigger: "MANUAL" | "HTTP" | "SCHEDULE" | null;
+  };
+
+  export interface QueryResult<Row = Record<string, unknown>> {
+    command: string;
+    fields: { dataTypeId: number; name: string }[];
+    rowCount: number | null;
+    rows: Row[];
+    /** True when rows were cut at 10 000 rows or 10 MB. */
+    truncated: boolean;
+  }
+
+  export interface Statement {
+    params?: unknown[];
+    sql: string;
+  }
+
+  export interface Database {
+    /** Runs one statement and returns its rows. Use $1, $2 for values. */
+    query<Row = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<Row[]>;
+    /** Runs one statement and returns how many rows it changed. */
+    execute(sql: string, params?: unknown[]): Promise<number | null>;
+    /** Runs one statement and returns its whole result. */
+    run<Row = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<QueryResult<Row>>;
+    /** Runs statements in one transaction: all of them, or none when one fails. */
+    transaction(statements: Statement[]): Promise<QueryResult[]>;
+  }
+
+  /** A database connection granted to this function, by alias or id. */
+  export function db(alias: string): Database;
+
+  export interface GraphqlOptions {
+    apiVersion?: string;
+    operationName?: string;
+  }
+
+  export interface GraphqlResponse<Data = any> {
+    data: Data;
+    extensions?: Record<string, unknown>;
+  }
+
+  export interface Store {
+    /** Runs an Admin API query or mutation. Throttled calls are retried; other errors throw. */
+    graphql<Data = any>(
+      query: string,
+      variables?: Record<string, unknown>,
+      options?: GraphqlOptions
+    ): Promise<GraphqlResponse<Data>>;
+    /**
+     * Yields every node of a connection. The query takes $cursor: String for
+     * after: and selects pageInfo { hasNextPage endCursor }.
+     */
+    paginate<Node = any>(
+      query: string,
+      variables?: Record<string, unknown>,
+      options?: GraphqlOptions & { path?: string }
+    ): AsyncGenerator<Node, void, undefined>;
+  }
+
+  /** A Shopify store granted to this function, by alias or id. */
+  export function shopify(alias: string): Store;
+
+  /** The stores this function may use, by alias. */
+  export const stores: { list(): Promise<string[]> };
+  /** The database connections this function may use, by alias. */
+  export const databases: { list(): Promise<string[]> };
+}
+`;

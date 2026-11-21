@@ -17,7 +17,9 @@ export type FunctionsFailure =
   | "ENV_VAR_NOT_FOUND"
   | "INVALID_SCHEDULE"
   | "SCHEDULE_NOT_FOUND"
-  | "SCHEDULES_UNAVAILABLE";
+  | "SCHEDULES_UNAVAILABLE"
+  | "INVALID_GRANT"
+  | "GRANT_NOT_FOUND";
 
 /**
  * A functions request that cannot be carried out. The message is safe to

@@ -5,6 +5,7 @@ import { registerHooks } from "node:module";
 import { pathToFileURL } from "node:url";
 
 const RELATIVE = /^\.{1,2}\//;
+const SDK_URL = pathToFileURL("/opt/fn/wizdek.mjs").href;
 const TRAILING_SLASH = /\/$/;
 const NOT_FOUND = new Set([
   "ERR_MODULE_NOT_FOUND",
@@ -27,6 +28,10 @@ const CANDIDATE_SUFFIXES = [
 // folder with an index file.
 registerHooks({
   resolve(specifier, context, nextResolve) {
+    // The built-in helpers, ahead of any installed package of that name.
+    if (specifier === "wizdek") {
+      return { shortCircuit: true, url: SDK_URL };
+    }
     try {
       return nextResolve(specifier, context);
     } catch (error) {

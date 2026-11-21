@@ -23,6 +23,8 @@ def finish(marker, code, result):
 
 def load(entry):
     sys.path.insert(0, "/fn")
+    # The built-in `wizdek` module, ahead of installed packages.
+    sys.path.insert(1, "/opt/fn/sdk")
     spec = importlib.util.spec_from_file_location("main", "/fn/" + entry)
     module = importlib.util.module_from_spec(spec)
     sys.modules["main"] = module

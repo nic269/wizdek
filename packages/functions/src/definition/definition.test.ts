@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  aliasOf,
   entryFileOf,
   FUNCTION_LIMITS,
   filesProblem,
+  GRANT_ALIAS,
+  isReadStatement,
   isSafeRelativePath,
   type ParamsSchema,
   validateParams,
@@ -129,5 +132,40 @@ describe("validating parameters", () => {
       ok: true,
       params: { anything: 1 },
     });
+  });
+});
+
+describe("database statements", () => {
+  it("counts select, show and explain as reads, after comments and space", () => {
+    for (const sql of [
+      "select 1",
+      "  SELECT * from orders",
+      "-- latest\nselect 1",
+      "/* note */ explain select 1",
+      "show server_version",
+    ]) {
+      expect(isReadStatement(sql)).toBe(true);
+    }
+  });
+
+  it("counts everything else as a write, a with query included", () => {
+    for (const sql of [
+      "insert into t values (1)",
+      "update t set a = 1",
+      "with gone as (delete from t returning *) select * from gone",
+      "/* select */ delete from t",
+      "",
+    ]) {
+      expect(isReadStatement(sql)).toBe(false);
+    }
+  });
+});
+
+describe("grant aliases", () => {
+  it("derives a valid alias from a resource name", () => {
+    for (const name of ["Main Store", "Analytics (PROD)", "ÄÖ shop"]) {
+      expect(aliasOf(name)).toMatch(GRANT_ALIAS);
+    }
+    expect(aliasOf("Main Store")).toBe("main-store");
   });
 });

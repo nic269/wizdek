@@ -90,6 +90,12 @@ export function OutputTab({
           value={run.exitCode === null ? "—" : String(run.exitCode)}
         />
         <Fact label="Started" value={formatDateTime(run.createdAt)} />
+        {run.dbCallCount > 0 || run.shopifyCallCount > 0 ? (
+          <>
+            <Fact label="Database calls" value={String(run.dbCallCount)} />
+            <Fact label="Shopify calls" value={String(run.shopifyCallCount)} />
+          </>
+        ) : null}
       </dl>
       {state.error ? <ErrorAlert message={state.error} /> : null}
       {run.error ? (

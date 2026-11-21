@@ -9,7 +9,8 @@ ENV HOME=/tmp \
 
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin fn
 
-COPY wrapper.mjs /opt/fn/wrapper.mjs
+# The wrapper, and the built-in helpers it maps to `wizdek`.
+COPY wrapper.mjs wizdek.mjs /opt/fn/
 
 USER 10001:10001
 WORKDIR /fn

@@ -18,6 +18,7 @@ import {
   type CodeFunctionRunSummary,
   findFunctionById,
   findRunById as findFunctionRunById,
+  findGrantById,
   findScheduleById,
 } from "@repo/functions";
 import { findStoreById, type ShopifyStoreRecord } from "@repo/shopify/stores";
@@ -313,4 +314,31 @@ export const requireFunctionRunPermission = async (
     "You do not have permission for this function action."
   );
   return { run, user };
+};
+
+/**
+ * Authorizes an action on a function's grant; the organization comes from
+ * the grant's function.
+ */
+export const requireFunctionGrantPermission = async (
+  headers: Headers,
+  grantId: string,
+  action: FunctionAction
+) => {
+  const user = await requireUser(headers);
+  const grant = await findGrantById(grantId);
+  const grantNotFound = () =>
+    new ApiError("NOT_FOUND", "Connection grant not found.", 404);
+  if (!grant) {
+    throw grantNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    grant.function.organizationId,
+    "functions",
+    action,
+    grantNotFound,
+    "You do not have permission for this function action."
+  );
+  return { grant, user };
 };

@@ -178,6 +178,7 @@ export const createApiApp = (options: ApiAppOptions = {}) => {
     "/api/functions/*",
     "/api/function-runs/*",
     "/api/function-schedules/*",
+    "/api/function-grants/*",
     "/api/organizations/:organizationId/functions",
     "/api/organizations/:organizationId/functions/*",
   ]) {
@@ -278,3 +279,5 @@ export const createApiApp = (options: ApiAppOptions = {}) => {
 };
 
 export type ApiApp = ReturnType<typeof createApiApp>;
+
+export { createFunctionRuntimeApp } from "./function-runtime-route";

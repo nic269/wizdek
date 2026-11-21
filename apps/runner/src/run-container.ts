@@ -116,6 +116,10 @@ export const sandboxArguments = (input: {
   input.config.sandboxNetwork,
   "--dns",
   input.config.dns,
+  // How a run reaches the API's helper routes on a development machine.
+  // Only a hosts entry: the egress filter still decides what is reachable.
+  "--add-host",
+  "host.docker.internal:host-gateway",
   "--read-only",
   "--tmpfs",
   `/tmp:rw,size=${input.tmpfsMb}m,mode=1777`,

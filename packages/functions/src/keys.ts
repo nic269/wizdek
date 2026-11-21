@@ -11,6 +11,11 @@ export const keys = () =>
       FUNCTIONS_RUNNER_TOKEN: z.string().min(32).optional(),
       /** The runner agent's address. Functions are off while it is unset. */
       FUNCTIONS_RUNNER_URL: z.url().optional(),
+      /**
+       * Where a run's code reaches this API's built-in helpers, as seen from
+       * the sandbox. Runs get no helper token while it is unset.
+       */
+      FUNCTIONS_RUNTIME_URL: z.url().optional(),
       NODE_ENV: z
         .enum(["development", "test", "production"])
         .default("development"),
@@ -61,3 +66,7 @@ export const functionsDisabled = () =>
     "FUNCTIONS_DISABLED",
     "Functions are not enabled on this server."
   );
+
+/** The helpers' address for runs, without a trailing slash, or undefined. */
+export const runtimeUrl = (): string | undefined =>
+  keys().FUNCTIONS_RUNTIME_URL?.replace(TRAILING_SLASHES, "");
