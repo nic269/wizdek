@@ -1,6 +1,6 @@
 # Architecture
 
-Shopify Toolkit is a developer toolkit for teams that work across many Shopify stores. A developer in an organization connects stores, runs Admin GraphQL against them in a console, and builds flows that run durably with a per-node, per-item trace.
+Shopify Toolkit is a developer toolkit for teams that work across many Shopify stores. A developer in an organization connects stores, runs Admin GraphQL against them in a console, builds flows that run durably with a per-node, per-item trace, and writes functions: scripts that run in one-shot containers on a separate runner.
 
 ## System shape
 
@@ -10,6 +10,8 @@ The repository is a pnpm and Turborepo monorepo generated from the Wizloft boile
 |------|------|-----------|
 | `apps/app` | Next.js App Router UI | 3000 |
 | `apps/api` | Hono server exposing contract-first oRPC routes and Better Auth | 3002 |
+| `apps/api`, helper port | The functions' `wizdek` helper routes only (`/api/fn-runtime/*`) | `FUNCTIONS_RUNTIME_PORT`, 3004 |
+| `apps/runner` | Runner agent: starts function containers on its host's Docker | 3003 locally, 8443 on the runner VM |
 | Postgres 17 | Application data, and later the job queue | `POSTGRES_PORT` in `.env` |
 
 The browser reaches the API same-origin through the rewrites in `apps/app/next.config.ts` (`/api/:path*`), so session cookies and origin checks apply to every API call.
@@ -259,8 +261,22 @@ A node's `mode` can be `batch`: `executeBatch` receives every pending item in on
 - **API.** Contracts are in `packages/api/src/contracts/databases.ts`; permissions are `databases:read`, `databases:manage` and `databases:backup`, checked against the organization of the connection or backup row. Downloads are served by a plain Hono route, `GET /api/databases/backups/:backupId/download`, which redirects to a 60-second signed URL when storage supports one and otherwise streams the file.
 - **UI.** `apps/app/app/database` holds the connection list, with adding in a sheet (`/database/new` opens it) and backups of deleted connections listed under it, and a per-connection page whose server component checks permissions before rendering, like the flow builder. Backup progress is an indeterminate bar with elapsed time, because `pg_dump` reports no percentage.
 
+## Functions
+
+`packages/functions` (`@repo/functions`) is server-only and may import `@repo/database`, `@repo/jobs` and `@repo/security`; `@repo/functions/definition` (limits, parameter schemas, validation) is shared with the app. The user guide is [Functions](./functions.md); [decision 0006](./decisions/0006-functions-on-a-dedicated-runner-vm.md) records why it works this way.
+
+- **Data model.** `CodeFunction` holds a function's settings, its parameter schema, package status, and the hash of its HTTP token; `CodeFunctionFile` its files. `CodeFunctionRun` is one run with status, params, output (capped), result, exit code, duration, call counts and, while it runs, the hash of its helper token. `CodeFunctionEnvVar` (value encrypted), `CodeFunctionSchedule` and `CodeFunctionGrant` (a store or database connection by alias) hang off the function.
+- **Runner agent.** `apps/runner` is a Hono server with a bearer token: `POST /inspect` parses `main`'s signature (TypeScript parser, or Python `ast` in a container without network), `POST /runs` and `POST /deps` start a container and stream NDJSON events, `DELETE /runs/:runId` stops one, `GET /health` reports the runtime images. Images are built from `apps/runner/runtimes/{node,python}` and tagged by a hash of that folder's top-level files. Containers get the limits in decision 0006; admission keeps the sum of running memory limits under a budget and answers busy beyond it.
+- **Execution.** `startRun` checks the packages, records a run and calls `executeRun`, which streams the agent's events into the row: output through `createStreamScrubber`, which replaces variable values and the helper token with `[redacted]` even when one is split across events. The API keeps each run's request open, so `abortAllRuns` cancels them on shutdown and `failInterruptedRuns` marks leftovers failed at startup. `FunctionRunner` (`src/runner/client.ts`) is the seam for another backend.
+- **Triggers.** The public trigger is a Hono sub-app at `/api/fn` (`packages/api/src/function-trigger-route.ts`) outside the app-origin check, authorized only by the function's token. Schedules are pg-boss cron jobs registered in the same transaction as their row (`services/schedules.ts`).
+- **Built-in helpers.** `createFunctionRuntimeApp()` (`packages/api/src/function-runtime-route.ts`) serves only `/api/fn-runtime/*`, on `FUNCTIONS_RUNTIME_PORT`. It authenticates the run token (`services/run-token.ts`), resolves the grant (`services/grants.ts`), and runs database calls through `DatabaseEngineAdapter.query` (parameterized, extended protocol, statement timeout, row and byte caps) or Shopify calls through `executeGraphqlForUser` with the function as actor. The SDKs are `apps/runner/runtimes/node/wizdek.mjs` and `apps/runner/runtimes/python/wizdek.py`, baked into the images; the editor's types for them are `WIZDEK_SDK_TYPES`. Runs get a helper token only while `FUNCTIONS_RUNTIME_URL` is set.
+- **API.** Contracts are in `packages/api/src/contracts/functions.ts`; permissions are `functions:read`, `functions:manage` and `functions:run`, checked against the organization of the function, run, schedule or grant row. Granting also needs `databases:read`, or `stores:read` and `graphql:mutate`.
+- **UI.** `apps/app/app/functions/[functionId]` is the workbench: a file tree, Monaco tabs (`monaco-setup.ts` shares workers with GraphiQL's environment), and a side panel with Test, Output, History, Triggers, Variables and Settings (which holds Connections).
+
 ## Local development
 
 Follow the setup in the [root README](../README.md). If another project already holds port 5432, set `POSTGRES_PORT` and the port in `DATABASE_URL` to a free port in `.env`; `docker-compose.yml` reads `POSTGRES_PORT`.
+
+To run functions locally, start the runner agent as described in the [root README](../README.md#functions).
 
 `pnpm release:check` runs lint, type checks, tests, boundary checks and the build in one command.
