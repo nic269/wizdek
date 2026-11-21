@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../../.env -- next dev --port 4000",
+    "dev": "dotenv -e ../../.env -- next dev --port ${PORT:-4000}",
     "build": "dotenv -e ../../.env -- next build",
     "start": "next start --port ${PORT:-3000}",
     "check-types": "tsc --noEmit",

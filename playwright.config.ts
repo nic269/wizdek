@@ -39,6 +39,8 @@ export default defineConfig({
     },
     {
       command: "pnpm --filter @repo/app dev",
+      // The app's dev script defaults to 4000; the suite expects 3000.
+      env: { PORT: "3000" },
       reuseExistingServer,
       timeout: 120_000,
       url: "http://localhost:3000/sign-in",
