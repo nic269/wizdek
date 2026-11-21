@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Phase 7: Triggers, Schedules and Env Vars"
-status: todo
+status: completed
 priority: P1
 effort: "2d"
 dependencies: [4, 5]
@@ -98,12 +98,12 @@ The rate limiter is an in-memory sliding window per function id; the API runs as
 
 ## Todo
 
-- [ ] Models and migration
-- [ ] Variables end to end with scrubbing
-- [ ] Public trigger route, limiter, rewrite timeout
-- [ ] Schedules and job
-- [ ] Triggers and Variables tabs
-- [ ] Tests
+- [x] Models and migration
+- [x] Variables end to end with scrubbing
+- [x] Public trigger route, limiter, rewrite timeout
+- [x] Schedules and job
+- [x] Triggers and Variables tabs
+- [x] Tests
 
 ## Success Criteria
 
@@ -121,7 +121,7 @@ The rate limiter is an in-memory sliding window per function id; the API runs as
 | Raising the rewrite timeout hides a slow API elsewhere | The console keeps its own 25-second limit; only the trigger route waits longer |
 | Token guessing | 256-bit tokens, constant-time compare, uniform 401, rate limit |
 | A schedule piles up runs of a slow function | The runner's memory budget refuses excess runs, which end as `FAILED` with "runner busy" |
-| Traefik or the tunnel cuts long requests before 90 s | Measured in phase 8 with an 80-second function through the public URL; lower the wait if needed |
+| Traefik or the tunnel cuts long requests before 90 s | Measured in phase 9 with an 80-second function through the public URL; lower the wait if needed |
 
 ## Security Considerations
 
@@ -129,6 +129,22 @@ The rate limiter is an in-memory sliding window per function id; the API runs as
 - Trigger responses return `result` and `error` only, never stdout.
 - Losing or changing `SHOPIFY_TOKEN_ENCRYPTION_KEY` makes variables unreadable, like every other stored secret.
 
+## Outcome (2026-11-21)
+
+Built as planned, with these differences:
+
+- `CodeFunction` has no `httpEnabled` column: the trigger is on exactly while `httpTokenHash` is set, so the two can never disagree. The API reports `httpTrigger: { enabled, tokenHint }`.
+- Output is scrubbed as it streams. The end of each piece that could start a secret is held back until the next piece, so a value split across two output events is still replaced. Results are scrubbed string by string (keys included), and errors as text.
+- `WIZDEK_` is already a reserved variable prefix, so phase 8's runtime variables cannot collide with existing ones.
+- Schedules are registered with the job provider inside the same transaction as the row. When the provider has no schedules (the in-memory `local` provider), the call fails with `SCHEDULES_UNAVAILABLE` (503) and nothing is saved. The job lives in `services/schedules.ts` and is not retried: a run that cannot start is logged.
+- Deleting a function removes its schedules from the job provider first.
+- The public route is a Hono sub-app mounted at `/api/fn`. `createApiApp({ functionTrigger: { waitMs } })` shortens the wait in tests. A run the runner refused for lack of room is recognized by its stored error and answered 503 with `Retry-After: 10`. The rate limit is checked after the token, so the limiter only holds keys of real functions.
+- `/api/function-schedules/*` joined the app-origin check.
+- The side panel gained Triggers and Variables tabs; its tab row uses less padding below the `xl` breakpoint so six tabs fit in 320 px.
+- `packages/api/src/health.test.ts` now mocks the functions configuration check; it failed whenever a developer's `.env` set an http runner URL.
+
+Verification: functions unit 14 and integration 34 (including a real pg-boss schedule firing), API 136 tests, functions e2e 6 against the fake runner, typecheck, lint and boundaries clean. The tabs were checked in the browser at 1280 and 1100 px.
+
 ## Next Steps
 
-Phase 8 deploys and verifies everything on the real runner.
+Phase 9 deploys and verifies everything on the real runner.

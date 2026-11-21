@@ -133,7 +133,7 @@ Audit actions: `function.created`, `function.updated`, `function.deleted`, `func
 |------|------------|
 | Frequent output flushes load the database | One update per 500 ms per running run, and at most a handful of runs fit the runner's memory budget |
 | Two saves race | The save runs in a transaction that compares `sourceHash` first |
-| Existing organizations lack the new permissions | `pnpm db:sync-roles` is part of the deploy in phase 8 |
+| Existing organizations lack the new permissions | `pnpm db:sync-roles` is part of the deploy in phase 9 |
 
 ## Security Considerations
 

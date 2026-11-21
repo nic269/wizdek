@@ -36,6 +36,7 @@ Free the capacity held by the unused `openclaw` VM, create the `runner` VM, and 
 - Docker Engine with log rotation and an address pool that overlaps neither the LAN nor apps-prod's pool: `10.210.0.0/16`.
 - A bridge network `fn-sandbox` (10.210.1.0/24), IPv6 off, inter-container communication off.
 - From `fn-sandbox`: allowed to public IPv4 addresses; dropped to 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16 and to every address of the runner host. Rules survive a reboot and a Docker restart.
+- One exception, for the built-in helpers: `fn-sandbox` may reach 10.10.10.30 on TCP 3003 (wizdek-api's runtime port), inserted before the private-range drops. Nothing else on apps-prod.
 - Agent port 8443 answers only to 10.10.10.30.
 - A TLS certificate for `runner.wizloft.dev` (SAN also `IP:10.10.10.50`) signed by the existing private CA, and a DNS-only A record `runner.wizloft.dev` to 10.10.10.50.
 - `infra` (VMID 101), the host network and the tunnel are not touched.
@@ -80,6 +81,7 @@ Probe, from a throwaway container on `fn-sandbox`:
 | `https://example.com`, DNS lookup of a public name | succeeds |
 | 10.10.10.1, 10.10.10.20:8000, 10.10.10.30:80, 10.10.10.40:5432, 10.10.10.110:8006, 10.10.10.201 | no connection |
 | 10.10.10.50:22, 10.10.10.50:8443, 10.210.1.1 | no connection |
+| 10.10.10.30:3003 | connects (the only LAN target that does) |
 | a second container on `fn-sandbox` | no connection |
 
 From another LAN machine: 10.10.10.50:8443 refuses; from apps-prod it connects.
@@ -117,4 +119,4 @@ From another LAN machine: 10.10.10.50:8443 refuses; from apps-prod it connects.
 
 ## Next Steps
 
-Phase 8 deploys the agent to this VM.
+Phase 9 deploys the agent to this VM.

@@ -86,7 +86,7 @@ The schema-driven fields of `generic-form.tsx` move to `apps/app/app/lib/schema-
 
 ## Outcome (2026-11-17)
 
-Monaco spike, for decision 0006 in phase 8. The standalone editor imports `monaco-editor` 0.52.2 and starts workers with `new Worker(new URL("monaco-editor/esm/vs/language/typescript/ts.worker.js", import.meta.url))`, as GraphiQL's webpack setup does. It needs no bundler override and no prebuilt `min/vs` fallback.
+Monaco spike, for decision 0006 in phase 9. The standalone editor imports `monaco-editor` 0.52.2 and starts workers with `new Worker(new URL("monaco-editor/esm/vs/language/typescript/ts.worker.js", import.meta.url))`, as GraphiQL's webpack setup does. It needs no bundler override and no prebuilt `min/vs` fallback.
 
 | Check | `next dev` | `next build` + `next start` |
 |-------|-----------|------------|
