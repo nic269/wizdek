@@ -3,12 +3,13 @@ import {
   mkdtemp,
   readdir,
   rm,
+  stat,
   utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chooseEvictions,
   createDepsCache,
@@ -122,9 +123,14 @@ describe("createDepsCache", () => {
     await addEntry("node-recent", now - DAY_MS);
 
     const release = cache.acquire("node-held");
-    // Acquiring marks the entry used; make it old again to test the hold.
+    // Acquiring marks the entry used without waiting for the write; let it
+    // land, then make the entry old again to test the hold.
+    const heldMarker = join(root, "node-held", ".complete");
+    await vi.waitFor(async () => {
+      expect((await stat(heldMarker)).mtimeMs).toBeGreaterThan(now - DAY_MS);
+    });
     const old = new Date(now - 40 * DAY_MS);
-    await utimes(join(root, "node-held", ".complete"), old, old);
+    await utimes(heldMarker, old, old);
 
     expect(await cache.evict(now)).toEqual(["node-old"]);
     release();
