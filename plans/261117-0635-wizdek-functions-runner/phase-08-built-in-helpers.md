@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Phase 8: Built-in Helpers for Databases and Shopify Stores"
-status: todo
+status: completed
 priority: P1
 effort: "3d"
 dependencies: [4, 5, 6, 7]
@@ -172,14 +172,14 @@ Contract additions (`manage` except reads):
 
 ## Todo
 
-- [ ] Grant model, migration, service and routes
-- [ ] Run token lifecycle
-- [ ] Runtime database and Shopify services
-- [ ] Runtime route on its own port
-- [ ] Node and Python SDKs in the images
-- [ ] Editor types and Connections section
-- [ ] Tests
-- [ ] Phase 1 and phase 9 infrastructure steps updated
+- [x] Grant model, migration, service and routes
+- [x] Run token lifecycle
+- [x] Runtime database and Shopify services
+- [x] Runtime route on its own port
+- [x] Node and Python SDKs in the images
+- [x] Editor types and Connections section
+- [x] Tests
+- [x] Phase 1 and phase 9 infrastructure steps updated
 
 ## Success Criteria
 
@@ -210,6 +210,24 @@ Contract additions (`manage` except reads):
 - The run token is the only credential in the sandbox; it is scoped to one run, one organization and its grant list, and dies with the run.
 - Credentials are decrypted only inside wizdek-api, per call, and never serialized into a response.
 - Only parameterized SQL is sent; the API does not try to forbid DDL or writes, because PROD writes are allowed by decision.
+
+## Outcome (2026-11-21)
+
+Built as planned, with these differences:
+
+- The runtime routes live in `packages/api/src/function-runtime-route.ts`, not in `@repo/functions`, because they use `@repo/database-tools` and `@repo/shopify`, which the functions package may not import. Grants and the run token stay in `@repo/functions` (`services/grants.ts`, `services/run-token.ts`). `createFunctionRuntimeApp()` serves only `/api/fn-runtime/*`; `apps/api` listens with it on `FUNCTIONS_RUNTIME_PORT` (default 3003) next to the main port.
+- A transaction is a list of statements, `db(alias).transaction([{ sql, params }, …])`, sent as one call to `POST /api/fn-runtime/db/{alias}/transaction`, instead of a callback. A callback cannot see its own reads' results when every statement travels in one call, and a callback that waits on each call would hold a connection open across calls. The SDKs also have `db(alias).run()` for the whole result (command, fields, `truncated`); `query()` warns on stderr when a result was cut.
+- A call counts as a write unless its first keyword (after comments) is `select`, `show` or `explain`; `with` counts as a write. Statements always use the extended protocol, so Postgres refuses several statements in one text and the first keyword is the statement's kind. `function.db.write` records the statements' SQL (up to 2000 characters each) and outcome, never their parameters, with the person who started the run as actor (null for HTTP and schedule runs).
+- The driver's `query_timeout` is not used: with a `pg.Query` object it replaces the query's callback, so the query's error event never fires and a failing statement hung the call. The whole call is cut by ending the connection 5 s after the statement timeout instead.
+- `executeGraphqlForUser` gained a nullable actor, `auditMetadata` (function and run ids), `auditQueries: false` (queries counted on the run, mutations audited as before) and `timeoutMs`, capped at `MAX_EXECUTE_TIMEOUT_MS` (60 s). `canMutate` is answered by the grant.
+- Run context reaches the SDK as `WIZDEK_RUN_ID`, `WIZDEK_FUNCTION_ID`, `WIZDEK_ORGANIZATION_ID` and `WIZDEK_TRIGGER`, so `ctx` is synchronous; `GET /context` serves the granted aliases for `stores.list()` and `databases.list()`. Only user variables and `WIZDEK_RUNTIME_TOKEN` are scrubbed from output.
+- The SDKs are single files (`apps/runner/runtimes/node/wizdek.mjs`, `apps/runner/runtimes/python/wizdek.py`) because the image tag hashes only the top-level files of each runtime folder. The Node wrapper maps the bare specifier `wizdek` to `/opt/fn/wizdek.mjs` ahead of installed packages; the Python wrapper puts `/opt/fn/sdk` after `/fn` on the import path. Monaco gets the types from `WIZDEK_SDK_TYPES` in the functions definition.
+- Sandbox containers get `--add-host host.docker.internal:host-gateway`, because their own DNS server cannot resolve that name on a development machine. On the runner VM the gateway address is already dropped by the egress rules, so the entry opens nothing.
+- Grants are removed when a store is disconnected (its credentials are gone), not only when it is deleted, and when a database connection is deleted. Granting needs `functions:manage` plus `databases:read`, or `stores:read` and `graphql:mutate`. `/api/function-grants/*` joined the app-origin check.
+- The Connections section sits in the Settings tab. Run details show the database and Shopify call counts when a run made any.
+- In-flight calls are not aborted when a run is cancelled; the token stops working for the next call, and a running call ends at its own timeout.
+
+Verification: API 145 tests (9 new runtime tests: token life and scrubbing through the fake runner, 401s, grant permissions, revocation on grant removal, connection delete and store disconnect, read/write audit split, transaction rollback, stacked statements refused, row cap, 429 at the fifth concurrent database call, Shopify query and audited mutation), functions 51, database-tools 44 (5 new query tests including the statement timeout), shopify 74, runner unit 32 and integration 25 (3 new SDK tests in real Node and Python containers against a fake runtime server, with throttle retry and paging), functions e2e 7 including granting and removing a database. Typecheck and boundaries clean; lint clean outside the untracked design preview. Infrastructure (the egress exception and the published port) is still to be applied with phases 1 and 9.
 
 ## Next Steps
 
