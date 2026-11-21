@@ -314,3 +314,52 @@ export const manifestsOf = (
     return file ? [{ content: file.content, path }] : [];
   });
 };
+
+export const ENV_VAR_LIMITS = {
+  nameLength: 100,
+  /** Values shorter than this are not scrubbed from output. */
+  scrubMinLength: 6,
+  valueBytes: 8 * 1024,
+  variables: 50,
+} as const;
+
+const ENV_VAR_NAME = /^[A-Z_][A-Z0-9_]*$/;
+const RESERVED_ENV_NAMES = new Set([
+  "HOME",
+  "NODE_OPTIONS",
+  "NODE_PATH",
+  "PATH",
+  "PYTHONHOME",
+  "PYTHONPATH",
+]);
+const RESERVED_ENV_PREFIXES = ["FN_", "LD_", "WIZDEK_"];
+
+/** Why a variable name cannot be used, or null when it can. */
+export const envVarNameProblem = (name: string): string | null => {
+  if (name.length === 0 || name.length > ENV_VAR_LIMITS.nameLength) {
+    return `Use 1 to ${ENV_VAR_LIMITS.nameLength} characters.`;
+  }
+  if (!ENV_VAR_NAME.test(name)) {
+    return "Use capital letters, digits and underscores, not starting with a digit.";
+  }
+  if (
+    RESERVED_ENV_NAMES.has(name) ||
+    RESERVED_ENV_PREFIXES.some((prefix) => name.startsWith(prefix))
+  ) {
+    return `${name} is reserved by the runtime.`;
+  }
+  return null;
+};
+
+export const HTTP_TRIGGER = {
+  bodyBytes: 1024 * 1024,
+  /** The header that carries the token; `Authorization: Bearer` also works. */
+  header: "x-function-token",
+  pathPrefix: "/api/fn",
+  requestsPerMinute: 60,
+  tokenPrefix: "wfn_",
+  /** How long a call waits for the run before answering with its id. */
+  waitMs: 90_000,
+} as const;
+
+export const SCHEDULE_LIMITS = { perFunction: 5 } as const;

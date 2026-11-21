@@ -9,6 +9,7 @@ import {
 import { FunctionsError, runNotFound } from "../errors";
 import { functionsDisabled, functionsEnabled } from "../keys";
 import { reinstallForRun } from "./deps";
+import { loadEnvForRun } from "./env-vars";
 import {
   type CodeFunctionRunRecord,
   executeRun,
@@ -84,6 +85,8 @@ export const startRun = async (
   input: FunctionScope & {
     actorId?: string | null | undefined;
     params: Record<string, unknown>;
+    /** The schedule that fired, for runs it starts. */
+    scheduleId?: string | undefined;
     trigger: RunTrigger;
   }
 ): Promise<{
@@ -115,6 +118,7 @@ export const startRun = async (
     );
   }
 
+  const env = await loadEnvForRun(fn.id);
   const run = await prisma.$transaction(async (db) => {
     await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fn.id}, 0))::text AS locked`;
     const last = await db.codeFunctionRun.aggregate({
@@ -127,6 +131,7 @@ export const startRun = async (
         number: (last._max.number ?? 0) + 1,
         organizationId: fn.organizationId,
         params: validation.params as Prisma.InputJsonObject,
+        scheduleId: input.scheduleId ?? null,
         sourceHash: fn.sourceHash,
         startedById: input.actorId ?? null,
         trigger: input.trigger,
@@ -151,7 +156,7 @@ export const startRun = async (
 
   const completion = executeRun(
     {
-      env: {},
+      env,
       files: fn.files.map(({ content, path }) => ({ content, path })),
       memoryMb: fn.memoryMb,
       params: validation.params,

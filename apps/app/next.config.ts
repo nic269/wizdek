@@ -6,9 +6,10 @@ const apiUrl = env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL;
 
 const nextConfig: NextConfig = {
   experimental: {
-    // How long the /api rewrite waits for the API. The console's execute
-    // route answers within 25 seconds, so it always beats this limit.
-    proxyTimeout: 30_000,
+    // How long the /api rewrite waits for the API. A function's HTTP
+    // trigger waits up to 90 seconds for its run, below Cloudflare's limit
+    // of about 100; the console's execute route answers within 25.
+    proxyTimeout: 95_000,
   },
   output: "standalone",
   outputFileTracingRoot: path.join(import.meta.dirname, "../.."),

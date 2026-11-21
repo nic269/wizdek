@@ -12,7 +12,12 @@ export type FunctionsFailure =
   | "RUNNER_BUSY"
   | "RUN_NOT_ACTIVE"
   | "DEPS_NOT_READY"
-  | "DEPS_MISSING";
+  | "DEPS_MISSING"
+  | "INVALID_ENV_VAR"
+  | "ENV_VAR_NOT_FOUND"
+  | "INVALID_SCHEDULE"
+  | "SCHEDULE_NOT_FOUND"
+  | "SCHEDULES_UNAVAILABLE";
 
 /**
  * A functions request that cannot be carried out. The message is safe to
@@ -33,3 +38,6 @@ export const functionNotFound = () =>
 
 export const runNotFound = () =>
   new FunctionsError("RUN_NOT_FOUND", "Run not found.");
+
+export const scheduleNotFound = () =>
+  new FunctionsError("SCHEDULE_NOT_FOUND", "Schedule not found.");

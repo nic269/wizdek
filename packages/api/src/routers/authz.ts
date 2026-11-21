@@ -18,6 +18,7 @@ import {
   type CodeFunctionRunSummary,
   findFunctionById,
   findRunById as findFunctionRunById,
+  findScheduleById,
 } from "@repo/functions";
 import { findStoreById, type ShopifyStoreRecord } from "@repo/shopify/stores";
 import { ApiError } from "../errors";
@@ -260,6 +261,33 @@ export const requireFunctionPermission = async (
     "You do not have permission for this function action."
   );
   return { fn, user };
+};
+
+/**
+ * Authorizes an action on a function schedule; the organization comes from
+ * the schedule's function.
+ */
+export const requireFunctionSchedulePermission = async (
+  headers: Headers,
+  scheduleId: string,
+  action: FunctionAction
+) => {
+  const user = await requireUser(headers);
+  const schedule = await findScheduleById(scheduleId);
+  const scheduleNotFound = () =>
+    new ApiError("NOT_FOUND", "Schedule not found.", 404);
+  if (!schedule) {
+    throw scheduleNotFound();
+  }
+  await requireMemberPermission(
+    user.id,
+    schedule.function.organizationId,
+    "functions",
+    action,
+    scheduleNotFound,
+    "You do not have permission for this function action."
+  );
+  return { schedule, user };
 };
 
 /** Authorizes an action on a function run; the organization comes from the run row. */

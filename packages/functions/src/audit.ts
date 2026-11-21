@@ -7,7 +7,15 @@ export type FunctionAuditAction =
   | "function.files_saved"
   | "function.deps.reinstalled"
   | "function.run.started"
-  | "function.run.canceled";
+  | "function.run.canceled"
+  | "function.env.set"
+  | "function.env.deleted"
+  | "function.http.enabled"
+  | "function.http.rotated"
+  | "function.http.disabled"
+  | "function.schedule.created"
+  | "function.schedule.updated"
+  | "function.schedule.deleted";
 
 /**
  * Records a function event. Metadata never includes source text, parameter
@@ -21,7 +29,7 @@ export const recordFunctionAudit = (
     metadata?: Prisma.InputJsonObject;
     organizationId: string;
     targetId: string;
-    targetType: "CodeFunction" | "CodeFunctionRun";
+    targetType: "CodeFunction" | "CodeFunctionRun" | "CodeFunctionSchedule";
   }
 ) =>
   db.auditLog.create({

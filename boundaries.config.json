@@ -59,7 +59,7 @@
       "@repo/shopify",
       "@repo/storage"
     ],
-    "@repo/functions": ["@repo/database"],
+    "@repo/functions": ["@repo/database", "@repo/jobs", "@repo/security"],
     "@repo/helpers": [],
     "@repo/i18n": [],
     "@repo/jobs": [],

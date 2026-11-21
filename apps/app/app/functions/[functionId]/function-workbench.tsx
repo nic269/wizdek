@@ -31,8 +31,10 @@ import { PackagesStatus } from "./packages-status";
 import { SettingsTab } from "./settings-tab";
 import { SidePanel, type SidePanelTab } from "./side-panel";
 import { paramsToSend, TestTab } from "./test-tab";
+import { TriggersTab } from "./triggers-tab";
 import { type FunctionEditor, useFunctionEditor } from "./use-function-editor";
 import { type FunctionRunState, useFunctionRun } from "./use-function-run";
+import { VariablesTab } from "./variables-tab";
 
 // Monaco needs the browser.
 const CodeEditor = dynamic(() => import("./code-editor"), {
@@ -354,6 +356,12 @@ export function FunctionWorkbench({
               }}
               selectedRunId={run.runId}
             />
+          ) : null}
+          {tab === "triggers" ? (
+            <TriggersTab canManage={canManage} fn={fn} />
+          ) : null}
+          {tab === "variables" ? (
+            <VariablesTab canManage={canManage} functionId={fn.id} />
           ) : null}
           {tab === "settings" ? (
             <SettingsTab canManage={canManage} editor={editor} fn={fn} />

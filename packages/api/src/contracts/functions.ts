@@ -1,4 +1,6 @@
+import { isCronExpression, isTimeZone } from "@repo/flows/definition";
 import {
+  ENV_VAR_LIMITS,
   FUNCTION_DEPS_STATUSES,
   FUNCTION_LIMITS,
   FUNCTION_RUN_STATUSES,
@@ -75,10 +77,17 @@ export const functionListItemSchema = functionSummarySchema.extend({
     .nullable(),
 });
 
+export const httpTriggerSchema = z.object({
+  enabled: z.boolean(),
+  /** The token's last four characters, to tell tokens apart. */
+  tokenHint: z.string().nullable(),
+});
+
 export const functionSchema = functionSummarySchema.extend({
   /** The end of the last package install's output. */
   depsLog: z.string(),
   files: z.array(functionFileSchema),
+  httpTrigger: httpTriggerSchema,
   paramsSchema: paramsSchemaSchema.nullable(),
   /** Send back as `baseHash` when saving files. */
   sourceHash: z.string(),
@@ -98,6 +107,7 @@ export const functionRunSummarySchema = z.object({
   outputTruncated: z.boolean(),
   params: z.record(z.string(), z.unknown()),
   result: z.unknown(),
+  scheduleId: z.string().nullable(),
   sourceHash: z.string(),
   startedAt: z.date().nullable(),
   startedByName: z.string().nullable(),
@@ -126,7 +136,43 @@ export const functionsStatusSchema = z.object({
   ),
 });
 
+export const functionEnvVarSchema = z.object({
+  name: z.string(),
+  updatedAt: z.date(),
+});
+
+export const functionScheduleSchema = z.object({
+  createdAt: z.date(),
+  cron: z.string(),
+  enabled: z.boolean(),
+  functionId: z.string(),
+  id: z.string(),
+  params: z.record(z.string(), z.unknown()),
+  timezone: z.string(),
+  updatedAt: z.date(),
+});
+
+const cron = z
+  .string()
+  .trim()
+  .refine(
+    isCronExpression,
+    "Use five cron fields, such as 0 6 * * * for every day at 06:00."
+  );
+const timezone = z
+  .string()
+  .refine(isTimeZone, "Use a time zone name such as Asia/Ho_Chi_Minh.");
+
 const functionIdInput = z.object({ functionId: z.string().min(1) });
+const scheduleIdInput = z.object({ scheduleId: z.string().min(1) });
+const envVarName = z.string().min(1).max(ENV_VAR_LIMITS.nameLength);
+const httpTokenOutput = dataEnvelope(
+  z.object({
+    httpTrigger: httpTriggerSchema,
+    /** Shown once; only its hash is stored. */
+    token: z.string(),
+  })
+);
 const runIdInput = z.object({ runId: z.string().min(1) });
 const functionName = z.string().trim().min(1).max(FUNCTION_LIMITS.nameLength);
 const description = z
@@ -172,6 +218,33 @@ export const functionsContract = {
     })
     .input(functionIdInput)
     .output(dataEnvelope(z.object({ id: z.string() }))),
+  deleteEnvVar: apiContract
+    .route({
+      method: "DELETE",
+      operationId: "functions.deleteEnvVar",
+      path: "/api/functions/{functionId}/env/{name}",
+      summary: "Delete a function's variable",
+    })
+    .input(functionIdInput.extend({ name: envVarName }))
+    .output(dataEnvelope(z.object({ name: z.string() }))),
+  disableHttpTrigger: apiContract
+    .route({
+      method: "POST",
+      operationId: "functions.disableHttpTrigger",
+      path: "/api/functions/{functionId}/http/disable",
+      summary: "Turn the HTTP trigger off and forget its token",
+    })
+    .input(functionIdInput)
+    .output(dataEnvelope(httpTriggerSchema)),
+  enableHttpTrigger: apiContract
+    .route({
+      method: "POST",
+      operationId: "functions.enableHttpTrigger",
+      path: "/api/functions/{functionId}/http/enable",
+      summary: "Turn the HTTP trigger on; returns its token once",
+    })
+    .input(functionIdInput)
+    .output(httpTokenOutput),
   get: apiContract
     .route({
       method: "GET",
@@ -190,6 +263,15 @@ export const functionsContract = {
     })
     .input(organizationIdInput)
     .output(dataEnvelope(z.array(functionListItemSchema))),
+  listEnvVars: apiContract
+    .route({
+      method: "GET",
+      operationId: "functions.listEnvVars",
+      path: "/api/functions/{functionId}/env",
+      summary: "List a function's variable names; values are never returned",
+    })
+    .input(functionIdInput)
+    .output(dataEnvelope(z.array(functionEnvVarSchema))),
   reinstallDeps: apiContract
     .route({
       method: "POST",
@@ -199,6 +281,15 @@ export const functionsContract = {
     })
     .input(functionIdInput)
     .output(dataEnvelope(functionSchema)),
+  rotateHttpToken: apiContract
+    .route({
+      method: "POST",
+      operationId: "functions.rotateHttpToken",
+      path: "/api/functions/{functionId}/http/rotate",
+      summary: "Replace the HTTP trigger's token; returns the new one once",
+    })
+    .input(functionIdInput)
+    .output(httpTokenOutput),
   saveFiles: apiContract
     .route({
       method: "PUT",
@@ -222,6 +313,20 @@ export const functionsContract = {
       })
     )
     .output(dataEnvelope(functionSchema)),
+  setEnvVar: apiContract
+    .route({
+      method: "PUT",
+      operationId: "functions.setEnvVar",
+      path: "/api/functions/{functionId}/env/{name}",
+      summary: "Create or replace a function's variable",
+    })
+    .input(
+      functionIdInput.extend({
+        name: envVarName,
+        value: z.string().min(1).max(ENV_VAR_LIMITS.valueBytes),
+      })
+    )
+    .output(dataEnvelope(functionEnvVarSchema)),
   status: apiContract
     .route({
       method: "GET",
@@ -295,4 +400,58 @@ export const functionRunsContract = {
       })
     )
     .output(dataEnvelope(functionRunSummarySchema)),
+};
+
+export const functionSchedulesContract = {
+  create: apiContract
+    .route({
+      method: "POST",
+      operationId: "functionSchedules.create",
+      path: "/api/functions/{functionId}/schedules",
+      successStatus: 201,
+      summary: "Add a cron schedule that runs the function",
+    })
+    .input(
+      functionIdInput.extend({
+        cron,
+        enabled: z.boolean().default(true),
+        params: z.record(z.string(), z.unknown()).default({}),
+        timezone: timezone.default("UTC"),
+      })
+    )
+    .output(dataEnvelope(functionScheduleSchema)),
+  delete: apiContract
+    .route({
+      method: "DELETE",
+      operationId: "functionSchedules.delete",
+      path: "/api/function-schedules/{scheduleId}",
+      summary: "Delete a schedule",
+    })
+    .input(scheduleIdInput)
+    .output(dataEnvelope(z.object({ id: z.string() }))),
+  list: apiContract
+    .route({
+      method: "GET",
+      operationId: "functionSchedules.list",
+      path: "/api/functions/{functionId}/schedules",
+      summary: "List a function's schedules",
+    })
+    .input(functionIdInput)
+    .output(dataEnvelope(z.array(functionScheduleSchema))),
+  update: apiContract
+    .route({
+      method: "PATCH",
+      operationId: "functionSchedules.update",
+      path: "/api/function-schedules/{scheduleId}",
+      summary: "Change a schedule's cron, time zone, parameters or state",
+    })
+    .input(
+      scheduleIdInput.extend({
+        cron: cron.optional(),
+        enabled: z.boolean().optional(),
+        params: z.record(z.string(), z.unknown()).optional(),
+        timezone: timezone.optional(),
+      })
+    )
+    .output(dataEnvelope(functionScheduleSchema)),
 };

@@ -765,14 +765,20 @@ model CodeFunction {
   depsError      String?                @db.Text
   depsLog        String                 @default("") @db.Text
   depsBuiltAt    DateTime?
+  /// The HTTP trigger is on while a token exists. Only its SHA-256 is stored.
+  httpTokenHash  String?                @unique
+  /// The token's last four characters, to tell tokens apart.
+  httpTokenHint  String?
   createdById    String?
   updatedById    String?
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
-  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   files        CodeFunctionFile[]
   runs         CodeFunctionRun[]
+  envVars      CodeFunctionEnvVar[]
+  schedules    CodeFunctionSchedule[]
 
   @@unique([organizationId, name])
   @@map("code_function")
@@ -807,6 +813,8 @@ model CodeFunctionRun {
   sourceHash        String
   cancelRequestedAt DateTime?
   startedById       String?
+  /// The schedule that started the run; kept when the schedule is deleted.
+  scheduleId        String?
   createdAt         DateTime               @default(now())
   startedAt         DateTime?
   finishedAt        DateTime?
@@ -818,4 +826,39 @@ model CodeFunctionRun {
   @@index([functionId, createdAt])
   @@index([status, createdAt])
   @@map("code_function_run")
+}
+
+/// A variable a function's runs read from their environment. The value is
+/// encrypted and never returned.
+model CodeFunctionEnvVar {
+  id             String   @id @default(cuid())
+  functionId     String
+  name           String
+  valueEncrypted String   @db.Text
+  updatedById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@unique([functionId, name])
+  @@map("code_function_env_var")
+}
+
+/// A cron schedule that starts runs of a function with fixed parameters.
+model CodeFunctionSchedule {
+  id          String   @id @default(cuid())
+  functionId  String
+  cron        String
+  timezone    String
+  params      Json
+  enabled     Boolean  @default(true)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  function CodeFunction @relation(fields: [functionId], references: [id], onDelete: Cascade)
+
+  @@index([functionId])
+  @@map("code_function_schedule")
 }

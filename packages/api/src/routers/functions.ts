@@ -2,29 +2,44 @@ import { prisma } from "@repo/database";
 import {
   type CodeFunctionRecord,
   type CodeFunctionRunSummary,
+  type CodeFunctionScheduleRecord,
   type CodeFunctionWithFiles,
   cancelRun,
   createFunction,
+  createSchedule,
+  deleteEnvVar,
   deleteFunction,
+  deleteSchedule,
+  disableHttpTrigger,
+  enableHttpTrigger,
   functionsEnabled,
   getFunction,
   getRun,
   getRunner,
+  httpTriggerStateOf,
+  listEnvVars,
   listFunctions,
   listRuns,
+  listSchedules,
   reinstallDeps,
+  rotateHttpToken,
   saveFiles,
+  setEnvVar,
   startRun,
+  unscheduleFunction,
   updateFunction,
+  updateSchedule,
 } from "@repo/functions";
 import {
   FUNCTION_RUNTIMES,
   isParamsSchema,
   RUNTIME_LABELS,
 } from "@repo/functions/definition";
+import { getJobProvider } from "../jobs";
 import {
   requireFunctionPermission,
   requireFunctionRunPermission,
+  requireFunctionSchedulePermission,
   requireOrganizationAccess,
 } from "./authz";
 import { withFunctionErrors } from "./function-errors";
@@ -51,6 +66,7 @@ const toPublicFunction = (fn: CodeFunctionWithFiles) => ({
   ...toPublicSummary(fn),
   depsLog: fn.depsLog,
   files: fn.files.map(({ content, path }) => ({ content, path })),
+  httpTrigger: httpTriggerStateOf(fn),
   paramsSchema: isParamsSchema(fn.paramsSchema) ? fn.paramsSchema : null,
   sourceHash: fn.sourceHash,
 });
@@ -91,11 +107,23 @@ const toPublicRunSummary = (
   outputTruncated: run.outputTruncated,
   params: (run.params ?? {}) as Record<string, unknown>,
   result: run.result,
+  scheduleId: run.scheduleId,
   sourceHash: run.sourceHash,
   startedAt: run.startedAt,
   startedByName: run.startedById ? (names.get(run.startedById) ?? null) : null,
   status: run.status,
   trigger: run.trigger,
+});
+
+const toPublicSchedule = (schedule: CodeFunctionScheduleRecord) => ({
+  createdAt: schedule.createdAt,
+  cron: schedule.cron,
+  enabled: schedule.enabled,
+  functionId: schedule.functionId,
+  id: schedule.id,
+  params: (schedule.params ?? {}) as Record<string, unknown>,
+  timezone: schedule.timezone,
+  updatedAt: schedule.updatedAt,
 });
 
 const scopeOf = (fn: CodeFunctionRecord) => ({
@@ -161,11 +189,51 @@ export const functionsRouter = {
       input.functionId,
       "manage"
     );
-    await withFunctionErrors(() =>
-      deleteFunction({ ...scopeOf(fn), actorId: user.id })
-    );
+    await withFunctionErrors(async () => {
+      await unscheduleFunction(fn.id, { jobs: getJobProvider() });
+      await deleteFunction({ ...scopeOf(fn), actorId: user.id });
+    });
     return { data: { id: fn.id } };
   }),
+  deleteEnvVar: os.functions.deleteEnvVar.handler(
+    async ({ context, input }) => {
+      const { fn, user } = await requireFunctionPermission(
+        context.headers,
+        input.functionId,
+        "manage"
+      );
+      await withFunctionErrors(() =>
+        deleteEnvVar({ ...scopeOf(fn), actorId: user.id, name: input.name })
+      );
+      return { data: { name: input.name } };
+    }
+  ),
+  disableHttpTrigger: os.functions.disableHttpTrigger.handler(
+    async ({ context, input }) => {
+      const { fn, user } = await requireFunctionPermission(
+        context.headers,
+        input.functionId,
+        "manage"
+      );
+      const state = await withFunctionErrors(() =>
+        disableHttpTrigger({ ...scopeOf(fn), actorId: user.id })
+      );
+      return { data: state };
+    }
+  ),
+  enableHttpTrigger: os.functions.enableHttpTrigger.handler(
+    async ({ context, input }) => {
+      const { fn, user } = await requireFunctionPermission(
+        context.headers,
+        input.functionId,
+        "manage"
+      );
+      const { state, token } = await withFunctionErrors(() =>
+        enableHttpTrigger({ ...scopeOf(fn), actorId: user.id })
+      );
+      return { data: { httpTrigger: state, token } };
+    }
+  ),
   get: os.functions.get.handler(async ({ context, input }) => {
     const { fn } = await requireFunctionPermission(
       context.headers,
@@ -190,6 +258,16 @@ export const functionsRouter = {
       })),
     };
   }),
+  listEnvVars: os.functions.listEnvVars.handler(async ({ context, input }) => {
+    const { fn } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "read"
+    );
+    return {
+      data: await withFunctionErrors(() => listEnvVars(scopeOf(fn))),
+    };
+  }),
   reinstallDeps: os.functions.reinstallDeps.handler(
     async ({ context, input }) => {
       const { fn, user } = await requireFunctionPermission(
@@ -201,6 +279,19 @@ export const functionsRouter = {
         reinstallDeps({ ...scopeOf(fn), actorId: user.id })
       );
       return { data: toPublicFunction(updated) };
+    }
+  ),
+  rotateHttpToken: os.functions.rotateHttpToken.handler(
+    async ({ context, input }) => {
+      const { fn, user } = await requireFunctionPermission(
+        context.headers,
+        input.functionId,
+        "manage"
+      );
+      const { state, token } = await withFunctionErrors(() =>
+        rotateHttpToken({ ...scopeOf(fn), actorId: user.id })
+      );
+      return { data: { httpTrigger: state, token } };
     }
   ),
   saveFiles: os.functions.saveFiles.handler(async ({ context, input }) => {
@@ -218,6 +309,22 @@ export const functionsRouter = {
       })
     );
     return { data: toPublicFunction(saved) };
+  }),
+  setEnvVar: os.functions.setEnvVar.handler(async ({ context, input }) => {
+    const { fn, user } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "manage"
+    );
+    const saved = await withFunctionErrors(() =>
+      setEnvVar({
+        ...scopeOf(fn),
+        actorId: user.id,
+        name: input.name,
+        value: input.value,
+      })
+    );
+    return { data: saved };
   }),
   status: os.functions.status.handler(async ({ context, input }) => {
     await requireOrganizationAccess(
@@ -315,5 +422,80 @@ export const functionRunsRouter = {
       console.error("functions.run_failed", error);
     });
     return { data: toPublicRunSummary(run, await starterNamesOf([run])) };
+  }),
+};
+
+export const functionSchedulesRouter = {
+  create: os.functionSchedules.create.handler(async ({ context, input }) => {
+    const { fn, user } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "manage"
+    );
+    const created = await withFunctionErrors(() =>
+      createSchedule(
+        {
+          ...scopeOf(fn),
+          actorId: user.id,
+          cron: input.cron,
+          enabled: input.enabled,
+          params: input.params,
+          timezone: input.timezone,
+        },
+        { jobs: getJobProvider() }
+      )
+    );
+    return { data: toPublicSchedule(created) };
+  }),
+  delete: os.functionSchedules.delete.handler(async ({ context, input }) => {
+    const { schedule, user } = await requireFunctionSchedulePermission(
+      context.headers,
+      input.scheduleId,
+      "manage"
+    );
+    await withFunctionErrors(() =>
+      deleteSchedule(
+        {
+          actorId: user.id,
+          organizationId: schedule.function.organizationId,
+          scheduleId: schedule.id,
+        },
+        { jobs: getJobProvider() }
+      )
+    );
+    return { data: { id: schedule.id } };
+  }),
+  list: os.functionSchedules.list.handler(async ({ context, input }) => {
+    const { fn } = await requireFunctionPermission(
+      context.headers,
+      input.functionId,
+      "read"
+    );
+    const schedules = await withFunctionErrors(() =>
+      listSchedules(scopeOf(fn))
+    );
+    return { data: schedules.map(toPublicSchedule) };
+  }),
+  update: os.functionSchedules.update.handler(async ({ context, input }) => {
+    const { schedule, user } = await requireFunctionSchedulePermission(
+      context.headers,
+      input.scheduleId,
+      "manage"
+    );
+    const updated = await withFunctionErrors(() =>
+      updateSchedule(
+        {
+          actorId: user.id,
+          cron: input.cron,
+          enabled: input.enabled,
+          organizationId: schedule.function.organizationId,
+          params: input.params,
+          scheduleId: schedule.id,
+          timezone: input.timezone,
+        },
+        { jobs: getJobProvider() }
+      )
+    );
+    return { data: toPublicSchedule(updated) };
   }),
 };

@@ -16,6 +16,11 @@ vi.mock("@repo/mail", () => ({
     state: "configured",
   }),
 }));
+// These tests are about the job provider; the function runner's settings,
+// which a developer's .env may hold, are checked in their own package.
+vi.mock("@repo/functions", () => ({
+  assertFunctionsConfiguration: vi.fn(),
+}));
 vi.mock("@repo/storage", () => ({
   assertStorageProviderConfiguration: vi.fn(),
   getStorageProviderStatus: () => ({

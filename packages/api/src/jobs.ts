@@ -11,6 +11,7 @@ import {
 } from "@repo/flows";
 import {
   abortAllRuns,
+  createFunctionScheduleJob,
   failInterruptedInstalls,
   failInterruptedRuns,
 } from "@repo/functions";
@@ -55,6 +56,7 @@ export const registerJobs = (target: JobQueueProvider): void => {
   );
   target.register(createFlowScheduleJob(target));
   target.register(createDatabaseBackupJob());
+  target.register(createFunctionScheduleJob());
 };
 
 /**

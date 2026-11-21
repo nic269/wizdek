@@ -2,6 +2,7 @@ import { Prisma, prisma } from "@repo/database";
 import { FUNCTION_LIMITS } from "../definition";
 import { FunctionsError } from "../errors";
 import { createOutputBuffer } from "../output-buffer";
+import { createStreamScrubber, scrubJson, scrubText } from "../redact";
 import {
   type FunctionRunner,
   getRunner,
@@ -66,13 +67,13 @@ const outcomeOfError = (
   };
 };
 
-const resultColumn = (outcome: Outcome) => {
+const resultColumn = (outcome: Outcome, secrets: readonly string[]) => {
   if (outcome.status !== "SUCCEEDED" || outcome.result === undefined) {
     return Prisma.DbNull;
   }
   return outcome.result === null
     ? Prisma.JsonNull
-    : (outcome.result as Prisma.InputJsonValue);
+    : (scrubJson(outcome.result, secrets) as Prisma.InputJsonValue);
 };
 
 /** Deletes a function's runs beyond the newest `FUNCTION_LIMITS.runsKept`. */
@@ -145,7 +146,8 @@ const streamRun = async (
 /**
  * Runs a queued run on the runner and records everything it reports. Output
  * is appended to the row about every 500 ms; the final status, result and
- * timing are written when the runner reports the exit. Never throws.
+ * timing are written when the runner reports the exit. The values of the
+ * run's variables are scrubbed from everything stored. Never throws.
  */
 export const executeRun = async (
   request: RunnerRunRequest,
@@ -154,9 +156,11 @@ export const executeRun = async (
   const { runId } = request;
   const controller = new AbortController();
   const buffer = createOutputBuffer(FUNCTION_LIMITS.outputBytes);
+  const secrets = Object.values(request.env);
+  const scrubber = createStreamScrubber(secrets);
   let writes = Promise.resolve();
-  const flush = () => {
-    const text = buffer.take();
+  const flush = (final = false) => {
+    const text = scrubber.push(buffer.take()) + (final ? scrubber.end() : "");
     if (text) {
       writes = writes.then(async () => {
         await prisma.$executeRaw`
@@ -211,15 +215,15 @@ export const executeRun = async (
     active.delete(runId);
   }
 
-  await flush().catch(() => undefined);
+  await flush(true).catch(() => undefined);
   const finished = await prisma.codeFunctionRun.update({
     data: {
       durationMs: outcome.durationMs ?? null,
-      error: outcome.error ?? null,
+      error: outcome.error ? scrubText(outcome.error, secrets) : null,
       exitCode: outcome.exitCode ?? null,
       finishedAt: new Date(),
       outputTruncated: buffer.truncated() || outcome.truncated === true,
-      result: resultColumn(outcome),
+      result: resultColumn(outcome, secrets),
       status: outcome.status,
     },
     where: { id: runId },

@@ -1,3 +1,4 @@
+import { prisma } from "@repo/database";
 import {
   type FakeRunner,
   fakeExit,
@@ -300,6 +301,16 @@ describe("authorization", () => {
       })
     ).json.data;
     await waitForRun(owner, run.id);
+    // Written directly: the test API has no durable job queue to register it.
+    const schedule = await prisma.codeFunctionSchedule.create({
+      data: {
+        cron: "0 * * * *",
+        enabled: false,
+        functionId: fn.id,
+        params: {},
+        timezone: "UTC",
+      },
+    });
 
     const organizationPath = `/api/organizations/${owner.organizationId}/functions`;
     const requests: [string, string, unknown?][] = [
@@ -318,6 +329,20 @@ describe("authorization", () => {
       ["POST", `/api/functions/${fn.id}/runs`, { params: {} }],
       ["GET", `/api/function-runs/${run.id}`],
       ["POST", `/api/function-runs/${run.id}/cancel`],
+      ["GET", `/api/functions/${fn.id}/env`],
+      ["PUT", `/api/functions/${fn.id}/env/API_KEY`, { value: "secret-value" }],
+      ["DELETE", `/api/functions/${fn.id}/env/API_KEY`],
+      ["POST", `/api/functions/${fn.id}/http/enable`],
+      ["POST", `/api/functions/${fn.id}/http/rotate`],
+      ["POST", `/api/functions/${fn.id}/http/disable`],
+      ["GET", `/api/functions/${fn.id}/schedules`],
+      [
+        "POST",
+        `/api/functions/${fn.id}/schedules`,
+        { cron: "0 * * * *", params: { name: "x" } },
+      ],
+      ["PATCH", `/api/function-schedules/${schedule.id}`, { enabled: false }],
+      ["DELETE", `/api/function-schedules/${schedule.id}`],
       ["DELETE", `/api/functions/${fn.id}`],
     ];
 
@@ -356,6 +381,10 @@ describe("authorization", () => {
       ["POST", `/api/functions/${fn.id}/runs`, { params: {} }],
       ["POST", `/api/functions/${fn.id}/deps/rebuild`, {}],
       ["POST", "/api/function-runs/any/cancel", {}],
+      ["PUT", `/api/functions/${fn.id}/env/API_KEY`, { value: "foreign" }],
+      ["POST", `/api/functions/${fn.id}/http/enable`, {}],
+      ["POST", `/api/functions/${fn.id}/schedules`, { cron: "0 * * * *" }],
+      ["PATCH", "/api/function-schedules/any", { enabled: false }],
       ["DELETE", `/api/functions/${fn.id}`, undefined],
     ];
 

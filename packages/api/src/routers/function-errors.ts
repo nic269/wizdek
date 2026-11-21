@@ -7,10 +7,13 @@ const FAILURE_RESPONSES: Record<
 > = {
   DEPS_MISSING: { code: "SERVICE_UNAVAILABLE", status: 503 },
   DEPS_NOT_READY: { code: "CONFLICT", status: 409 },
+  ENV_VAR_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   FUNCTION_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   FUNCTIONS_DISABLED: { code: "CONFLICT", status: 409 },
+  INVALID_ENV_VAR: { code: "VALIDATION_ERROR", status: 422 },
   INVALID_FILES: { code: "VALIDATION_ERROR", status: 422 },
   INVALID_NAME: { code: "VALIDATION_ERROR", status: 422 },
+  INVALID_SCHEDULE: { code: "VALIDATION_ERROR", status: 422 },
   INVALID_SETTINGS: { code: "VALIDATION_ERROR", status: 422 },
   NAME_TAKEN: { code: "CONFLICT", status: 409 },
   PARAMS_INVALID: { code: "VALIDATION_ERROR", status: 422 },
@@ -18,6 +21,8 @@ const FAILURE_RESPONSES: Record<
   RUN_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
   RUNNER_BUSY: { code: "SERVICE_UNAVAILABLE", status: 503 },
   RUNNER_UNAVAILABLE: { code: "SERVICE_UNAVAILABLE", status: 503 },
+  SCHEDULE_NOT_FOUND: { code: "NOT_FOUND", status: 404 },
+  SCHEDULES_UNAVAILABLE: { code: "SERVICE_UNAVAILABLE", status: 503 },
   SOURCE_CONFLICT: { code: "CONFLICT", status: 409 },
 };
 

@@ -111,6 +111,10 @@ const errorOf = (
     () => ({})
   );
 
+/** Stored as the error of a run the runner had no room for. */
+export const RUNNER_BUSY_MESSAGE =
+  "The function runner is busy with other runs. Try again shortly.";
+
 /** Maps a refused request to an error the caller can show. */
 const refusal = async (response: Response): Promise<FunctionsError> => {
   const { code, message } = await errorOf(response);
@@ -121,10 +125,7 @@ const refusal = async (response: Response): Promise<FunctionsError> => {
     );
   }
   if (response.status === 429) {
-    return new FunctionsError(
-      "RUNNER_BUSY",
-      "The function runner is busy with other runs. Try again shortly."
-    );
+    return new FunctionsError("RUNNER_BUSY", RUNNER_BUSY_MESSAGE);
   }
   if (response.status === 401) {
     return unavailable("it refused this server's token.");

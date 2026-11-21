@@ -3,12 +3,20 @@
 import { NavTabs } from "@repo/design-system";
 import type { ReactNode } from "react";
 
-export type SidePanelTab = "test" | "output" | "history" | "settings";
+export type SidePanelTab =
+  | "test"
+  | "output"
+  | "history"
+  | "triggers"
+  | "variables"
+  | "settings";
 
 const TABS: { key: SidePanelTab; label: string }[] = [
   { key: "test", label: "Test" },
   { key: "output", label: "Output" },
   { key: "history", label: "History" },
+  { key: "triggers", label: "Triggers" },
+  { key: "variables", label: "Variables" },
   { key: "settings", label: "Settings" },
 ];
 
@@ -26,7 +34,7 @@ export function SidePanel({
     <aside className="flex w-[320px] flex-none flex-col border-border border-l bg-card xl:w-[380px]">
       <NavTabs
         aria-label="Function panel"
-        className="shrink-0 px-4"
+        className="shrink-0 px-3 xl:px-4"
         tabs={TABS.map(({ key, label }) => ({
           current: tab === key,
           key,

@@ -7,6 +7,7 @@ import {
 } from "./support/user-flows";
 
 const WORKBENCH_URL_PATTERN = /\/functions\/[a-z0-9]+$/;
+const TOKEN_PREFIX = /^wfn_/;
 
 const SAMPLE_MAIN =
   "export function main(orderId: string, limit: number = 10, dryRun: boolean = false) { console.log(orderId); return { orderId, limit }; }";
@@ -189,6 +190,78 @@ test("packages from package.json install, show their log and are used by runs", 
   await expect(page.getByTestId("history-run-1")).toContainText("Succeeded", {
     timeout: 30_000,
   });
+});
+
+test("variables, the HTTP trigger and schedules are set up from the side panel", async ({
+  page,
+}, testInfo) => {
+  test.slow();
+  const suffix = createTestSuffix(testInfo);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(String(error)));
+  const secret = `e2e-secret-${suffix}`;
+
+  await signUp({
+    email: `fn-triggers-${suffix}@example.com`,
+    name: "Function Triggers",
+    page,
+  });
+  await createOrganization({ name: `Function Triggers ${suffix}`, page });
+  await createFunction(page, "Triggered");
+  const functionId = page.url().split("/").at(-1) ?? "";
+
+  // A variable shows by name only.
+  await page.getByRole("button", { exact: true, name: "Variables" }).click();
+  await page.getByLabel("Variable name").fill("api_key");
+  await expect(page.getByLabel("Variable name")).toHaveValue("API_KEY");
+  await page.getByLabel("Variable value").fill(secret);
+  await page.getByRole("button", { name: "Save variable" }).click();
+  await expect(page.getByTestId("env-var")).toContainText("API_KEY");
+  await expect(page.getByText(secret)).toHaveCount(0);
+
+  // The token is shown once, and calling the URL with it runs the function.
+  await page.getByRole("button", { exact: true, name: "Triggers" }).click();
+  await page.getByRole("button", { name: "Turn on" }).click();
+  const token = (await page.getByTestId("http-token").textContent()) ?? "";
+  expect(token).toMatch(TOKEN_PREFIX);
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByText(`…${token.slice(-4)}`)).toBeVisible();
+
+  const refused = await page.request.post(`/api/fn/${functionId}`, {
+    data: { name: "outside" },
+    headers: { "x-function-token": "wfn_wrong" },
+  });
+  expect(refused.status()).toBe(401);
+  const called = await page.request.post(`/api/fn/${functionId}`, {
+    data: { name: "outside" },
+    headers: { "x-function-token": token },
+  });
+  expect(called.status()).toBe(200);
+  expect(await called.json()).toMatchObject({
+    result: { ok: true },
+    status: "SUCCEEDED",
+  });
+
+  // A schedule with the function's parameters.
+  await page.getByRole("button", { name: "Add schedule" }).click();
+  await page.getByLabel("Cron").fill("0 6 * * *");
+  await page.getByLabel("Time zone").fill("Asia/Ho_Chi_Minh");
+  await page.getByRole("textbox", { name: "name" }).fill("nightly");
+  await page.getByRole("button", { exact: true, name: "Add schedule" }).click();
+  const schedule = page.getByTestId("schedule");
+  await expect(schedule).toContainText("0 6 * * *");
+  await expect(schedule).toContainText("Asia/Ho_Chi_Minh");
+  await schedule.getByRole("checkbox", { name: "Enabled" }).click();
+  await expect(
+    schedule.getByRole("checkbox", { name: "Enabled" })
+  ).not.toBeChecked();
+  await page.getByRole("button", { name: "Delete schedule 0 6 * * *" }).click();
+  await expect(schedule).toHaveCount(0);
+
+  await page.getByRole("button", { exact: true, name: "History" }).click();
+  await expect(page.getByTestId("history-run-1")).toContainText("HTTP");
+
+  expect(errors).toEqual([]);
 });
 
 test("the page says when functions are not enabled", async ({
