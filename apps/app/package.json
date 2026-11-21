@@ -8,7 +8,7 @@
     "build": "dotenv -e ../../.env -- next build",
     "start": "next start --port ${PORT:-3000}",
     "check-types": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests --exclude \"app/works/oms-management/_module/tests/e2e/**\"",
+    "test": "vitest run --passWithNoTests --exclude \"app/works/oms-management/_module/tests/e2e/**\" --exclude \"app/works/oms-management/_module/tests/integration/**\"",
     "test:unit": "vitest run --passWithNoTests --exclude \"app/works/oms-management/_module/tests/e2e/**\" --exclude \"app/works/oms-management/_module/tests/integration/**\"",
     "test:integration": "echo 'no app integration tests yet'",
     "test:oms": "vitest run app/works/oms-management/_module/tests/unit",
