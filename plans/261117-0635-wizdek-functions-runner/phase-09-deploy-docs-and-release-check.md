@@ -1,7 +1,7 @@
 ---
 phase: 9
 title: "Phase 9: Deploy, Docs and Release Check"
-status: todo
+status: in-progress
 priority: P1
 effort: "1.5d"
 dependencies: [1, 2, 3, 4, 5, 6, 7, 8]
@@ -29,7 +29,7 @@ Deploy the agent to the runner VM, turn the feature on in production, verify eve
 ## Requirements
 
 - The agent runs on the runner VM from the `runner-agent` image, restarts on boot, serves HTTPS with the phase 1 certificate, and holds only its token, TLS files and paths.
-- The API publishes its runtime port as `10.10.10.30:3003` and gets `FUNCTIONS_RUNTIME_URL=http://10.10.10.30:3003`. apps-prod's `DOCKER-USER` chain accepts 3003 only from 10.10.10.50; every other source is dropped.
+- The API publishes its runtime port as `10.10.10.30:3004` and gets `FUNCTIONS_RUNTIME_URL=http://10.10.10.30:3004`. apps-prod's `DOCKER-USER` chain accepts 3004 only from 10.10.10.50; every other source is dropped.
 - The API gets `FUNCTIONS_RUNNER_URL=https://runner.wizloft.dev:8443` and `FUNCTIONS_RUNNER_TOKEN` as runtime-only variables. The token is generated on the owner's Mac into `~/.config/wizloft/wizdek-secrets.env` and never printed.
 - A pgBackRest diff backup is taken before the migrations are applied.
 - Existing organizations receive the new permissions through `pnpm db:sync-roles`.
@@ -53,7 +53,7 @@ Deploy the agent to the runner VM, turn the feature on in production, verify eve
 3. Deploy the agent. From apps-prod, `GET /health` over HTTPS verifies against the private CA and reports both runtimes ready. From another LAN host the port refuses.
 4. Re-run `infra:scripts/runner/probe-egress.sh` with the agent running.
 5. Take the pgBackRest diff backup; apply the four migrations following the release procedure in the build log; run `pnpm db:sync-roles` against production.
-6. Add the variables and the `10.10.10.30:3003` port mapping to the API in `wizdek.py`, add the `DOCKER-USER` rule on apps-prod (owner approval), run it, and deploy API and app with `deploy.sh`.
+6. Add the variables and the `10.10.10.30:3004` port mapping to the API in `wizdek.py`, add the `DOCKER-USER` rule on apps-prod (owner approval), run it, and deploy API and app with `deploy.sh`.
 7. Verify in production (table below).
 8. Write the docs, then run `pnpm release:check` again.
 9. Record the release in `infra:docs/build-log.md`.
@@ -89,7 +89,7 @@ Production verification on `https://tools.wizloft.dev`:
 - [ ] Backup, migrations, role sync
 - [ ] API and app deployed with the feature on
 - [ ] Production verification table complete
-- [ ] Docs written and links checked
+- [x] Docs written and links checked
 - [ ] Build log updated
 
 ## Success Criteria
@@ -110,6 +110,16 @@ Production verification on `https://tools.wizloft.dev`:
 
 - The runner token is created with a non-echoing command and passed only through the secrets file and Coolify's runtime variables.
 - The hostile-script check is the release gate for the isolation claims; the release does not proceed if any address in the probe table answers.
+
+## Progress (2026-11-21)
+
+Done in the repository, before any infrastructure step:
+
+- `pnpm release:check`: lint failed on three files. Two were this branch's tests (a format slip and an inline regex in the e2e spec, a shadowed name in the runtime test) and are fixed. The third is the untracked `docs/design/wizdek-scale-preview/index.html`, which belongs to the owner and was left alone, so the full command stays red until it is formatted, committed elsewhere or ignored. With it excluded, lint, type checks, tests, boundaries and the build pass.
+- The API's helper port moved from 3003 to 3004: the local runner agent already listens on 3003 (`RUNNER_PORT`, `FUNCTIONS_RUNNER_URL=http://127.0.0.1:3003`), so the API could not have bound both on a developer machine. Phases 1, 8 and 9 and `.env.example` now say 3004; production uses the same number.
+- Written: `docs/functions.md`, `docs/decisions/0006-functions-on-a-dedicated-runner-vm.md`, a Functions section and two system-shape rows in `docs/architecture.md`, index rows in `docs/README.md`, and a Functions setup section in `README.md`. Decision 0006 marks the runner-VM probe as pending.
+
+Waiting: phase 1 (owner approval and a Proxmox key), then steps 2 to 7 and 9 of this phase.
 
 ## Next Steps
 

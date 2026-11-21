@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Phase 1: Runner VM and Network Isolation"
-status: todo
+status: done
 priority: P1
 effort: "1d"
 dependencies: []
@@ -36,7 +36,7 @@ Free the capacity held by the unused `openclaw` VM, create the `runner` VM, and 
 - Docker Engine with log rotation and an address pool that overlaps neither the LAN nor apps-prod's pool: `10.210.0.0/16`.
 - A bridge network `fn-sandbox` (10.210.1.0/24), IPv6 off, inter-container communication off.
 - From `fn-sandbox`: allowed to public IPv4 addresses; dropped to 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10, 169.254.0.0/16 and to every address of the runner host. Rules survive a reboot and a Docker restart.
-- One exception, for the built-in helpers: `fn-sandbox` may reach 10.10.10.30 on TCP 3003 (wizdek-api's runtime port), inserted before the private-range drops. Nothing else on apps-prod.
+- One exception, for the built-in helpers: `fn-sandbox` may reach 10.10.10.30 on TCP 3004 (wizdek-api's runtime port), inserted before the private-range drops. Nothing else on apps-prod.
 - Agent port 8443 answers only to 10.10.10.30.
 - A TLS certificate for `runner.wizloft.dev` (SAN also `IP:10.10.10.50`) signed by the existing private CA, and a DNS-only A record `runner.wizloft.dev` to 10.10.10.50.
 - `infra` (VMID 101), the host network and the tunnel are not touched.
@@ -81,21 +81,33 @@ Probe, from a throwaway container on `fn-sandbox`:
 | `https://example.com`, DNS lookup of a public name | succeeds |
 | 10.10.10.1, 10.10.10.20:8000, 10.10.10.30:80, 10.10.10.40:5432, 10.10.10.110:8006, 10.10.10.201 | no connection |
 | 10.10.10.50:22, 10.10.10.50:8443, 10.210.1.1 | no connection |
-| 10.10.10.30:3003 | connects (the only LAN target that does) |
+| 10.10.10.30:3004 | connects (the only LAN target that does) |
 | a second container on `fn-sandbox` | no connection |
 
 From another LAN machine: 10.10.10.50:8443 refuses; from apps-prod it connects.
 
 ## Todo
 
-- [ ] Owner approval and Proxmox key received; pre-change state recorded
-- [ ] `openclaw` backed up and removed
-- [ ] `runner` VM created, reserved, baselined
-- [ ] Docker and `fn-sandbox` configured
-- [ ] Egress and agent-port rules applied and persistent
-- [ ] Certificate issued, DNS record added
-- [ ] Probe passes before and after a reboot
-- [ ] Build log updated
+- [x] Owner approval and Proxmox key received; pre-change state recorded
+- [x] `openclaw` backed up and removed
+- [x] `runner` VM created and baselined (DHCP reservation: owner)
+- [x] Docker and `fn-sandbox` configured
+- [x] Egress and agent-port rules applied and persistent
+- [x] Certificate issued, DNS record added
+- [x] Probe passes before and after a reboot
+- [x] Build log updated
+
+## Results (2026-11-21)
+
+- Pre-change state: thin pool 25.6% data, 1.3% metadata; `openclaw` stopped with `onboot: 0` (the build log said 1).
+- `openclaw` backed up to `/var/lib/vz/dump/vzdump-qemu-100-2026_11_21-17_36_42.vma.zst` (4.13 GB, `zstd -t` clean), then destroyed after the owner confirmed. Thin pool now 17.5% before the runner.
+- `runner` (150) at 10.10.10.50, MAC BC:24:11:C7:37:9B, Ubuntu 24.04.5, baseline applied. Docker 29.10.0 with the iptables backend; `fn-sandbox` 10.210.1.0/24.
+- Deviations from the plan, both stricter or equivalent:
+  - Private ranges are refused with REJECT rather than dropped, so a function that touches the LAN fails at once instead of waiting for its timeout. The list also covers 0/8, 224/4 and 240/4.
+  - The agent-port rule in `DOCKER-USER` matches the original destination 10.10.10.50:8443, so a function calling another host on port 8443 is not caught; ufw also allows 8443 only from 10.10.10.30, since the baseline denies incoming by default.
+- Probe: 0 failures before and after a reboot; rules also survive `systemctl restart docker`. 10.10.10.30:3004 is shown passing the filter by its rule counter; the connection itself is checked in phase 9 once the API listens there.
+- Agent port with a temporary `openssl s_server` and the new certificate: apps-prod connected and verified `runner.wizloft.dev` against the private CA; deploy and the owner's Mac were refused.
+- Recorded in `infra:docs/build-log.md` (section `runner`).
 
 ## Success Criteria
 

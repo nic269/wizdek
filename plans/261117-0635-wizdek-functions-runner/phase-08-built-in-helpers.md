@@ -116,7 +116,7 @@ Editor and UI:
 ```text
 script (fn-sandbox, runner VM)
    │  import { db } from "wizdek"   WIZDEK_RUNTIME_URL + WIZDEK_RUNTIME_TOKEN
-   ▼  egress exception: 10.210.1.0/24 → 10.10.10.30:3003 only
+   ▼  egress exception: 10.210.1.0/24 → 10.10.10.30:3004 only
 wizdek-api (apps-prod)  /api/fn-runtime/*
    │  token hash → active run → function → grant by alias
    ├──► openConnection() → pg, statement timeout, row cap ──► Postgres
@@ -133,7 +133,7 @@ model CodeFunctionGrant {
 // CodeFunctionRun gains: runtimeTokenHash? @unique, dbCallCount Int @default(0), shopifyCallCount Int @default(0)
 ```
 
-The runtime routes are a plain Hono sub-app (like the webhook route), mounted before the oRPC handler and listening on a second port, `FUNCTIONS_RUNTIME_PORT` (3003), so the published port exposes nothing else of the API. In development the same port is reached through `host.docker.internal`.
+The runtime routes are a plain Hono sub-app (like the webhook route), mounted before the oRPC handler and listening on a second port, `FUNCTIONS_RUNTIME_PORT` (3004), so the published port exposes nothing else of the API. In development the same port is reached through `host.docker.internal`.
 
 Contract additions (`manage` except reads):
 
@@ -154,7 +154,7 @@ Contract additions (`manage` except reads):
 - Create: `apps/runner/runtimes/node/sdk/` (`index.mjs`, `index.d.ts`, `package.json`), `apps/runner/runtimes/python/sdk/wizdek/__init__.py`; modify both Dockerfiles to install them
 - Modify: `apps/app/app/functions/[functionId]/monaco-setup.ts` (add the SDK types), `side-panel.tsx`; create `connections-section.tsx`
 - Modify: `turbo.json`, `.env.example` (`FUNCTIONS_RUNTIME_PORT`, `FUNCTIONS_RUNTIME_URL`)
-- Modify: phase 1 egress rules and probe (the one exception); `infra:scripts/coolify/wizdek.py` (publish `10.10.10.30:3003`), apps-prod `DOCKER-USER` rule allowing 3003 from 10.10.10.50 only — infrastructure, owner approval
+- Modify: phase 1 egress rules and probe (the one exception); `infra:scripts/coolify/wizdek.py` (publish `10.10.10.30:3004`), apps-prod `DOCKER-USER` rule allowing 3004 from 10.10.10.50 only — infrastructure, owner approval
 - Create or extend tests: `packages/functions/integration/runtime.integration.test.ts`, `packages/api/integration/function-runtime.integration.test.ts`, `apps/runner/integration/sdk.integration.test.ts`, `tests/e2e/functions.spec.ts`
 
 ## Implementation Steps
@@ -192,7 +192,7 @@ Contract additions (`manage` except reads):
 - An insert and a Shopify mutation each leave an audit entry naming the function and the run; a select leaves none and is counted on the run.
 - An HTTP-triggered and a scheduled run can use granted resources.
 - Monaco shows completion for `db(...).query`.
-- On the runner, a sandbox reaches 10.10.10.30:3003 and nothing else on the LAN; from any other LAN host 3003 refuses.
+- On the runner, a sandbox reaches 10.10.10.30:3004 and nothing else on the LAN; from any other LAN host 3004 refuses.
 
 ## Risk Assessment
 
@@ -215,7 +215,7 @@ Contract additions (`manage` except reads):
 
 Built as planned, with these differences:
 
-- The runtime routes live in `packages/api/src/function-runtime-route.ts`, not in `@repo/functions`, because they use `@repo/database-tools` and `@repo/shopify`, which the functions package may not import. Grants and the run token stay in `@repo/functions` (`services/grants.ts`, `services/run-token.ts`). `createFunctionRuntimeApp()` serves only `/api/fn-runtime/*`; `apps/api` listens with it on `FUNCTIONS_RUNTIME_PORT` (default 3003) next to the main port.
+- The runtime routes live in `packages/api/src/function-runtime-route.ts`, not in `@repo/functions`, because they use `@repo/database-tools` and `@repo/shopify`, which the functions package may not import. Grants and the run token stay in `@repo/functions` (`services/grants.ts`, `services/run-token.ts`). `createFunctionRuntimeApp()` serves only `/api/fn-runtime/*`; `apps/api` listens with it on `FUNCTIONS_RUNTIME_PORT` next to the main port. The default is 3004, because the local runner agent already uses 3003 (the plan said 3003; found while preparing phase 9).
 - A transaction is a list of statements, `db(alias).transaction([{ sql, params }, …])`, sent as one call to `POST /api/fn-runtime/db/{alias}/transaction`, instead of a callback. A callback cannot see its own reads' results when every statement travels in one call, and a callback that waits on each call would hold a connection open across calls. The SDKs also have `db(alias).run()` for the whole result (command, fields, `truncated`); `query()` warns on stderr when a result was cut.
 - A call counts as a write unless its first keyword (after comments) is `select`, `show` or `explain`; `with` counts as a write. Statements always use the extended protocol, so Postgres refuses several statements in one text and the first keyword is the statement's kind. `function.db.write` records the statements' SQL (up to 2000 characters each) and outcome, never their parameters, with the person who started the run as actor (null for HTTP and schedule runs).
 - The driver's `query_timeout` is not used: with a `pg.Query` object it replaces the query's callback, so the query's error event never fires and a failing statement hung the call. The whole call is cut by ending the connection 5 s after the statement timeout instead.

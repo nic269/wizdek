@@ -53,7 +53,7 @@ Paths in phase files are relative to this repository unless they start with `inf
 
 | # | Phase | Status |
 |---|-------|--------|
-| 1 | [Phase 1: Runner VM and Network Isolation](./phase-01-runner-vm-and-network-isolation.md) | Pending |
+| 1 | [Phase 1: Runner VM and Network Isolation](./phase-01-runner-vm-and-network-isolation.md) | Done |
 | 2 | [Phase 2: Runner Agent and Runtime Images](./phase-02-runner-agent-and-runtime-images.md) | Completed |
 | 3 | [Phase 3: Data Model, Permissions and Services](./phase-03-data-model-permissions-and-services.md) | Completed |
 | 4 | [Phase 4: API Contracts and Routers](./phase-04-api-contracts-and-routers.md) | Completed |
@@ -61,7 +61,7 @@ Paths in phase files are relative to this repository unless they start with `inf
 | 6 | [Phase 6: Package Install and Cache](./phase-06-package-install-and-cache.md) | Completed |
 | 7 | [Phase 7: Triggers, Schedules and Env Vars](./phase-07-triggers-schedules-and-env-vars.md) | Completed |
 | 8 | [Phase 8: Built-in Helpers for Databases and Shopify Stores](./phase-08-built-in-helpers.md) | Completed |
-| 9 | [Phase 9: Deploy, Docs and Release Check](./phase-09-deploy-docs-and-release-check.md) | Pending |
+| 9 | [Phase 9: Deploy, Docs and Release Check](./phase-09-deploy-docs-and-release-check.md) | In progress |
 
 Phase 1 changes infrastructure and waits for the owner's approval and a Proxmox key; it blocks only phase 9. Phases 2 to 7 are built and tested on a developer machine against a local agent and local Docker. Phase 3 needs 2. Phase 4 needs 3. Phase 5 needs 4. Phase 6 needs 2, 4 and 5. Phase 7 needs 4 and 5. Phase 8 needs 4 to 7. Phase 9 needs all.
 
@@ -103,6 +103,6 @@ Phase 1 changes infrastructure and waits for the owner's approval and a Proxmox 
 
 - The owner grants a Proxmox key and approves each infrastructure step when phase 1 starts.
 - How the agent container gets the Docker socket under Coolify is verified in phase 9, with a systemd fallback.
-- Phase 8 adds infrastructure: an egress exception from `fn-sandbox` to 10.10.10.30:3003, and a published port on apps-prod restricted to 10.10.10.50. Both need the owner's approval with phases 1 and 9.
+- Phase 8 adds infrastructure: an egress exception from `fn-sandbox` to 10.10.10.30:3004, and a published port on apps-prod restricted to 10.10.10.50. Both need the owner's approval with phases 1 and 9.
 
 <!-- slug: wizdek-functions-runner -->
