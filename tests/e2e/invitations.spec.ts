@@ -5,6 +5,7 @@ import {
   createTestSuffix,
   DASHBOARD_URL_PATTERN,
   E2E_PASSWORD,
+  expectActiveOrganization,
   signUp,
 } from "./support/user-flows";
 
@@ -52,11 +53,7 @@ test("owner can invite a member who signs up and accepts access", async ({
 
     await memberPage.getByRole("button", { name: "Accept invitation" }).click();
     await expect(memberPage).toHaveURL(DASHBOARD_URL_PATTERN);
-    await expect(
-      memberPage.getByRole("button", {
-        name: `Switch organization, current: ${organizationName}`,
-      })
-    ).toBeVisible();
+    await expectActiveOrganization(memberPage, organizationName);
   } finally {
     await memberContext.close();
   }

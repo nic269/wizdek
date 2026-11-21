@@ -153,7 +153,8 @@ test("a member runs the CSV flow and reads the failed row in the trace", async (
   await dialog.getByRole("button", { name: "Start 1 run" }).click();
 
   // The trace follows the run until it reaches a final status.
-  await expect(page).toHaveURL(RUN_URL_PATTERN);
+  // Starting the run waits on the server, which is slower on CI runners.
+  await expect(page).toHaveURL(RUN_URL_PATTERN, { timeout: 15_000 });
   await expect(page.getByTestId("run-status")).toHaveText(
     RUN_FINISHED_PATTERN,
     {

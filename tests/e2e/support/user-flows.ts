@@ -109,6 +109,35 @@ export const signUp = async ({
 };
 
 /**
+ * On narrow screens the navigation, organization switcher and account menu
+ * live in a sheet. Opens it when the page shows the menu button, and says
+ * whether it did.
+ */
+export const openShellNavigation = async (page: Page) => {
+  const open = page.getByRole("button", { name: "Open navigation" });
+  if (!(await open.isVisible())) {
+    return false;
+  }
+  await open.click();
+  return true;
+};
+
+const closeShellNavigation = async (page: Page) => {
+  await page.getByRole("button", { name: "Close navigation" }).click();
+};
+
+/** Checks which organization the switcher shows as active. */
+export const expectActiveOrganization = async (page: Page, name: string) => {
+  const opened = await openShellNavigation(page);
+  await expect(
+    page.getByRole("button", { name: `Switch organization, current: ${name}` })
+  ).toBeVisible();
+  if (opened) {
+    await closeShellNavigation(page);
+  }
+};
+
+/**
  * Creates an organization and makes it the active one: from the empty state
  * for someone without one, otherwise from the switcher's menu.
  */
@@ -121,20 +150,25 @@ export const createOrganization = async ({
 }) => {
   const firstName = page.getByLabel("Organization name", { exact: true });
   const switcher = page.getByRole("button", { name: SWITCHER_NAME });
+  const openNavigation = page.getByRole("button", { name: "Open navigation" });
+  await expect(firstName.or(switcher).or(openNavigation)).toBeVisible();
+  // On narrow screens the switcher is in the navigation sheet, and the menu
+  // button shows before the page knows whether an organization exists.
+  const opened = await openShellNavigation(page);
   await expect(firstName.or(switcher)).toBeVisible();
   if (await firstName.isVisible()) {
+    if (opened) {
+      await closeShellNavigation(page);
+    }
     await firstName.fill(name);
     await page.getByRole("button", { name: "Create organization" }).click();
   } else {
-    await switcher.click();
     await page.getByRole("menuitem", { name: "Create organization" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Name", { exact: true }).fill(name);
     await dialog.getByRole("button", { exact: true, name: "Create" }).click();
   }
-  await expect(
-    page.getByRole("button", { name: `Switch organization, current: ${name}` })
-  ).toBeVisible();
+  await expectActiveOrganization(page, name);
 };
 
 export const connectStoreWithToken = async ({

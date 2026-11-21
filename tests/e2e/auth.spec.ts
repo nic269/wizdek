@@ -2,7 +2,13 @@ import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { prisma } from "../../packages/database/src/client";
-import { createTestSuffix, E2E_PASSWORD, signUp } from "./support/user-flows";
+import {
+  createTestSuffix,
+  DASHBOARD_URL_PATTERN,
+  E2E_PASSWORD,
+  openShellNavigation,
+  signUp,
+} from "./support/user-flows";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3002";
 const RESET_SUBJECT_PREFIX = "Reset your ";
@@ -111,11 +117,14 @@ test("user can sign up, view dashboard session, and sign out", async ({
   const email = `auth-smoke-${createTestSuffix(testInfo)}@example.com`;
 
   await signUp({ email, name: "Auth Smoke", page });
-  await expect(page.getByText(email, { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(DASHBOARD_URL_PATTERN);
 
+  // The account menu names the signed-in user and holds sign-out.
+  await openShellNavigation(page);
   await page
     .getByRole("button", { name: "Open account menu for Auth Smoke" })
     .click();
+  await expect(page.getByText(email, { exact: true })).toBeVisible();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(SIGN_IN_URL_PATTERN);
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
